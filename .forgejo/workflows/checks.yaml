@@ -1,0 +1,87 @@
+name: checks
+
+# Server-side copy of the pre-commit hooks, plus the paperless-tarmed tests and
+# lint. Pre-commit alone is opt-in per clone and skipped by --no-verify; this is
+# the gate that cannot be. Push-only: Renovate's PR branches live in this repo,
+# so their pushes trigger it too, and no fork PR can ever reach the runner —
+# which matters, because the runner holds the host's docker.sock.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: docker
+    container:
+      image: python:3.12-slim-bookworm
+    env:
+      GITLEAKS_VERSION: 8.24.2 # keep in step with .pre-commit-config.yaml
+    steps:
+      - name: Install tools
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends git shellcheck curl ca-certificates >/dev/null
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          pip install -q uv
+
+      # Not actions/checkout: it clones from the server URL, which Forgejo
+      # derives from ROOT_URL — Caddy's macvlan IP, which a job container cannot
+      # hairpin back to (same reason as RENOVATE_ENDPOINT in renovate.yaml).
+      - name: Clone
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q .
+          git remote add origin "http://forgejo:3000/${{ github.repository }}.git"
+          git -c http.extraHeader="Authorization: token ${TOKEN}" fetch -q --depth=1 origin "${{ github.ref }}"
+          git checkout -q FETCH_HEAD
+
+      - name: gitleaks
+        run: gitleaks dir --no-banner --redact .
+
+      # Site-specific patterns come from the PRIVATE_PATTERNS Actions secret
+      # (same format as .private-patterns.example). Unset, only the generic
+      # patterns run and the script prints a warning.
+      - name: No deployment-specific real values
+        env:
+          PRIVATE_PATTERNS: ${{ secrets.PRIVATE_PATTERNS }}
+        run: |
+          if [ -n "$PRIVATE_PATTERNS" ]; then printf '%s\n' "$PRIVATE_PATTERNS" > .private-patterns; fi
+          git ls-files -z | xargs -0 scripts/check-no-real-values.sh
+
+      - name: shellcheck
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -x
+
+      - name: run-jobs tests
+        run: bash scripts/tests/run-jobs.test.sh
+
+      - name: paperless-tarmed — ruff
+        working-directory: stacks/paperless-tarmed
+        run: uv run -q --extra serve --extra dev ruff check .
+
+      - name: paperless-tarmed — pytest
+        working-directory: stacks/paperless-tarmed
+        run: uv run -q --extra serve --extra dev pytest -q
+
+  # Markdown stays formatted for reading in plain text: aligned tables,
+  # consistent lists (.prettierrc.yaml). Fix locally: npx prettier@3.6.2 --write <file>
+  markdown:
+    runs-on: docker
+    container:
+      image: node:22-bookworm-slim
+    env:
+      PRETTIER_VERSION: 3.6.2 # keep in step with .pre-commit-config.yaml
+    steps:
+      - name: Clone
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          apt-get update -qq && apt-get install -y -qq --no-install-recommends git ca-certificates >/dev/null
+          git init -q .
+          git remote add origin "http://forgejo:3000/${{ github.repository }}.git"
+          git -c http.extraHeader="Authorization: token ${TOKEN}" fetch -q --depth=1 origin "${{ github.ref }}"
+          git checkout -q FETCH_HEAD
+
+      - name: prettier --check
+        run: git ls-files -z '*.md' | xargs -0 npx --yes "prettier@${PRETTIER_VERSION}" --check

@@ -1,0 +1,34 @@
+# Local env files — real values live in Portainer's per-stack Environment
+# Variables, never in a file. .env here is only ever a local testing convenience
+# (e.g. for `docker compose config`), never committed.
+.env
+*.env
+!.env.example
+
+# App state — lives on the NAS host filesystem, outside this repo's working tree
+# by construction (compose volumes point at sibling NAS paths). Listed here
+# anyway as defense-in-depth in case a path is ever created inside the repo by mistake.
+**/pgdata/
+**/data/
+**/media/
+
+# Local overrides, never shared
+docker-compose.override.yml
+compose.override.yaml
+
+# Throwaway PoC stacks — proven-then-deleted, never meant to be committed
+stacks/_poc-*/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Deployment-specific content that is NOT publishable: real hostnames, NAS
+# paths, household and device names, LDAP UIDs. Kept in the working tree so
+# it stays to hand, deliberately never tracked. scripts/check-no-real-values.sh
+# is the backstop if something from here is ever staged by mistake.
+/PRIVATE-real-values-do-not-publish/
+.private-patterns

@@ -1,0 +1,82 @@
+services:
+  paperless-tarmed:
+    # Built on the NAS by the scheduler's build-images job (scripts/jobs.conf),
+    # never by Portainer: its "Pull and redeploy" did not reliably rebuild, and
+    # silently kept running old code. Portainer only starts the image that job
+    # built; `never` makes a missing image fail loudly ("No such image") instead
+    # of trying Docker Hub. To build by hand: scripts/build-images.sh
+    # paperless-tarmed=paperless-tarmed:0.1.0 (README, "Updating").
+    pull_policy: never
+    image: ${PAPERLESS_TARMED_IMAGE:-paperless-tarmed:0.1.0}
+    container_name: paperless-tarmed
+    restart: unless-stopped
+
+    environment:
+      PAPERLESS_URL: ${PAPERLESS_URL:?set PAPERLESS_URL}
+      PAPERLESS_TOKEN: ${PAPERLESS_TOKEN:?set PAPERLESS_TOKEN}
+      PAPERLESS_TARMED_VERIFY_SSL: ${PAPERLESS_TARMED_VERIFY_SSL:-1}
+
+      # Which extracted value goes to which of YOUR custom fields.
+      # `paperless-tarmed fields` lists both sides.
+      PAPERLESS_TARMED_FIELDS: ${PAPERLESS_TARMED_FIELDS:?set PAPERLESS_TARMED_FIELDS}
+
+      # Optional. Personal data, so never defaulted in the repository.
+      PAPERLESS_TARMED_PATIENTS: ${PAPERLESS_TARMED_PATIENTS:-}
+      PAPERLESS_TARMED_ALIASES: ${PAPERLESS_TARMED_ALIASES:-}
+      PAPERLESS_TARMED_GLN_OVERRIDES: ${PAPERLESS_TARMED_GLN_OVERRIDES:-}
+      PAPERLESS_TARMED_CATEGORIES: ${PAPERLESS_TARMED_CATEGORIES:-}
+
+      PAPERLESS_TARMED_TITLE: ${PAPERLESS_TARMED_TITLE:-{patient} - {category} - {treatment_date} - {provider}}
+      PAPERLESS_TARMED_DOCUMENT_TYPE: ${PAPERLESS_TARMED_DOCUMENT_TYPE:-}
+      PAPERLESS_TARMED_REVIEW_TAG: ${PAPERLESS_TARMED_REVIEW_TAG:-extraction-failed}
+      PAPERLESS_TARMED_DONE_TAG: ${PAPERLESS_TARMED_DONE_TAG-tarmed}
+      PAPERLESS_TARMED_WEBHOOK_SECRET: ${PAPERLESS_TARMED_WEBHOOK_SECRET:?set PAPERLESS_TARMED_WEBHOOK_SECRET}
+
+      # The webhook plans writes exactly like `apply`: blanks only, title
+      # untouched. Turning either of these on makes an automated run able to
+      # modify a document it has already processed, which is also what lets a
+      # "Document Updated" trigger feed itself.
+      PAPERLESS_TARMED_WEBHOOK_OVERWRITE: ${PAPERLESS_TARMED_WEBHOOK_OVERWRITE:-0}
+      PAPERLESS_TARMED_WEBHOOK_TITLE: ${PAPERLESS_TARMED_WEBHOOK_TITLE:-0}
+
+      # Plausibility bounds. config.py reads these; without them here they were
+      # documented in .env.example but never reached the container.
+      PAPERLESS_TARMED_MAX_AMOUNT: ${PAPERLESS_TARMED_MAX_AMOUNT:-50000}
+      PAPERLESS_TARMED_MAX_AGE_DAYS: ${PAPERLESS_TARMED_MAX_AGE_DAYS:-3650}
+      PAPERLESS_TARMED_FUTURE_TOLERANCE_DAYS: ${PAPERLESS_TARMED_FUTURE_TOLERANCE_DAYS:-2}
+      PAPERLESS_TARMED_MAX_SPAN_DAYS: ${PAPERLESS_TARMED_MAX_SPAN_DAYS:-730}
+      TZ: ${TZ:-Europe/Zurich}
+
+    volumes:
+      # Holds the pull cache, the refreshed tariff table and the change journal.
+      # Set PAPERLESS_TARMED_DATA to an absolute path on the NAS, e.g.
+      # <nas-volume-path>/docker/paperless-tarmed/data -- a relative path resolves
+      # inside Portainer's stack directory.
+      - ${PAPERLESS_TARMED_DATA:-./data}:/data
+
+    # Deliberately no `ports:` -- Paperless reaches it over the shared Docker
+    # network and nothing outside the host needs to. Add one only to debug.
+    networks:
+      - paperless
+
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      # app.py downloads each PDF into a TemporaryDirectory before parsing.
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  paperless:
+    external: true
+    # `proxy` is the shared external network (scripts/bootstrap.sh). Paperless's
+    # `webserver` is attached to it, which is the only reason this stack joins.
+    # Not the paperless stack's own `paperless_net` — that is declared
+    # non-external there, so its real name carries a Portainer stack-name prefix.
+    name: ${PAPERLESS_NETWORK:-proxy}

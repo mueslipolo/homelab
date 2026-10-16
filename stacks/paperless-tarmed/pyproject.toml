@@ -1,0 +1,35 @@
+[project]
+name = "paperless-tarmed"
+version = "0.1.0"
+description = "Extract Concerne / treatment date / total from Swiss 'Justificatif de remboursement' into Paperless-ngx"
+requires-python = ">=3.11"
+dependencies = [
+    "pypdfium2>=4",
+    "httpx>=0.27",
+    "openpyxl>=3.1",   # only used by `refresh-tariffs`, but must ship in the image
+]
+
+[project.optional-dependencies]
+serve = ["fastapi>=0.110", "uvicorn>=0.29"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+paperless-tarmed = "paperless_tarmed.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["paperless_tarmed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# pyflakes, import order, bugbear, pyupgrade — on top of the default pycodestyle errors.
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]

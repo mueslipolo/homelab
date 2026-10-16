@@ -1,0 +1,93 @@
+services:
+  postgres:
+    # Replaces the SQLite storage backend — under concurrent write load
+    # (routine session/regulation writes from every full-gate app's
+    # forward-auth traffic, plus OIDC consent writes) SQLite's single-writer
+    # limitation produced real, reproducible "database is locked" failures,
+    # not just theoretical risk. Authelia's own guidance: PostgreSQL is the
+    # recommended backend once this happens with any regularity.
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: authelia
+      POSTGRES_USER: authelia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGUSER: authelia
+      TZ: Europe/Zurich
+    volumes:
+      - ${AUTHELIA_PGDATA_PATH}:/var/lib/postgresql/data
+    networks:
+      - authelia_db
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  authelia:
+    image: authelia/authelia:4.39.28
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Zurich
+      INTERNAL_DOMAIN: ${INTERNAL_DOMAIN}
+      # Reaches the NAS's own LDAP Server package (a host-level DSM service,
+      # not a container) — same mechanism as stacks/edge's Portainer/Forgejo
+      # reverse_proxy blocks, needed here because Authelia's own LDAP client
+      # runs inside this container, not on the host. See stacks/edge/README.md's
+      # "Reaching host-level services" gotcha before changing this.
+      PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
+      LDAP_BASE_DN: ${LDAP_BASE_DN}
+      X_AUTHELIA_CONFIG_FILTERS: template
+      AUTHELIA_SESSION_SECRET_FILE: /secrets/session_secret
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/storage_encryption_key
+      AUTHELIA_STORAGE_POSTGRES_PASSWORD_FILE: /secrets/postgres_password
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
+      AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE: /secrets/oidc_hmac_secret
+      AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE: /secrets/ldap_bind_password
+    volumes:
+      # The folder, not the file: a single-file bind mount keeps the file it
+      # first opened, and a Git redeploy replaces the file, so Authelia went on
+      # running the old access rules (README, Gotchas).
+      - ./config:/config
+      - ${AUTHELIA_SECRETS_ROOT}:/secrets:ro
+      - ${AUTHELIA_DATA_ROOT}:/data
+    networks:
+      - proxy
+      - authelia_db
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+networks:
+  authelia_db:
+    driver: bridge
+  proxy:
+    external: true

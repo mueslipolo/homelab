@@ -1,0 +1,1165 @@
+{
+  "source_url": "https://www.forum-datenaustausch.ch/application/files/3817/8153/6622/Tariftyp_Liste_20260615.xlsx",
+  "tariff_types": [
+    {
+      "code": "001",
+      "status": "aktiv",
+      "label_fr": "TARMED",
+      "label_de": "TARMED",
+      "valid_from": "2002-01-01",
+      "valid_to": "2025-12-31"
+    },
+    {
+      "code": "002",
+      "status": "terminiert",
+      "label_fr": "Forfaits Tarmed",
+      "label_de": "Tarmedpauschalen",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-12-31"
+    },
+    {
+      "code": "003",
+      "status": "aktiv",
+      "label_fr": "Autres forfaits ambulatoires",
+      "label_de": "Übrige ambulante Pauschalen",
+      "valid_from": "2016-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "005",
+      "status": "aktiv",
+      "label_fr": "Forfaits ambulatoires",
+      "label_de": "Ambulante Pauschalen",
+      "valid_from": "2026-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "007",
+      "status": "aktiv",
+      "label_fr": "TARDOC",
+      "label_de": "TARDOC",
+      "valid_from": "2026-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "008",
+      "status": "terminiert",
+      "label_fr": "Tarif médical du médecin agréé AA/AM/AI",
+      "label_de": "Belegarzt-Tarif UV/MVIV",
+      "valid_from": "2018-04-01",
+      "valid_to": "2018-07-31"
+    },
+    {
+      "code": "010",
+      "status": "aktiv",
+      "label_fr": "SwissDRG",
+      "label_de": "SwissDRG",
+      "valid_from": "2010-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "011",
+      "status": "aktiv",
+      "label_fr": "SwissDRG Catalogue des rémunérations supplémentaires",
+      "label_de": "SwissDRG Zusatzentgelte-Katalog",
+      "valid_from": "2012-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "012",
+      "status": "aktiv",
+      "label_fr": "Services d'hospitalisation à aucune DRG",
+      "label_de": "Stationäre Leistungen ohne DRG",
+      "valid_from": "2012-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "020",
+      "status": "aktiv",
+      "label_fr": "SwissDRG ST Reha",
+      "label_de": "ST Reha",
+      "valid_from": "2020-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "021",
+      "status": "aktiv",
+      "label_fr": "ST Reha Catalogue des rémunérations supplémentaires",
+      "label_de": "ST Reha Zusatzentgelte-Katalog",
+      "valid_from": "2021-01-21",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "030",
+      "status": "aktiv",
+      "label_fr": "TARPSY",
+      "label_de": "TARPSY",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "031",
+      "status": "aktiv",
+      "label_fr": "TARPSY Catalogue des rémunérations supplémentaires",
+      "label_de": "TarPSY Zusatzentgelte-Katalog",
+      "valid_from": "2021-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "050",
+      "status": "aktiv",
+      "label_fr": "Tarif pour dépistages précoces dans le domaine de la médecine du travail",
+      "label_de": "Tarif für Arbeitsmedizinische Vorsorgeuntersuchungen",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "051",
+      "status": "aktiv",
+      "label_fr": "Tarif évaluateur AA / AM",
+      "label_de": "Tarif Gutachter UV / MV",
+      "valid_from": "2026-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "090",
+      "status": "aktiv",
+      "label_fr": "Tarif pour les acomptes",
+      "label_de": "Tarif für Akontozahlungen",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "091",
+      "status": "aktiv",
+      "label_fr": "Tarif paiements de recours",
+      "label_de": "Tarif für Regress-Zahlungen",
+      "valid_from": "2023-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "222",
+      "status": "aktiv",
+      "label_fr": "Tarif dentaire suisse AA / AM / AI (SSO)",
+      "label_de": "Zahnarzt-Tarif UV / MV / IV (SSO)",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "223",
+      "status": "aktiv",
+      "label_fr": "Tarif pour les travaux de technique dentaire AA / AM / AI (VZLS)",
+      "label_de": "Tarif für zahntechnische Arbeiten UV / MV / IV (VZLS)",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "272",
+      "status": "terminiert",
+      "label_fr": "Tarif médical Liechtenstein",
+      "label_de": "Arzt-Tarif Liechtenstein",
+      "valid_from": "2002-01-01",
+      "valid_to": "2011-12-31"
+    },
+    {
+      "code": "273",
+      "status": "terminiert",
+      "label_fr": "Tarif médical Liechtenstein",
+      "label_de": "Arzt-Tarif Liechtenstein",
+      "valid_from": "2012-10-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "280",
+      "status": "aktiv",
+      "label_fr": "Tarif pour factures tarifaires étrangères (accord de sécurité sociale)",
+      "label_de": "Tarif Auslandrechnungen (Sozialversicherungsabkommen)",
+      "valid_from": "2013-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "290",
+      "status": "aktiv",
+      "label_fr": "Tarif pour les expertises pluridisciplinaires de l’AI",
+      "label_de": "Tarif für polydisziplinären Gutachten für die IV",
+      "valid_from": "2012-10-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "302",
+      "status": "terminiert",
+      "label_fr": "Catalogue des prestations hospitalières (CPH)",
+      "label_de": "Spitalleistungs-Katalog (SLK)",
+      "valid_from": "2002-01-01",
+      "valid_to": "2010-12-31"
+    },
+    {
+      "code": "311",
+      "status": "aktiv",
+      "label_fr": "Tarif suisse de physiothérapie (physioswiss) (1.1.2018 AA / AM / AI)",
+      "label_de": "Physiotherapie-Tarif (physioswiss) UV / MV / IV",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "312",
+      "status": "aktiv",
+      "label_fr": "Tarif suisse de physiothérapie (1.1.2018 LAMal)",
+      "label_de": "Physiotherapie-Tarif KV (1.1.2018)",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "316",
+      "status": "terminiert",
+      "label_fr": "Liste fédérale des analyses (LA)",
+      "label_de": "Eidg. Analysenliste (EAL)",
+      "valid_from": "2002-01-01",
+      "valid_to": "2009-06-30"
+    },
+    {
+      "code": "317",
+      "status": "aktiv",
+      "label_fr": "Liste fédérale des analyses (LA)",
+      "label_de": "Eidg. Analysenliste (EAL)",
+      "valid_from": "2009-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "318",
+      "status": "aktiv",
+      "label_fr": "Liste des analyses (LA) Liechtenstein (Neu ab 1.6.2010)",
+      "label_de": "Analysenliste (EAL) Liechtenstein (Neu ab 1.6.2010)",
+      "valid_from": "2010-06-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "320",
+      "status": "reserviert",
+      "label_fr": "Tarif dentaire suisse PP (SSO)",
+      "label_de": "Zahnarzt-Tarif PP (SSO)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "321",
+      "status": "reserviert",
+      "label_fr": "Tarif pour les travaux de technique dentaire PP (VZLS)",
+      "label_de": "Tarif für zahntechnische Arbeiten PP (VZLS)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "322",
+      "status": "aktiv",
+      "label_fr": "Tarif dentaire suisse AA / AM / AI / Amal (SSO)",
+      "label_de": "Zahnarzt-Tarif KV (SSO)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "323",
+      "status": "aktiv",
+      "label_fr": "Tarif pour les travaux de technique dentaire AA / AM / AI / Amal (VZLS)",
+      "label_de": "Tarif für zahntechnische Arbeiten KV (VZLS)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "324",
+      "status": "aktiv",
+      "label_fr": "Tarif des chiropraticiens (SCG)",
+      "label_de": "Chiropraktoren-Tarif (ChiroSuisse)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "325",
+      "status": "aktiv",
+      "label_fr": "Tarif d'ergothérapie (ASE)",
+      "label_de": "Ergotherapie-Tarif (EVS)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "326",
+      "status": "aktiv",
+      "label_fr": "Travaux en technique Orthopédique de chaussures AA AM AI (ASMCBO)",
+      "label_de": "Orthopädie-Schuhtechnische Arbeiten UV MV IV (SSOMV)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "327",
+      "status": "aktiv",
+      "label_fr": "Travaux en orthopedie technique Tarif  AA AM AI (ASTO)",
+      "label_de": "Orthopädietechnische Arbeiten Tarif UV MV IV (SVOT)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "328",
+      "status": "aktiv",
+      "label_fr": "Tarif de logopédie",
+      "label_de": "Logopädietarif",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "329",
+      "status": "aktiv",
+      "label_fr": "Tarif pour appareils acoustiques (HZV) AA/AM",
+      "label_de": "Tarif für Hörgeräte (HZV) UV/MV",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "330",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations neuropsychologiques ambulatoires fournies aux assurés selon LAI,  LAA et LAM dans des institutions reconnues (H+)",
+      "label_de": "Tarif für ambulante neuropsychologische Leistungen an versicherten Personen gemäss IVG, UVG und MVG in zugelassenen Institutionen (H+)",
+      "valid_from": "2004-10-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "331",
+      "status": "aktiv",
+      "label_fr": "Tarif de prothèse occulaire AA / AM / AI",
+      "label_de": "Tarif für Augenprothesen UV / MV / IV",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "332",
+      "status": "aktiv",
+      "label_fr": "Evaluation de la capacité fonctionnelle (ECF) AI/AM/AI",
+      "label_de": "Evaluation der funktionellen Leistungsfähigkeit (EFL) UV/MV/IV",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "334",
+      "status": "aktiv",
+      "label_fr": "Tarif pour infirmières et infirmiers ASI selon AA / AM / AI",
+      "label_de": "Pflegefachpersonen-Tarif SBK nach UV/MV/IV",
+      "valid_from": "2000-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "335",
+      "status": "terminiert",
+      "label_fr": "Tarif pour les travaux de technique dentaire (ALPDS) selon AA/AM/AI",
+      "label_de": "Tarif für zahntechnische Arbeiten (VZLS) nach UV/MV/IV",
+      "valid_from": "2000-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "336",
+      "status": "terminiert",
+      "label_fr": "Tarif pour des prestations ambulatoires logopédiques \"indépendent\" (Tarif 555)",
+      "label_de": "Tarif für ambulante logopädische Leistungen \"freischaffend\" (Tarif 555)",
+      "valid_from": "2014-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "337",
+      "status": "aktiv",
+      "label_fr": "Tarif fauteuil roulant AA / AM / AI",
+      "label_de": "Rollstuhltarif UV/MV/IV",
+      "valid_from": "2018-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "338",
+      "status": "aktiv",
+      "label_fr": "Tarif d'ergothérapie AA/AM/AI",
+      "label_de": "Ergotherapie-Tarif UV/MV/IV",
+      "valid_from": "2019-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "340",
+      "status": "aktiv",
+      "label_fr": "Services neuropsychologiques LaMal",
+      "label_de": "Neuropsychologische Leistungen KVG",
+      "valid_from": "2021-04-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "341",
+      "status": "aktiv",
+      "label_fr": "Podologie LAMal",
+      "label_de": "Podologie KVG",
+      "valid_from": "2022-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "350",
+      "status": "aktiv",
+      "label_fr": "Tarifs forfaitaires LaMal hors tarif 003",
+      "label_de": "Pauschalen KVG ausserhalb Tarif 003",
+      "valid_from": "2017-11-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "351",
+      "status": "aktiv",
+      "label_fr": "Tarif pandémique",
+      "label_de": "Pandemieleistungen",
+      "valid_from": "2020-11-02",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "352",
+      "status": "aktiv",
+      "label_fr": "LAMal-FL : prestations des psychothérapeutes",
+      "label_de": "KVG-FL: Leistungen von Psychotherapeuten",
+      "valid_from": "2016-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "353",
+      "status": "aktiv",
+      "label_fr": "LAMal-FL : prestations des masseurs médicaux",
+      "label_de": "KVG-FL: Leistungen von medizinischen Masseuren",
+      "valid_from": "2017-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "354",
+      "status": "aktiv",
+      "label_fr": "LAMal-FL : tarif médecine alternative",
+      "label_de": "KVG-FL: Tarif Alternativmedizin",
+      "valid_from": "2017-09-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "400",
+      "status": "terminiert",
+      "label_fr": "Catalogue de médicaments code Pharma",
+      "label_de": "Medikamenten-Katalog Pharmacode",
+      "valid_from": "2002-01-01",
+      "valid_to": "2019-04-30"
+    },
+    {
+      "code": "401",
+      "status": "aktiv",
+      "label_fr": "LS Groupe thérapeutique 70 (Homoeopathie / Anthroposophie /Médicaments relevant de l'immunothérapie spécifique)",
+      "label_de": "SL Therapeutische Gruppe 70 (Homoeopathica / Anthroposophica / Spezifische Immuntherapeutika)",
+      "valid_from": "2015-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "402",
+      "status": "aktiv",
+      "label_fr": "Catalogue de médicaments GTIN (LS / HL / LPPA / LiMA)",
+      "label_de": "GTIN - Arzneimittel und Medizinprodukte",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "403",
+      "status": "aktiv",
+      "label_fr": "Catalogue de médicaments swissmedic",
+      "label_de": "Human-Arzneimittel swissmedic (8-stellig Zulassungsnummer Packungscode)",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "404",
+      "status": "aktiv",
+      "label_fr": "Médicaments homéopathiques et anthroposophiques swissmedic (numéro d'agrément à 6 chiffres)",
+      "label_de": "Homöopathische und anthroposophische Arzneimittel swissmedic (6-stellig Zulassungsnummer)",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "405",
+      "status": "aktiv",
+      "label_fr": "Adjonctions aux tarifs médicaux",
+      "label_de": "Ergänzungen zu den Medizinal-Tarifen",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "406",
+      "status": "aktiv",
+      "label_fr": "Autres prestations non définies dans des tarifs officiels (médecin LAMal/LCA)",
+      "label_de": "Übrige Leistungen nicht in offiziellen Tarifen definiert (Arzt KVG/VVG)",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "407",
+      "status": "aktiv",
+      "label_fr": "Autres prestations non définies dans des tarifs officiels (prestations paramédicales LAMal/LCA)",
+      "label_de": "Übrige Leistungen nicht in offiziellen Tarifen definiert (Paramedizin KVG/VVG)",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "408",
+      "status": "aktiv",
+      "label_fr": "Numéro de référence étranger pour les drogues, par exemple PZN",
+      "label_de": "Ausländische Referenznummer für Arzneimittel z.B PZN",
+      "valid_from": "2019-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "410",
+      "status": "aktiv",
+      "label_fr": "Liste des médicaments FoDa",
+      "label_de": "Arzneimittelliste FoDa",
+      "valid_from": "2012-05-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "424",
+      "status": "aktiv",
+      "label_fr": "Tarif des chiropraticiens AA / AM / AI (chirosuisse)",
+      "label_de": "Chiropraktoren-Tarif  UV / MV / IV (Chirosuisse)",
+      "valid_from": "2014-04-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "451",
+      "status": "aktiv",
+      "label_fr": "Codes rayon",
+      "label_de": "Rayon-Codes",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "452",
+      "status": "aktiv",
+      "label_fr": "LiMA: liste des moyens et appareils",
+      "label_de": "MiGeL: Mittel und Gegenstände Liste (HVB Selbstanwendung)",
+      "valid_from": "2001-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "453",
+      "status": "aktiv",
+      "label_fr": "OMAA: Ordonnance sur la remise de moyens auxiliaires par l’assurance—accidents",
+      "label_de": "HVUV: Verordnung über die Abgabe von Hilfsmitteln durch die Unfallversicherung",
+      "valid_from": "2020-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "454",
+      "status": "aktiv",
+      "label_fr": "LiMA: liste des moyens et appareils",
+      "label_de": "MiGeL: Mittel und Gegenstände Liste (HVB Pflege)",
+      "valid_from": "2021-10-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "500",
+      "status": "aktiv",
+      "label_fr": "Traitements par  dialyse ambulatoire (SVK et H+)",
+      "label_de": "Ambulante Dialysenbehandlungen",
+      "valid_from": "2012-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "501",
+      "status": "aktiv",
+      "label_fr": "Tarif Organes solides (SVK)",
+      "label_de": "Tarif Solide Organe",
+      "valid_from": "2012-01-12",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "502",
+      "status": "aktiv",
+      "label_fr": "Tarif Transplantation de cellules souches (SVK)",
+      "label_de": "Tarif Stammzell-Transplantation",
+      "valid_from": "2012-01-12",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "503",
+      "status": "aktiv",
+      "label_fr": "Tarif Radiothérapie à protons (SVK)",
+      "label_de": "Tarif Protonen-Strahlentherapie",
+      "valid_from": "2016-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "504",
+      "status": "aktiv",
+      "label_fr": "Tarif Nutrition à domicile (SVK)",
+      "label_de": "Tarif Ernährung zuhause",
+      "valid_from": "2016-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "505",
+      "status": "aktiv",
+      "label_fr": "Tarif Ventilation mécanique de la maison (SVK)",
+      "label_de": "Mechanische Heimventilation",
+      "valid_from": "2016-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "506",
+      "status": "terminiert",
+      "label_fr": "Tarif Médicament SVK",
+      "label_de": "Medikamente SVK",
+      "valid_from": "2016-07-01",
+      "valid_to": "2018-12-31"
+    },
+    {
+      "code": "510",
+      "status": "aktiv",
+      "label_fr": "Tarif de conseils nutritionnels (ASDD)",
+      "label_de": "Tarif für Ernährungsberatung (SVDE)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "511",
+      "status": "aktiv",
+      "label_fr": "Tarif de conseils diabétiques (ASD)",
+      "label_de": "Tarif für Diabetesberatung (SDG)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "512",
+      "status": "terminiert",
+      "label_fr": "Tarif pour des prestations non médicales de conseils et de soins en milieu hospitalier: traitement ambulatoire oncologique (H+)",
+      "label_de": "Tarif für nichtärztliche Beratungs- und Pflegeleistungen in Spitälern; ambulante onkologische Behandlung (H+)",
+      "valid_from": "2004-01-01",
+      "valid_to": "2004-12-31"
+    },
+    {
+      "code": "513",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations non médicales de conseils et de soins en milieu hospitalier: conseil et traitement ambulatoires en matière de stomie (H+)",
+      "label_de": "Tarif für nichtärztliche Beratungs- und Pflegeleistungen in Spitälern; ambulante Stomaberatung und -behandlung (H+)",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "514",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations ambulatoires de conseils en nutrition fournies en établissements hospitaliers (H+)",
+      "label_de": "Tarif für ambulante Leistungen der Ernährungsberatung in Spitälern (H+)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "515",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations ambulatoires de conseils aux diabétiques fournies en établissements hospitaliers (H+)",
+      "label_de": "Tarif für ambulante Leistungen der Diabetesberatung in Spitälern (H+)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "516",
+      "status": "terminiert",
+      "label_fr": "Tarif pour les conseils diabétiques (ASI)",
+      "label_de": "Tarif für Diabetesberatung (SBK)",
+      "valid_from": "2004-10-01",
+      "valid_to": "2016-12-31"
+    },
+    {
+      "code": "530",
+      "status": "terminiert",
+      "label_fr": "Tarife cadre suisse de Spitex",
+      "label_de": "Schweiz. Spitex-Rahmentarif",
+      "valid_from": "2002-01-01",
+      "valid_to": "2002-01-01"
+    },
+    {
+      "code": "532",
+      "status": "aktiv",
+      "label_fr": "Prestations de soins ambulatoire",
+      "label_de": "Pflegeleistungen ambulant",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "533",
+      "status": "aktiv",
+      "label_fr": "Tarif Aide et soins à domicile AA/AM/AI",
+      "label_de": "Spitex-Tarif UV/MV/IV",
+      "valid_from": "2019-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "534",
+      "status": "aktiv",
+      "label_fr": "KVG-FL : soins ambulatoires",
+      "label_de": "KVG-FL: Pflege ambulant",
+      "valid_from": "2023-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "535",
+      "status": "aktiv",
+      "label_fr": "KVG-FL : soins stationnaires",
+      "label_de": "KVG-FL: Pflege stationär",
+      "valid_from": "2023-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "540",
+      "status": "terminiert",
+      "label_fr": "Tarif de location d'appareils d'inhalation et de respiration",
+      "label_de": "Tarif für die Vermietung von Inhalations- und Atemtheraphiegeräte",
+      "valid_from": "2002-01-01",
+      "valid_to": "2016-12-31"
+    },
+    {
+      "code": "541",
+      "status": "terminiert",
+      "label_fr": "Tarif de la ligue pulmonaire",
+      "label_de": "Tarif Lungenliga",
+      "valid_from": "2011-01-01",
+      "valid_to": "2019-12-31"
+    },
+    {
+      "code": "542",
+      "status": "terminiert",
+      "label_fr": "Tarif pour les thérapies respiratoire et par inhalation (complément à la LiMA) LAMal",
+      "label_de": "Tarif für Inhalations- und Atemtherapie (Ergänzungen zur MiGeL) KVG",
+      "valid_from": "2015-01-01",
+      "valid_to": "2022-12-31"
+    },
+    {
+      "code": "550",
+      "status": "aktiv",
+      "label_fr": "Tarif suisse des sages-femmes",
+      "label_de": "Schweiz. Hebammentarif",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "551",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations non médicales de conseils et de soins en milieu hospitalier: traitement ambulatoire lié à l’accouchement, à la préparation à l’accouchement et aux soins postnatals par des sages-femmes,  CHF (H+)",
+      "label_de": "Tarif für nichtärztliche Beratungs- und Pflegeleistungen in Spitälern; ambulante Behandlung im Zusammenhang mit Geburt, Geburtsvorbereitung und Wochenbett durch Hebammen, CHF (H+)",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "552",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations non médicales de conseils et de soins en milieu hospitalier: traitement ambulatoire lié à l’accouchement, à la préparation à l’accouchement et aux soins postnatals par des sages-femmes,  PT (H+)",
+      "label_de": "Tarif für nichtärztliche Beratungs- und Pflegeleistungen in Spitälern; ambulante Behandlung im Zusammenhang mit Geburt, Geburtsvorbereitung und Wochenbett durch Hebammen, TP (H+)",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "553",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations ambulatoires physiothérapeutiques fournies en établissements hospitaliers (H+) (1.1.2018 AA / AM / AI)",
+      "label_de": "Tarif für ambulante physiotherapeutische Leistungen in Spitälern (H+) (UV / MV / IV)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "554",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations ambulatoires ergothérapeutiques fournies en établissements hospitaliers (H+)",
+      "label_de": "Tarif für ambulante ergotherapeutische Leistungen in Spitälern (H+)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "555",
+      "status": "aktiv",
+      "label_fr": "Tarif pour des prestations ambulatoires logopédiques fournies en établissements hospitaliers (H+)",
+      "label_de": "Tarif für ambulante logopädische Leistungen in Spitälern (H+)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "556",
+      "status": "aktiv",
+      "label_fr": "Tarif de la réhabilitation musculoskelettal et neurologique ambulatoires en établissements hospitaliers (H+)",
+      "label_de": "Tarif für ambulante muskuloskelettale Rehabilitation und Neurorehabilitation in Spitälern (H+)",
+      "valid_from": "2007-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "557",
+      "status": "terminiert",
+      "label_fr": "Tarif de physiothérapie LAMal nouveau, motionner par H+ et curafutura",
+      "label_de": "Physiotherapie-Tarif ambulant KVG neu, beantragt durch H+ und curafutura",
+      "valid_from": "2017-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "570",
+      "status": "aktiv",
+      "label_fr": "Rémunération basée sur les prestations (RBP)",
+      "label_de": "Leistungsorientierte Abgeltung der Apothekerleistungen (LOA)",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "571",
+      "status": "terminiert",
+      "label_fr": "Autres prestations non définies dans des tarifs officiels (pharmacie LAMal/LCA)",
+      "label_de": "Übrige Leistungen nicht in offiziellen Tarifen definiert (Apotheke KVG/VVG)",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "580",
+      "status": "aktiv",
+      "label_fr": "Tarif de la Garde Aérienne Suisse de Sauvetage (REGA)",
+      "label_de": "Tarif Schweizerische Rettungsflugwacht Rega und H+",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "581",
+      "status": "aktiv",
+      "label_fr": "Psychothérapie Tarif LAMal",
+      "label_de": "Psychotherapie Tarif KVG",
+      "valid_from": "2022-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "582",
+      "status": "aktiv",
+      "label_fr": "Psychothérapie Tarif AA/AM/AI",
+      "label_de": "Psychotherapie Tarif UV/MV/IV",
+      "valid_from": "2019-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "583",
+      "status": "aktiv",
+      "label_fr": "Transports et sauvetages AA/AM/AI",
+      "label_de": "Transporte und Rettungen UV/MV/IV",
+      "valid_from": "2008-04-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "584",
+      "status": "aktiv",
+      "label_fr": "Transporte und Rettungen KVG / VVG",
+      "label_de": "Transporte und Rettungen KVG / VVG",
+      "valid_from": "2018-09-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "590",
+      "status": "aktiv",
+      "label_fr": "Complémentaires services médicaux ambulatoire (LCA)",
+      "label_de": "Ambulante komplementärmedizinische Leistungen VVG",
+      "valid_from": "2010-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "595",
+      "status": "aktiv",
+      "label_fr": "Ambulante gesundheitsfördernde Leistungen VVG",
+      "label_de": "Ambulante gesundheitsfördernde Leistungen VVG",
+      "valid_from": "2019-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "699",
+      "status": "terminiert",
+      "label_fr": "Autres prestations non définies dans des tarifs officiels (laboratoire LAMal/LCA)",
+      "label_de": "Übrige Leistungen nicht in offiziellen Tarifen definiert (Labor KVG/VVG)",
+      "valid_from": "2011-01-01",
+      "valid_to": "2018-12-31"
+    },
+    {
+      "code": "800",
+      "status": "terminiert",
+      "label_fr": "APDRG: cost-weight version 3.2",
+      "label_de": "APDRG: cost-weight version 3.2",
+      "valid_from": "2002-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "804",
+      "status": "terminiert",
+      "label_fr": "APDRG: cost-weight version 4.1",
+      "label_de": "APDRG: cost-weight version 4.1",
+      "valid_from": "2004-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "805",
+      "status": "terminiert",
+      "label_fr": "APDRG: cost-weight version 5.1",
+      "label_de": "APDRG: cost-weight version 5.1",
+      "valid_from": "2005-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "806",
+      "status": "terminiert",
+      "label_fr": "APDRG: cost-weight version 6.0",
+      "label_de": "APDRG: cost-weight version 6.0",
+      "valid_from": "2009-01-01",
+      "valid_to": "2017-12-31"
+    },
+    {
+      "code": "904",
+      "status": "aktiv",
+      "label_fr": "Mesures de réinsertion professionnelle",
+      "label_de": "Berufliche Eingliederungsmassnahmen",
+      "valid_from": "2014-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "907",
+      "status": "aktiv",
+      "label_fr": "Gestion des dépôts de ressources AI",
+      "label_de": "Bewirtschaftung Hilfsmitteldepots IV",
+      "valid_from": "2010-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "908",
+      "status": "aktiv",
+      "label_fr": "Autres mesures professionnelles AI",
+      "label_de": "Andere berufliche Massnahmen IV",
+      "valid_from": "2020-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "909",
+      "status": "aktiv",
+      "label_fr": "Tarif pour l’appareillage auditif à l‘AVS/AI",
+      "label_de": "Tarif für Hörgeräteversorgung bei der AHV/IV",
+      "valid_from": "2013-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "910",
+      "status": "aktiv",
+      "label_fr": "Tarif hospitalier pour prestations stationnaires selon AA/AI/AM",
+      "label_de": "Spitaltarif für stationäre Leistungen nach UV/IV/MV",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "914",
+      "status": "aktiv",
+      "label_fr": "Autres aides de la AI",
+      "label_de": "Andere Hilfsmittel der IV / AHV",
+      "valid_from": "2017-11-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "915",
+      "status": "aktiv",
+      "label_fr": "Autisme d'intervention précoce",
+      "label_de": "Frühintervention Autismus",
+      "valid_from": "2013-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "920",
+      "status": "terminiert",
+      "label_fr": "Tarif hospitalier pour prestations stationnaires selon LAMal",
+      "label_de": "Spitaltarif für stationäre Leistungen nach KVG",
+      "valid_from": "2002-01-01",
+      "valid_to": "2002-01-01"
+    },
+    {
+      "code": "923",
+      "status": "aktiv",
+      "label_fr": "Tarif pour l'allocation d'impuissance et la contribution d'assistance AI",
+      "label_de": "Tarif Hilflosenentschädigung und Assistenzbeitrag IV",
+      "valid_from": "2004-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "925",
+      "status": "aktiv",
+      "label_fr": "Tarif d'information pour les aveugles et les malvoyants AI",
+      "label_de": "Informatiktarif für Blinde und hochgradig Sehbehinderte IV",
+      "valid_from": "2019-07-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "930",
+      "status": "aktiv",
+      "label_fr": "Tarif hospitalier pour prestations stationnaires selon LCA",
+      "label_de": "Spitaltarif für stationäre Leistungen nach VVG",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "940",
+      "status": "aktiv",
+      "label_fr": "Tarif hospitalier pour autres prestations",
+      "label_de": "Übrige Leistungen Spital ambulant KVG / VVG",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "951",
+      "status": "terminiert",
+      "label_fr": "EMS BESA 4",
+      "label_de": "Pflegeheim BESA 4",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "952",
+      "status": "terminiert",
+      "label_fr": "EMS BESA 12",
+      "label_de": "Pflegeheim BESA 12",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "953",
+      "status": "terminiert",
+      "label_fr": "EMS PLAISIR 8",
+      "label_de": "Pflegeheim PLAISIR 8",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "954",
+      "status": "terminiert",
+      "label_fr": "EMS RAI/RUG 12",
+      "label_de": "Pflegeheim RAI/RUG 12",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "955",
+      "status": "terminiert",
+      "label_fr": "EMS RAI/RUG 44 + 12",
+      "label_de": "Pflegeheim RAI/RUG 44 + 12",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "956",
+      "status": "terminiert",
+      "label_fr": "EMS ZSB 10",
+      "label_de": "Pflegeheim ZSB 10",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "957",
+      "status": "terminiert",
+      "label_fr": "EMS CH Index RAI/RUG 12",
+      "label_de": "Pflegeheim CH Index RAI/RUG 12",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "958",
+      "status": "terminiert",
+      "label_fr": "EMS Tessin 5",
+      "label_de": "Pflegeheim Tessin 5",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "959",
+      "status": "terminiert",
+      "label_fr": "EMS Fribourg 6",
+      "label_de": "Pflegeheim Fribourg 6",
+      "valid_from": "2008-01-01",
+      "valid_to": "2015-06-30"
+    },
+    {
+      "code": "960",
+      "status": "aktiv",
+      "label_fr": "Prestation de soins stationaire",
+      "label_de": "Pflegeleistungen stationär",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "963",
+      "status": "aktiv",
+      "label_fr": "Structures de jour ou de nuit et soins spitex in house par niveau/forfait",
+      "label_de": "Tages- oder Nachtstrukturen und In-house Spitex Stufen/Pauschalen",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "964",
+      "status": "aktiv",
+      "label_fr": "Structures de jour et de nuit et soins spitex in house par tarif horaire",
+      "label_de": "Tages- oder Nachtstrukturen und In-house Spitex Zeittarif",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "965",
+      "status": "aktiv",
+      "label_fr": "Soins aigus et de transition par niveau",
+      "label_de": "Akut- und Übergangspflege Stufen",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "966",
+      "status": "aktiv",
+      "label_fr": "Soins aigus et de transition par tarif horaire",
+      "label_de": "Akut- und Übergangspflege Zeittarif",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "967",
+      "status": "aktiv",
+      "label_fr": "Forfaits pour soins aigus et de transition",
+      "label_de": "Akut- und Übergangspflege Pauschalen",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "970",
+      "status": "aktiv",
+      "label_fr": "Forfaits pour prestations de soins non à charge",
+      "label_de": "Pauschalen für \"Nicht-Pflegeleistungen\"",
+      "valid_from": "2011-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "971",
+      "status": "aktiv",
+      "label_fr": "Traitement ambulatoire à domicile des plaies par pression négative AA/AI/AM",
+      "label_de": "Ambulante Unterdruck-Wundbehandlung in der Domiziltherapie UV/MV/IV",
+      "valid_from": "2021-02-24",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "980",
+      "status": "aktiv",
+      "label_fr": "Tarif pour les marchandises commerciales AA/AI/AM (SVOT /ORS)",
+      "label_de": "Tarif für Handelsware UV/MV/IV (SVOT/ORS)",
+      "valid_from": "2019-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "999",
+      "status": "terminiert",
+      "label_fr": "Prestations ne figurant dans aucun des tarifs énumérés",
+      "label_de": "Leistungen, die in keinem der aufgeführten Tarife enthalten sind",
+      "valid_from": "2002-01-01",
+      "valid_to": "9999-12-31"
+    },
+    {
+      "code": "TMA",
+      "status": "aktiv",
+      "label_fr": "Tarif Médical Ambulatoire (LKAAT)",
+      "label_de": "Leistungskatalog ambulante Arzttarife (LKAAT)",
+      "valid_from": "2026-01-01",
+      "valid_to": "9999-12-31"
+    }
+  ]
+}

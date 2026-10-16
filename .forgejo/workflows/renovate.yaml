@@ -1,0 +1,54 @@
+name: renovate
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  renovate:
+    runs-on: docker
+    # Renovate runs AS the job container. The previous `docker run` approach
+    # needed a docker CLI that the runner's default job image (node:22-bookworm)
+    # doesn't ship — `docker: command not found`. Nothing here needs the daemon.
+    container:
+      image: renovate/renovate:44.24.3
+    steps:
+      - name: Run Renovate
+        run: renovate
+        env:
+          RENOVATE_PLATFORM: gitea
+          # Internal proxy-network path, NOT https://forgejo.<public-domain>/ —
+          # that resolves to Caddy's macvlan IP, which a job container cannot
+          # hairpin back to (stacks/edge/README.md, "Reaching Caddy itself from
+          # another container"). Requires the runner to place job containers on
+          # the `proxy` network; see stacks/forgejo-runner/README.md.
+          RENOVATE_ENDPOINT: http://forgejo:3000/api/v1
+          # Build clone URLs from RENOVATE_ENDPOINT instead of the API's
+          # clone_url, which Forgejo derives from ROOT_URL and would point
+          # straight back at the unreachable macvlan IP at git-clone time.
+          RENOVATE_GIT_URL: endpoint
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          # Changelog retrieval only — Renovate reads release notes from
+          # github.com to fill in PR bodies, and without this logs "No
+          # github.com token has been configured" on the Dependency Dashboard
+          # and ships PRs with no indication of what changed. Create it with
+          # ZERO scopes: it reads public release notes and nothing else, so it
+          # grants no access even if it leaks. Unrelated to RENOVATE_TOKEN,
+          # which is the Forgejo API token that actually opens the PRs.
+          #
+          # Secret is named RENOVATE_GITHUB_COM_TOKEN, not GITHUB_COM_TOKEN:
+          # Forgejo rejects secret names starting with GITHUB_ (also FORGEJO_,
+          # GITEA_). The env var below must keep the GITHUB_COM_TOKEN name
+          # regardless — that exact string is what Renovate reads.
+          GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_COM_TOKEN }}
+          # Explicit list, because RENOVATE_AUTODISCOVER is false below: a repo
+          # is invisible to Renovate until it is named here.
+          RENOVATE_REPOSITORIES: yves/homelab
+          RENOVATE_AUTODISCOVER: "false"
+          # The renovate image runs as uid 12021, but act_runner's job cwd
+          # (/workspace/<owner>/<repo>) is auto-created by Docker as root:root
+          # 755 — not writable by that user. Renovate defaults to its own temp
+          # dir so it happens to survive, but pin it explicitly rather than
+          # relying on that: any step that touched cwd would fail.
+          RENOVATE_BASE_DIR: /tmp/renovate

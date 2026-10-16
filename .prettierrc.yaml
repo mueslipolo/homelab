@@ -1,0 +1,5 @@
+# Markdown only (see .forgejo/workflows/checks.yaml and .pre-commit-config.yaml).
+# Lines keep their breaks; tables get aligned columns; code blocks are left as
+# written (hand-aligned JSON and shell stay readable).
+proseWrap: preserve
+embeddedLanguageFormatting: "off"

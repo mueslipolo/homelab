@@ -1,0 +1,33 @@
+services:
+  dashboard:
+    image: nginxinc/nginx-unprivileged:1.31-alpine
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+      # Deployment-specific device list (names, LAN addresses) that must not be
+      # in git — see README.md. Mounts over the tracked, empty html/local/.
+      - ${DASHBOARD_LOCAL_DIR:?set DASHBOARD_LOCAL_DIR to the NAS folder holding devices.json}:/usr/share/nginx/html/local:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,54 @@
+services:
+  caddy:
+    build:
+      context: .
+    # No `image:` key, so compose names the build with a project-derived tag that
+    # never changes. Without this, `compose up` treats the service as up to date
+    # and reuses whatever image already carries that tag: a redeploy fetches the
+    # new Dockerfile/Caddyfile, starts the old binary, and reports success. Same
+    # failure as stacks/paperless-tarmed, which is where it was first diagnosed.
+    pull_policy: build
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      INTERNAL_DOMAIN: ${INTERNAL_DOMAIN}
+      INFOMANIAK_API_TOKEN: ${INFOMANIAK_API_TOKEN}
+      PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
+    mac_address: ${CADDY_LAN_MAC}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      proxy:
+        aliases:
+          - auth.${INTERNAL_DOMAIN}
+      lan:
+        ipv4_address: ${CADDY_LAN_IP}
+        priority: 1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+networks:
+  proxy:
+    external: true
+  lan:
+    driver: macvlan
+    driver_opts:
+      parent: ${LAN_PARENT_INTERFACE}
+    ipam:
+      config:
+        - subnet: ${LAN_SUBNET}
+          gateway: ${LAN_GATEWAY}
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,159 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ${PAPERLESS_DOCKER_ROOT}/db:/var/lib/postgresql/data
+    networks:
+      - paperless_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperless -d paperless"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  broker:
+    image: redis:8
+    restart: unless-stopped
+    user: "${PAPERLESS_UID}:${PAPERLESS_GID}"
+    volumes:
+      - ${PAPERLESS_DOCKER_ROOT}/redis:/data
+    networks:
+      - paperless_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    networks:
+      - paperless_net
+      - proxy
+    volumes:
+      - ${PAPERLESS_DATA_ROOT}/data:/usr/src/paperless/data
+      - ${PAPERLESS_DATA_ROOT}/media:/usr/src/paperless/media
+      - ${PAPERLESS_DATA_ROOT}/export:/usr/src/paperless/export
+      - ${PAPERLESS_DATA_ROOT}/scripts:/usr/src/paperless/scripts
+      - ${PAPERLESS_INBOX_PATH}:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBPASS: ${POSTGRES_PASSWORD}
+      USERMAP_UID: ${PAPERLESS_UID}
+      USERMAP_GID: ${PAPERLESS_GID}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_TIME_ZONE: Europe/Zurich
+      PAPERLESS_OCR_LANGUAGE: fra+eng
+      PAPERLESS_OCR_MODE: redo
+      PAPERLESS_FILENAME_FORMAT: "{{document_type}}/{{correspondent}}_{{title}}_{{created}}"
+      PAPERLESS_URL: https://paperless.${INTERNAL_DOMAIN}
+      # `webserver` is NOT redundant with the hostname above. paperless-tarmed
+      # (its own repo and Portainer Stack — see stacks/paperless-tarmed/README.md)
+      # calls this API server-to-server over `proxy` as http://webserver:8000, so
+      # the Host header it sends is the bare service name. Django rejects any Host
+      # missing from this list with a bodyless 400 (DisallowedHost), so deleting
+      # this breaks custom-field write-back silently, from a different stack, with
+      # nothing logged in paperless.
+      PAPERLESS_ALLOWED_HOSTS: paperless.${INTERNAL_DOMAIN},webserver
+      PAPERLESS_CONSUMER_RECURSIVE: 1
+      PAPERLESS_TIKA_ENABLED: 1
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000/
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+      PAPERLESS_CONSUMER_ENABLE_BARCODES: 1
+      PAPERLESS_CONSUMER_BARCODE_STRING: paperless:separator
+      # Native OIDC login via Authelia — Phase 5 Step 4. Matching client
+      # registered in stacks/authelia/config/configuration.yml
+      # (identity_providers.oidc.clients, client_id: paperless). The
+      # provider_id in this JSON ("authelia") is what determines the OIDC
+      # callback URL path Authelia's client redirect_uris must match exactly
+      # — see stacks/authelia/README.md before changing either side alone.
+      PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+      PAPERLESS_SOCIALACCOUNT_PROVIDERS: >-
+        {"openid_connect":{"SCOPE":["openid","profile","email"],"OAUTH_PKCE_ENABLED":true,"APPS":[{"provider_id":"authelia","name":"Authelia","client_id":"paperless","secret":"${PAPERLESS_OIDC_CLIENT_SECRET}","settings":{"server_url":"https://auth.${INTERNAL_DOMAIN}","token_auth_method":"client_secret_basic"}}]}}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.37.0
+    restart: unless-stopped
+    networks:
+      - paperless_net
+    environment:
+      CHROMIUM_DISABLE_ROUTES: 1
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  tika:
+    image: apache/tika@sha256:a8b442501f601fb15015de974f9afe13dd242b0f14e49a2b144fadcb214a555b
+    restart: unless-stopped
+    networks:
+      - paperless_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  paperless_net:
+    driver: bridge
+  proxy:
+    external: true

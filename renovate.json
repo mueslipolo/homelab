@@ -1,0 +1,81 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Zurich",
+  "description": [
+    "prHourlyLimit is 0 (unlimited), overriding Renovate's default of 2. That default",
+    "exists to keep busy public repos from flooding a PR list and burning API quota;",
+    "here it only hides work. This repo runs weekly, so a batch larger than two gets",
+    "trickled out two PRs at a time a week apart, and the remainder sit in the",
+    "Dependency Dashboard's Rate-Limited section — no PR, no error, easy to read as",
+    "'Renovate found nothing'. That happened on 2026-09-26: the linuxserver versioning",
+    "fix detected all five images, but sonarr/radarr/prowlarr were capped out and never",
+    "filed. prConcurrentLimit stays at its default of 10 as the real backstop on how",
+    "many updates are open at once."
+  ],
+  "prHourlyLimit": 0,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": [
+        "Portainer is bootstrapped with `docker run` (docs/INSTALL.md) rather than as a Stack —",
+        "it is what deploys the Stacks — so its pin lives in prose no built-in manager",
+        "parses. Without this it would rot silently."
+      ],
+      "managerFilePatterns": ["/^docs/INSTALL\\.md$/"],
+      "matchStrings": ["(?<depName>portainer/portainer-ce):(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": [
+        "LinuxServer.io images never update under Renovate's default `docker` versioning.",
+        "That scheme splits a tag at the first `-` and treats the remainder as a",
+        "'compatibility' string (the `-alpine` / `-bookworm` convention), then only offers",
+        "tags carrying the identical string. LinuxServer's suffix is its own build counter",
+        "— `-ls155` -> `-ls162` — so no candidate ever matches and every linuxserver/*",
+        "image sits frozen: no PR, no warning, nothing on the Dependency Dashboard.",
+        "",
+        "Hence explicit regex versioning, which folds that counter into the version.",
+        "It goes into `build`, deliberately, NOT the more obvious `revision`: regex",
+        "versioning only appends `revision` to the comparable release when `build` also",
+        "matched (modules/versioning/regex/index.js). With the counter in `revision`,",
+        "any image whose tag has no fourth numeric segment — qbittorrent, jellyfin —",
+        "parses to a bare major.minor.patch, so the counter is dropped and every ls-only",
+        "rebuild still compares equal. Same silent freeze, one layer deeper.",
+        "",
+        "`[^-]*` absorbs whatever sits between the app version and the counter, which is",
+        "a different thing per image and needs no ordering of its own:",
+        "  sonarr/radarr/prowlarr  4.0.19.2979-ls320      upstream build number",
+        "  qbittorrent             5.2.3_v2.0.13-ls469    bundled libtorrent",
+        "  jellyfin                10.11.11ubu2604-ls43   base-distro tag",
+        "  jellyfin 12.x           12.1ubu2604-ls50       two-segment, no patch",
+        "Ordering on the ls counter alone is safe because LinuxServer increments it per",
+        "build and never resets it across upstream version changes.",
+        "",
+        "Requiring a leading digit and a literal `-ls` is also what keeps `develop`,",
+        "`nightly`, `amd64-*`/`arm64v8-*` and the bare rolling `2.6.5` tags out of the",
+        "candidate set."
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["linuxserver/**"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?[^-]*-ls(?<build>\\d+)$"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": [
+        "Built on the NAS from this repo (scripts/build-images.sh), never pushed to a",
+        "registry: every lookup fails ('no-result') and shows as a warning on the",
+        "Dependency Dashboard. Its tag changes with the code, not with Renovate."
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["paperless-tarmed"],
+      "enabled": false
+    }
+  ]
+}

@@ -1,0 +1,1231 @@
+{
+ "built": "2026-10-11",
+ "sources": {
+  "tarmed": "https://www.sumex1.net/images/validators/tarmed/download/tarmed100_109_dt.pdf",
+  "tardoc": "https://www.tardoc-online.ch/fr/chapitres",
+  "tarif_590": "https://www.santeservices.ch/sharepoint/public/tarif-590.xlsx"
+ },
+ "tarmed_chapters": {
+  "00": "Grundleistungen",
+  "00.01": "Allgemeine Grundleistungen",
+  "00.01.01": "Konsultation, Besuch, Wegentschädigung u.a.",
+  "00.02": "Leistungspakete",
+  "00.02.01": "Untersuchungen",
+  "00.02.02": "Beratungen",
+  "00.02.03": "Instruktionen",
+  "00.03": "Spezielle Grundleistungen",
+  "00.03.01": "Punktionen, Zugänge, Injektionen",
+  "00.03.02": "Oberflächenanästhesien, Infiltrationsanästhesien, Leitungsanästhesien",
+  "00.03.03": "Diagnostische und therapeutische Extraleistungen",
+  "00.03.04": "Zeitkredite für bestimmte Fachärzte (Subspezialitäten, Fähigkeitsausweise)",
+  "00.03.05": "Komplementärmedizin",
+  "00.04": "Endokrinologische Funktionsuntersuchungen",
+  "00.05": "Konsiliarische Beratung (Konsilium)",
+  "00.06": "Ärztliche Zeugnisse, Berichte, Schreiben",
+  "00.07": "Ärztliche Gutachten",
+  "00.08": "Dringlichkeitszuschläge und Notfallzuschläge",
+  "00.09": "Eigenblutentnahme/Plasmapherese zur Autotransfusion",
+  "01": "Verbände",
+  "01.01": "Nicht härtende Verbände",
+  "01.02": "Taping",
+  "01.03": "Härtende Verbände",
+  "01.04": "Spezialverbände",
+  "02": "Psychiatrie",
+  "02.01": "Psychiatrische Diagnostik und Therapie",
+  "02.02": "Nichtärztliche psychologische/psychotherapeutische Leistungen in der Spitalpsychiatrie",
+  "02.03": "Delegierte Psychotherapie in der Arztpraxis",
+  "02.05": "Elektrokrampftherapie",
+  "03": "Kinder- und Jugendmedizin, Neonatologie",
+  "03.01": "Untersuchungen und Beratung",
+  "03.02": "Neonatologie",
+  "03.03": "Entwicklungspädiatrische Untersuchungen",
+  "03.04": "Neuromotorische Untersuchungen",
+  "03.05": "Pädiatrische Extraleistungen",
+  "04": "Haut, Weichteile",
+  "04.01": "Dermatologie",
+  "04.01.01": "Dermatologie: Diagnostik",
+  "04.01.02": "Dermatologie: Therapie",
+  "04.02": "Haut, Weichteile: Kleinchirurgie",
+  "04.02.01": "Haut, Weichteile: Punktion, Inzision, Exzision",
+  "04.02.02": "Haut, Weichteile: Wundversorgung, Débridement",
+  "04.03": "Haut, Weichteile: plastischkonstruktive/rekonstruktive operative Versorgung",
+  "04.03.01": "Haut, Weichteile: Wundverschluss mittels plastischer Massnahmen",
+  "04.03.02": "Haut, Weichteile: Dermabrasio, primäre Brandwundenchirurgie, Tätowierung",
+  "04.03.03": "Haut, Weichteile: Transplantatentnahme",
+  "04.03.04": "Lappenhebung",
+  "04.03.05": "Haut: Transplantatbearbeitung",
+  "04.03.06": "Narbenkorrektur/Weichteilkorrektur",
+  "04.03.07": "Replantation, Revaskularisation, Einbau freier mikrochirurgischer Lappen",
+  "04.03.08": "Expander",
+  "04.03.09": "Dermolipektomie, Sauglipektomie",
+  "04.03.10": "Facelifting, Lidplastik",
+  "04.03.11": "Ersatzoperation bei Fazialisparese",
+  "05": "Zentrales und peripheres Nervensystem",
+  "05.01": "Neurologie",
+  "05.01.01": "Neurologie: klinische Untersuchung",
+  "05.01.02": "Neurologie: apparative Diagnostik",
+  "05.01.02.01": "Elektroneurogramm (ENG), Elektromyogramm (EMG)",
+  "05.01.02.02": "Elektroenzephalogramm (EEG)",
+  "05.01.02.03": "Evozierte Potentiale, Monitoring",
+  "05.02": "Chirurgie des zentralen Nervensystems (Neurochirurgie)",
+  "05.02.01": "Ventrikelpunktion, Ventrikeldrainage, Katheter",
+  "05.02.02": "Operative Versorgung bei Schädelhirntrauma",
+  "05.02.03": "Bohrloch/Kraniotomie zur Exploration, Dekompression und Evakuation",
+  "05.02.04": "Kraniotomie bei Hirntumor",
+  "05.02.05": "Kraniotomie für operative Versorgung an Hirnnerven",
+  "05.02.06": "Kraniotomie für operative Versorgung an Gefässen (Missbildung, Aneurysma, Shunt)",
+  "05.02.07": "Intrakraniale, stereotaktische operative Versorgung",
+  "05.02.08": "Intrakraniale Elektrode",
+  "05.02.09": "Epilepsiechirurgie, Elektrostimulation (VNS)",
+  "05.02.10": "Rhizotomie, Chordotomie, Neurostimulator, Rückenmarkfehlbildung",
+  "05.03": "Chirurgie des peripheren Nervensystems",
+  "05.03.01": "Nervendekompression, Neurolyse",
+  "05.03.02": "Nervennaht",
+  "05.03.03": "Gelenkdenervation, Neurom, endoneuraler Tumor",
+  "06": "Wirbelsäule",
+  "06.01": "Wirbelsäule: geschlossene Reposition, äussere Fixation, Fixateur externe",
+  "06.02": "Wirbelsäule: Perkutane operative Versorgung",
+  "06.03": "Wirbelsäule: Offene Knochenbiopsie",
+  "06.04": "Wirbelsäule: Fenestration, Hemilaminektomie, Laminotomie",
+  "06.05": "Wirbelsäule: Laminektomie",
+  "06.06": "Wirbelsäule: Resektion Wirbelkörper/Bandscheibe durch dorsalen/dorsolateralen Zugang",
+  "06.07": "Wirbelsäule: Bandstabilisierung, Laminoplastik",
+  "06.08": "Wirbelsäule: dorsale Spondylodese",
+  "06.09": "Wirbelsäule: operative Versorgung mit ventralem Zugang",
+  "06.10": "Wirbelsäule: offene Versorgung Fraktur/Luxation durch dorsalen Zugang",
+  "06.11": "Wirbelsäule: Implantatentfernung, Batteriewechsel",
+  "07": "Gesichtsschädel und Stirnbeinbereich",
+  "07.01": "Untersuchung durch Facharzt für Kieferchirurgie und Gesichtschirurgie (07.0015)",
+  "07.02": "Frakturversorgung im Stirnbereich/Mittelgesichtsbereich",
+  "07.03": "Frakturversorgung im Unterkiefer",
+  "07.04": "Spaltchirurgie",
+  "07.05": "Kraniofaziale Osteotomie",
+  "07.06": "Planung der operative Versorgung",
+  "07.08": "Nervenchirurgie im MKG-Bereich",
+  "07.09": "Osteoplastische operative Versorgungen im Schädelbereich, MKG-Bereich",
+  "07.10": "Kiefergelenk, Mundboden",
+  "07.11": "Präprothetische Chirurgie",
+  "07.12": "Orbita",
+  "08": "Auge",
+  "08.01": "Visus, Refraktion, Brille",
+  "08.02": "Augendruck",
+  "08.03": "Perimetrie",
+  "08.04": "Orthoptik, Neurophthalmologie",
+  "08.05": "Farbsinn",
+  "08.06": "Tränendrüse, Tränenwege",
+  "08.07": "Auge: Ultraschall",
+  "08.08": "Konjunktiva",
+  "08.10": "Auge: Diagnostik, diverses",
+  "08.11": "Auge: Therapie, diverses",
+  "08.12": "Kontaktlinse",
+  "08.13": "Augenlid",
+  "08.14": "Kornea, Sklera",
+  "08.15": "Iris",
+  "08.16": "Linse",
+  "08.17": "Retina",
+  "08.18": "Glaskörper",
+  "08.19": "Schieloperation",
+  "08.20": "Transplantatentnahme (Augenbulbus, Kornea)",
+  "08.21": "Botulinusinjektion in Muskel",
+  "09": "Ohr, Gleichgewichtsorgan, N. facialis",
+  "09.01": "Ohr, Gleichgewichtsorgan, N. facialis: Diagnostik",
+  "09.01.01": "ORL-Status",
+  "09.01.02": "Gehörgang",
+  "09.01.03": "Funktionsuntersuchung Tränen, Speichel",
+  "09.01.04": "Audiometrie",
+  "09.01.05": "Tympanometrie, Cochlea, akustisch evozierte Potentiale, otoakustische Emissionen",
+  "09.01.06": "Vestibularis",
+  "09.01.07": "Phoniatrie",
+  "09.02": "Ohr, Gleichgewichtsorgan, N. facialis: Therapie",
+  "09.02.01": "Lagerungsschwindel, äusserer Gehörgang",
+  "09.02.02": "Trommelfell",
+  "09.02.03": "Ohrmuschel, präaurikuläre Region",
+  "09.02.04": "Mittelohr, Mastoid",
+  "09.02.05": "Felsenbein",
+  "10": "Nase und Nasennebenhöhlen",
+  "10.01": "Nase und Nasennebenhöhlen: Diagnostik",
+  "10.02": "Nase und Nasennebenhöhlen: Therapie",
+  "10.02.01": "Nase",
+  "10.02.01.01": "Traumatologie",
+  "10.02.01.02": "Rhinoplastik, Rekonstruktion",
+  "10.02.01.03": "Septum",
+  "10.02.01.04": "Blutung, Fremdkörper, operative Versorgung endonasaler Weichteile",
+  "10.02.02": "Nasennebenhöhlen",
+  "10.02.03": "Offene Tumorchirurgie Nasenraum, Nasennebenhöhlen",
+  "11": "Mund, Mundhöhle und Speicheldrüse",
+  "11.01": "Mund, Mundhöhle und Speicheldrüse: Diagnostik",
+  "11.02": "Mund, Mundhöhle und Speicheldrüse: Therapie",
+  "11.02.01": "Mundhöhle",
+  "11.02.02": "Lippe",
+  "11.02.03": "Zunge",
+  "11.02.04": "Speicheldrüse",
+  "12": "Pharynx",
+  "12.01": "Pharynx: Diagnostik",
+  "12.02": "Pharynx: Therapie",
+  "12.02.01": "Tonsillen, Adenoide, Fremdkörper",
+  "12.02.02": "Tumor im Pharynxbereich",
+  "12.02.03": "Traumatologie, plastischrekonstruktive operative Versorgungen im Pharynxbereich",
+  "13": "Larynx und Trachea",
+  "13.01": "Larynx",
+  "13.02": "Trachea",
+  "14.01": "Hals",
+  "14.02": "Schilddrüse, Nebenschilddrüse",
+  "14.03": "Mediastinum",
+  "15": "Diagnostik und nichtchirurgische Therapie der unteren Atemwege inkl. Schlafdiagnostik",
+  "15.01": "Untere Atemwege, Instruktion, Beratung",
+  "15.02": "Lungenfunktion",
+  "15.03": "Bronchoskopie",
+  "15.04": "Schlafdiagnostik",
+  "16": "Chirurgische Therapie der Thoraxorgane",
+  "16.01": "Pleura",
+  "16.02": "Rippen, Thoraxwand, Sternum",
+  "16.03": "Oesophagus, Trachea",
+  "16.04": "Lunge",
+  "16.05": "Thorakoskopie",
+  "17": "Diagnostik und nichtchirurgische Therapie von Herz und Gefässen",
+  "17.01": "Elektrokardiografie",
+  "17.02": "Echokardiografie",
+  "17.03": "Kardiologische, angiologische apparative Untersuchung",
+  "17.04": "Herzlabor",
+  "17.04.01": "Herzkatheter",
+  "17.04.01.01": "Grundleistungen Kardangiografie",
+  "17.04.01.02": "Rechtsherzkatheter",
+  "17.04.01.03": "Linksherzkatheter",
+  "17.04.01.04": "Kardangiografische Interventionen",
+  "17.04.02": "Kardiale Elektrophysiologie",
+  "17.04.04": "Perikardpunktion, Port-A-Cath (17.1710)",
+  "17.05": "Technische Grundleistungen für Herz und Gefässe (17.1810)",
+  "18": "Chirurgische Therapie von Herz und Gefässen",
+  "18.01": "Extrakorporaler Kreislauf (ECC), Arteriotomie, intraoperative Angioplastie",
+  "18.02": "Herz",
+  "18.02.01": "Koronare Revaskularisation",
+  "18.02.02": "Klappen, Myokard, Tumor",
+  "18.02.03": "Herzfehler",
+  "18.02.04": "Isolierte operative Versorgungen am Perikard",
+  "18.02.05": "Revisionseingriff am Herzen, Assist Device",
+  "18.03": "Gefässe",
+  "18.03.01": "Arterie",
+  "18.03.01.01": "Traumatologie, Arterie",
+  "18.03.01.02": "Aortenaneurysma, arterielles Aneurysma",
+  "18.03.01.03": "Arterielle Biopsie/Embolektomie/Thrombektomie",
+  "18.03.01.04": "Endarterektomie",
+  "18.03.01.05": "Rekonstruktion arterielle Strombahn",
+  "18.03.01.06": "Bypass-Operation",
+  "18.03.01.07": "Arteriovenöse Fistel",
+  "18.03.02": "Vene",
+  "18.03.02.01": "Traumatologie, Vene",
+  "18.03.02.02": "Oberfläche (Sklerosierung, Stichinzision), Varizen",
+  "18.03.02.03": "Plastik, Thrombektomie, Rekonstruktion, lymphovenöse Anastomose, Fehlbildung",
+  "18.03.02.04": "Shunt",
+  "19": "Diagnostik und nichtchirurgische Therapie des Gastrointestinaltraktes",
+  "19.01": "Endoluminale Manometrie, pH-Metrie; Magensonde, Dünndarmsonde",
+  "19.02": "Oesophagoskopie",
+  "19.03": "Obere gastrointestinale Endoskopie",
+  "19.04": "Endoskopisch Retrograde Cholangio-Pankreatikografie (ERCP)",
+  "19.05": "Enteroskopie",
+  "19.06": "Koloskopie",
+  "19.07": "Sigmoidoskopie, Rektoskopie",
+  "19.08": "Anoskopie",
+  "19.09": "Kolon, Rektum, Anus (nicht endoskopisch)",
+  "19.11": "Provokationstestung, z.B. bei Lebensmittelallergie oder Medikamentenallergie",
+  "20": "Chirurgische Therapie des Gastrointestinaltraktes",
+  "20.01": "Bauchdecke",
+  "20.02": "Laparoskopie, Chirurgische Therapie des Gastrointestinaltraktes",
+  "20.03": "Hernien, Chirurgische Therapie des Gastrointestinaltraktes",
+  "20.04": "Zugänge für operative Versorgungen im abdominalen und retroperitonealen Bereich",
+  "20.05": "Bauchhöhle, Mesenterium",
+  "20.06": "Zwerchfell, Magen, Duodenum",
+  "20.07": "Dünndarm, Appendix",
+  "20.08": "Dickdarm",
+  "20.09": "Rektum",
+  "20.10": "Anus, Perineum",
+  "20.11": "Hämorrhoiden",
+  "20.12": "Milz",
+  "20.13": "Leber",
+  "20.14": "Gallenblase, Gallenwege",
+  "20.15": "Pankreas",
+  "20.16": "Retroperitoneum, Sakralregion",
+  "21": "Diagnostik und Therapie von Nieren und Harnwegen sowie der männlichen Genitalorgane",
+  "21.01": "Blasenkatheter, Blasenpunktion",
+  "21.02": "Urethroskopie",
+  "21.03": "Zystourethroskopie",
+  "21.04": "Ureteroskopie retrograd",
+  "21.05": "Renoskopie/Pyeloskopie",
+  "21.06": "Uroflowmetrie/Zystometrie, Blasentraining, Urodynamik obere Harnwege",
+  "21.09": "Niere, Nierenbecken",
+  "21.10": "Extrakorporale Stosswellen-Lithotripsie (ESWL)",
+  "21.11": "Nebenniere",
+  "21.12": "Harnleiter, Harnableitung",
+  "21.13": "Harnblase, Blasenhals",
+  "21.14": "Prostata, Samenblase",
+  "21.15": "Harnröhre",
+  "21.16": "Urologische Harninkontinenzoperation",
+  "21.17": "Penis, Epispadie/Hypospadie",
+  "21.18": "Hoden, Nebenhoden, Samenleiter",
+  "22": "Diagnostik und Therapie der weiblichen Genitalorgane, Geburtshilfe",
+  "22.01": "Gynäkologie",
+  "22.01.01": "Gynäkologische Untersuchungen und Beratungen, Spekularuntersuchung, Kolposkopie",
+  "22.01.02": "Genitaluntersuchung beim vorpubertären Kind",
+  "22.01.03": "Gynäkologische Laparoskopie",
+  "22.01.04": "Hysteroskopie, Hysterosalpingografie",
+  "22.01.05": "Äusseres Genitale, Vagina",
+  "22.01.06": "Portio, Cervix, Diaphragma/Pessar/Intrauterine Device (IUD)",
+  "22.01.07": "Curettage",
+  "22.01.08": "Vagina, Uterus, Adnexe",
+  "22.01.09": "Senkungsoperation, Harninkontinenzoperation, Fisteloperation",
+  "22.02": "Schwangerschaft und Geburtshilfe",
+  "22.02.01": "Schwangerschaftsuntersuchungen, vorgeburtliche Untersuchungen und Geburtsnachkontrolle",
+  "22.02.02": "Geburt",
+  "22.02.02.01": "Äussere Wendung (22.2010)",
+  "22.02.02.02": "Geburtsbetreuung und Geburtsleitung",
+  "22.02.02.03": "Geburtshilfliche Inkonvenienzpauschalen",
+  "22.02.03": "Primäre Sectio, Resectio, Sterilisation post partum",
+  "22.02.04": "Assistierte Fortpflanzung",
+  "22.02.05": "Gebärsaal",
+  "23": "Diagnostik und Therapie der Mamma",
+  "23.01": "Nicht bildgebende Diagnostik der Mammae (23.0010)",
+  "23.02": "Tumorchirurgie der Mamma",
+  "23.03": "Plastischrekonstruktive Chirurgie der Mamma",
+  "24": "Diagnostik und Therapie des Bewegungsapparates",
+  "24.01": "Allgemeine diagnostische und/oder therapeutische Leistungen, Bewegungsapparat",
+  "24.02": "Schultergürtel, obere Extremität",
+  "24.02.01": "Clavicula, Scapula",
+  "24.02.02": "Schulter",
+  "24.02.03": "Oberarm",
+  "24.02.03.01": "Fraktur: Oberarm",
+  "24.02.04": "Ellbogen",
+  "24.02.04.01": "Fraktur: Ellbogen",
+  "24.02.05": "Unterarm",
+  "24.02.05.01": "Fraktur: Unterarm",
+  "24.02.06": "Handgelenk, Mittelhand",
+  "24.02.06.01": "Fraktur, Luxation: Handgelenk, Mittelhand",
+  "24.02.06.03": "Missbildungen, posttraumatische Veränderungen der Hand",
+  "24.02.06.04": "Empyem, Sehne, Synovia, Faszie, Ganglion, Band: Handgelenk, Mittelhand",
+  "24.02.07": "Finger",
+  "24.02.07.01": "Fraktur, Luxation, Arthrolyse, Arthroplastik, Arthrodese, Amputation: Finger",
+  "24.02.07.02": "Panaritium, Empyem, Sehne, Synovia, Band, Ganglion: Finger",
+  "24.03": "Beckengürtel, untere Extremität",
+  "24.03.01": "Becken",
+  "24.03.01.01": "Fraktur: Becken",
+  "24.03.01.02": "Tumor, Resektion, Arthrotomie, Osteotomie, Arthrodese: Becken",
+  "24.03.02": "Hüfte",
+  "24.03.02.01": "Fraktur, Luxation: Hüfte",
+  "24.03.02.02": "Arthroskopie, Arthrotomie, Acetabuloplastik, Epiphysiolyse, Epiphysiodese, Arthrodese: Hüfte",
+  "24.03.02.03": "Muskel, Sehne, Faszie, Bursa: Hüfte",
+  "24.03.02.04": "Endoprothetik: Hüfte",
+  "24.03.03": "Oberschenkel",
+  "24.03.03.01": "Fraktur: Oberschenkel",
+  "24.03.03.02": "Osteotomie, Epiphysiodese, Arthroplastik, Tumor: Oberschenkel, proximale Tibia",
+  "24.03.04": "Knie",
+  "24.03.04.01": "Arthroskopie, Knie",
+  "24.03.04.02": "Arthrotomie, Knie",
+  "24.03.04.03": "Endoprothetik: Knie",
+  "24.03.04.04": "Patella",
+  "24.03.04.05": "Zyste, Bursa, Infektion, Luxation, Arthrodese: Knie",
+  "24.03.05": "Unterschenkel",
+  "24.03.05.01": "Fraktur: Unterschenkel",
+  "24.03.05.02": "Osteotomie, Osteoplastik, Epiphysiodese: Unterschenkel",
+  "24.03.05.03": "Faszie, Sehne: Unterschenkel",
+  "24.03.06": "Sprunggelenk",
+  "24.03.06.01": "Malleolarfraktur",
+  "24.03.06.02": "Luxation, Gabelsprengung, Band: Sprunggelenk",
+  "24.03.06.03": "Arthroskopie, Sprunggelenk",
+  "24.03.06.04": "Arthrotomie, Arthroplastik, Arthrodese: Sprunggelenk",
+  "24.03.07": "Fuss",
+  "24.03.07.01": "Fraktur: Fuss",
+  "24.03.07.02": "Luxation: Fuss",
+  "24.03.07.03": "Hammerzehe",
+  "24.03.07.04": "Hallux valgus",
+  "24.03.07.05": "Arthrodese, Knochenresektion, Osteotomie, Missbildung, Arthrotomie; Fuss",
+  "24.03.07.06": "Faszie, Sehne, Ganglion: Fuss",
+  "24.03.07.07": "Infektion: Fuss",
+  "24.03.08": "Amputation: Untere Extremität",
+  "26": "Lymphknoten, Lymphwege",
+  "26.01": "Lymphknoten",
+  "26.01.01": "Lymphknoten: Hals",
+  "26.01.02": "Lymphknoten: Achselhöhle",
+  "26.01.03": "Lymphknoten: Leiste",
+  "26.01.04": "Lymphknoten: Stamm",
+  "26.01.05": "Lymphknoten: weitere Lokalisationen",
+  "26.02": "Lymphwege",
+  "27": "Organtransplantation",
+  "28": "Anästhesie",
+  "28.01": "Anästhesiespezifische Leistungen",
+  "28.02": "Reanimation im Schockraum des Spitals",
+  "29": "Schmerztherapie",
+  "29.05": "Allgemeine Schmerztherapie",
+  "29.05.01": "Allgemeine Schmerztherapie: Schädel (29.1000)",
+  "29.05.02": "Allgemeine Schmerztherapie: Wirbelsäule",
+  "29.05.03": "Allgemeine Schmerztherapie: Stamm, Schultergürtel, Beckengürtel, Extremitäten",
+  "29.06": "Interventionelle Schmerzdiagnostik und -therapie",
+  "29.06.01": "Interventionelle Schmerzdiagnostik und -therapie: Grundleistung (29.2000)",
+  "29.06.02": "Interventionelle Schmerzdiagnostik und -therapie: Region Wirbelsäule",
+  "29.06.04": "Interventionelle Schmerzdiagnostik und -therapie unter Ultraschallkontrolle (29.2200)",
+  "29.06.05": "Interventionelle Schmerzdiagnostik und -therapie: Intravenöse Regionalanalgesie (29.2210)",
+  "31": "Nuklearmedizin",
+  "31.01": "Basiselement Diagnostik (31.0010)",
+  "31.02": "Vorbereitung Radiopharmaka, Kit-Markierung",
+  "31.03": "Szintigrafie",
+  "31.05": "Aktivitätsmessung, Funktions-Test",
+  "31.06": "Nuklearmedizinische Therapie",
+  "31.07": "Technische Grundleistungen für Nuklearmedizin",
+  "32": "Radioonkologie, Strahlentherapie",
+  "32.01.01": "Radioonkologie, Strahlentherapie: Grundkonsultation Radiologie (32.0010)",
+  "32.01.02": "Radioonkologie, Strahlentherapie: fachärztliche Zuschläge",
+  "32.02": "Radioonkologie, Strahlentherapie: Vorbereitung, Kontrolle",
+  "32.05": "Radioonkologie, Strahlentherapie: Stereotaktische Radiotherapie SRT",
+  "32.06": "Radioonkologie, Strahlentherapie: Ganzkörper-Bestrahlung",
+  "32.07": "Radioonkologie, Strahlentherapie: Hyperthermie",
+  "32.08": "Radioonkologie, Strahlentherapie: Brachytherapie",
+  "32.09": "Technische Grundleistungen für Radioonkologie, Strahlentherapie",
+  "33": "Dialyse",
+  "34": "Intensivpflege und Spezialpflegeeinheiten",
+  "34.01": "Intensivpflegestationen (IPS)",
+  "34.01.01": "Ärztliche Leistungen Intensivpflegestationen (IPS)",
+  "34.01.05": "Nichtärztliche Betreuung auf der kard-/angiologischen Überwachungsstation",
+  "34.02": "Onkologische Sterilpflege",
+  "35": "Operationssaal (OP), Aufwachraum, Tagesklinik",
+  "35.01": "Technische Grundleistung für OP anerkannt",
+  "35.03": "Chirurgische/medizinische Tagesklinik",
+  "35.04": "Nichtärztliche Betreuung ausserhalb der chirurgischen/medizinischen Tagesklinik",
+  "35.05": "Notfallaufnahme anerkannt (35.0610)",
+  "37": "Klinische Pathologie (Autopsie, Histologie, Zytologie) und Rechtsmedizin",
+  "37.01": "Autopsie, Legalinspektion",
+  "37.01.01": "Autopsie, Legalinspektion: ärztliche Leistung",
+  "37.01.02": "Autopsie, Legalinspektion: nichtärztliche Leistung",
+  "37.02": "Histopathologie/Zytopathologie",
+  "37.02.01": "Histopathologie/Zytopathologie: ärztliche Leistung",
+  "37.02.02": "Histopathologie/Zytopathologie: nichtärztliche Leistung",
+  "39": "Bildgebende Verfahren",
+  "39.01": "Bildgebende Verfahren: Allgemeines",
+  "39.02": "Röntgen",
+  "39.02.01": "Röntgen: Untersuchung der Organe",
+  "39.02.01.01": "Röntgen: Schädel, Hals",
+  "39.02.01.02": "Röntgen: Wirbelsäule",
+  "39.02.01.03": "Röntgen: Thorax, Abdomen, Becken",
+  "39.02.01.04": "Röntgen: Obere Extremität",
+  "39.02.01.05": "Röntgen: Untere Extremität",
+  "39.02.02": "Röntgen: Durchleuchtungen, Urogramme und Cholangiogramme",
+  "39.02.03": "Röntgen: Durchleuchtungsgestützte Interventionen",
+  "39.02.04": "Röntgen: Mammografie",
+  "39.02.05": "Minimalinvasive Mammaeingriffe",
+  "39.02.06": "Knochendichtebestimmungen: Osteodensitometrien (39.1950)",
+  "39.02.07": "Röntgen: Technische Grundleistungen",
+  "39.03": "Ultraschall, Dopplersysteme und Interventionen",
+  "39.03.01": "Ultraschall: Schwangerschaft",
+  "39.03.02": "Ultraschall: Organe",
+  "39.03.02.01": "Ultraschall: Schädel, Hals",
+  "39.03.02.02": "Ultraschall: Abdomen",
+  "39.03.02.03": "Ultraschall: Endosonografien",
+  "39.03.02.04": "Ultraschall: Bewegungsapparat, Weichteile",
+  "39.03.02.05": "Ultraschall: Mammae",
+  "39.03.03": "Ultraschall: Gefässe mit Dopplersystemen",
+  "39.03.04": "Ultraschall: Interventionen und intraoperativer Ultraschall",
+  "39.03.05": "Ultraschall: Besonderes (39.3790)",
+  "39.03.06": "Ultraschall: Technische Grundleistungen",
+  "39.04": "Computer-Tomografie CT",
+  "39.04.01": "CT: Allgemeines",
+  "39.04.02": "CT: Untersuchungen der Organe",
+  "39.04.03": "CT: Interventionen",
+  "39.04.04": "CT: Technische Grundleistungen (39.4300)",
+  "39.05": "Magnetic Resonance Imaging MRI",
+  "39.05.01": "MRI: Allgemeines",
+  "39.05.02": "MRI: Untersuchung der Organe",
+  "39.05.03": "MRI: Interventionen",
+  "39.05.04": "MRI: Technische Grundleistungen (39.5300)",
+  "39.06": "Angiografie",
+  "39.06.01": "Angiografie: Arteriografie",
+  "39.06.01.01": "Arteriografie: Grundleistungen und Kinderzuschläge",
+  "39.06.01.02": "Arteriografie: Untersuchung der Organe",
+  "39.06.01.03": "Arteriografie: Perkutane transluminale Angioplastie (PTA), arterieller Stent",
+  "39.06.01.04": "Arteriografie: Lyse, Thrombektomie, Embolisation und i.a. Chemotherapie (39.6260)",
+  "39.06.01.05": "Arteriografie: Embolisation, intraarterielle Chemotherapie",
+  "39.06.02": "Angiografie: Phlebografie",
+  "39.06.02.01": "Phlebografie: Grundleistung",
+  "39.06.02.02": "Phlebografie: Kopf, Hals, Stamm, Extremitäten",
+  "39.06.03": "Angiografie: Pfortader",
+  "39.06.04": "Angiografie: Lunge",
+  "39.06.05": "Angiografie: Dialyse-Shunts",
+  "39.06.06": "Angiografie: Interventionen",
+  "39.06.07": "Angiografie: Perkutane transhepatische Cholangiografie (PTC)",
+  "39.06.08": "Angiografie: Nephrostomien",
+  "39.06.09": "Angiografie: Spezielles",
+  "39.08": "Bildgebend überwachte Eingriffe",
+  "39.08.01": "Ärztliche Leistungen",
+  "39.08.02": "Technische Grundleistungen"
+ },
+ "tardoc_groups": {
+  "A": "Prestations de base: médicales, paramédicales",
+  "AA": "Prestations médicales générales de base",
+  "AG": "Traitements par injection, sans imagerie",
+  "AK": "Prestations paramédicales de base",
+  "AM": "Prise en charge/surveillance médicale et paramédicale",
+  "AP": "Bandages",
+  "AR": "Temps de changement",
+  "C": "Prestations fournies par le médecin de famille (premier recours)",
+  "CA": "Prestations de la médecine de famille",
+  "CG": "Pédiatrie, néonatologie",
+  "E": "Psychiatrie",
+  "EA": "Psychiatrie",
+  "G": "Imagerie / radiographie",
+  "GA": "Prestations de base",
+  "GG": "Radiologie",
+  "GK": "Sonographie",
+  "GM": "Tomographie informatisée (CT)",
+  "GP": "Imagerie par résonance magnétique",
+  "JA": "Gériatrie",
+  "JC": "Médecine du travail",
+  "JE": "Endocrinologie et diabétologie",
+  "JG": "Médecine hyperbare",
+  "JK": "Infectiologie",
+  "JM": "Pathologie clinique",
+  "JP": "Pharmacologie clinique et toxicologie",
+  "JR": "Médecine complémentaire",
+  "JT": "Génétique médicale",
+  "JV": "Oncologie médicale, hématologie",
+  "JX": "Médecine nucléaire",
+  "JZ": "Médecine psychosomatique, psychosociale",
+  "KD": "Médecine reproductive, endocrinologie gynécologique",
+  "KF": "Rhumatologie, Médecine physique, Réadaptation, Traitement de la douleur",
+  "KH": "Diagnostic du sommeil",
+  "KK": "Grossesse, obstétrique",
+  "KM": "Médecine du sport",
+  "KP": "Médecine tropicale",
+  "M": "Organes - corps entier",
+  "MA": "Diagnostic instrumental angiologique",
+  "MG": "Vaisseaux: traitement chirurgical",
+  "MK": "Peau et tissus mous",
+  "MP": "Système nerveux (neurologie)",
+  "MR": "Chirurgie du système nerveux central et de la colonne vertébrale",
+  "P": "Appareil locomoteur",
+  "PG": "Main, poignet",
+  "R": "Région: tête et cou",
+  "RA": "Os de la face",
+  "RC": "Oeil",
+  "RE": "Phoniatrie",
+  "RG": "Oto-rhino-laryngologie",
+  "T": "Région: thorax",
+  "TA": "Seins",
+  "TG": "Poumons et voies respiratoires",
+  "TK": "Coeur et vaisseaux diagnostic et traitement non chirurgical",
+  "TM": "Organes thoraciques: traitement chirurgical",
+  "V": "Région: abdomen et bassin",
+  "VA": "Tractus gastro-intestinal: Diagnostic et traitement non chirurgical",
+  "VC": "Tractus gastro-intestinal: Traitement chirurgical",
+  "VE": "Reins, des voies urinaires, organes génitaux masculins",
+  "VG": "Génitaux féminins",
+  "VK": "Néphrologie",
+  "W": "Anesthésie, prestations opératoires de base, soins d’urgence et intensifs",
+  "WA": "Anesthésie",
+  "WF": "Assistance médicale",
+  "WG": "Service des urgences de l'hôpital",
+  "WK": "Soins intensifs et soins intermédiaires"
+ },
+ "tarif_590": {
+  "1001": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Saignée, par période de 5 min."
+  },
+  "1002": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Akumat, par période de 5 min."
+  },
+  "1003": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Acupressure, par période de 5 min."
+  },
+  "1004": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Acupuncture, par période de 5 min."
+  },
+  "1005": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "APM thérapie (Thérapie par le massage sur méridiens d'acupuncture), par période de 5 min."
+  },
+  "1006": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Technique Alexander, par période de 5 min."
+  },
+  "1007": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Tui-Na/An-Mo, par période de 5 min."
+  },
+  "1008": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Médécine anthroposophique, traitement/consultation, par période de 5 min."
+  },
+  "1010": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Aromathérapie, par période de 5 min."
+  },
+  "1011": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Travail asiatique d’énergie et du corps, par période de 5 min."
+  },
+  "1012": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie respiratoire, par période de 5 min."
+  },
+  "1013": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Atlaslogie, par période de 5 min."
+  },
+  "1014": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Audio-psycho-phonologie/Tomatis, par période de 5 min."
+  },
+  "1016": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Auro-Soma thérapie, par période de 5 min."
+  },
+  "1017": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Training autogène, par période de 5 min."
+  },
+  "1021": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage ayurvédique, par période de 5 min."
+  },
+  "1022": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie des fleurs de Bach, par période de 5 min."
+  },
+  "1023": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Méthode Baunscheidt, par période de 5 min."
+  },
+  "1024": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par le mouvement (intégrat./cliniq.), par période de 5 min."
+  },
+  "1025": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage du tissu conjonctif, par période de 5 min."
+  },
+  "1026": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Biofeedback, par période de 5 min."
+  },
+  "1027": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Biorésonance, par période de 5 min."
+  },
+  "1028": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Biochimie selon Schüssler, par période de 5 min."
+  },
+  "1029": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Psychologie biodynamique/Biodynamique, par période de 5 min."
+  },
+  "1030": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Sangsues, par période de 5 min."
+  },
+  "1031": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Brain Gym, par période de 5 min."
+  },
+  "1032": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Hydrothérapie du côlon, par période de 5 min."
+  },
+  "1033": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage du côlon, par période de 5 min."
+  },
+  "1034": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie craniosacrale, par période de 5 min."
+  },
+  "1035": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Deep Draining, par période de 5 min."
+  },
+  "1036": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Autohémothérapie/thérapie autosanguine, par période de 5 min."
+  },
+  "1037": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Électroacupuncture, par période de 5 min."
+  },
+  "1038": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Électroacupuncture selon Voll, par période de 5 min."
+  },
+  "1039": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Électrothérapie, par période de 5 min."
+  },
+  "1041": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Conseil diététique, par période de 5 min."
+  },
+  "1045": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage ésalien, par période de 5 min."
+  },
+  "1047": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Eutonie Gerda Alexander, par période de 5 min."
+  },
+  "1048": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Chromopuncture, par période de 5 min."
+  },
+  "1049": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par la couleur, par période de 5 min."
+  },
+  "1050": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Fasciathérapie, par période de 5 min."
+  },
+  "1051": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Méthode Feldenkrais, par période de 5 min."
+  },
+  "1052": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage des zones réflexes du pied, par période de 5 min."
+  },
+  "1053": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie d’oxydation hématogène, par période de 5 min."
+  },
+  "1054": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Yoga thérapie, par période de 5 min."
+  },
+  "1055": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Eurythmie thérapeutique, par période de 5 min."
+  },
+  "1056": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Hippothérapie, par période de 5 min."
+  },
+  "1057": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Homéopathie, Traitement/Consultation, par période de 5 min."
+  },
+  "1058": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Hydrothérapie, par période de 5 min."
+  },
+  "1060": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Kinésiologie, par période de 5 min."
+  },
+  "1061": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie sonore, par période de 5 min."
+  },
+  "1062": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage classique, par période de 5 min."
+  },
+  "1063": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie selon Kneipp, par période de 5 min."
+  },
+  "1064": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Acupuncture par laser, par période de 5 min."
+  },
+  "1065": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par la lumière, par période de 5 min."
+  },
+  "1066": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Drainage lymphatique, manuel, par période de 5 min."
+  },
+  "1067": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Magnétothérapie/thérapie par champs magnétiques, par période de 5 min."
+  },
+  "1068": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par la peinture, par période de 5 min."
+  },
+  "1069": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Mésothérapie, par période de 5 min."
+  },
+  "1070": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage métamorphique, par période de 5 min."
+  },
+  "1071": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Moxibustion, par période de 5 min."
+  },
+  "1072": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Musicothérapie, par période de 5 min."
+  },
+  "1073": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage des zones réflexes musculaires, par période de 5 min."
+  },
+  "1074": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie myofonctionelle, par période de 5 min."
+  },
+  "1075": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie neurale, par période de 5 min."
+  },
+  "1076": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Neurofeedback, par période de 5 min."
+  },
+  "1077": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Acupuncture des oreilles, par période de 5 min."
+  },
+  "1079": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Otothérapie par les bougies, par période de 5 min."
+  },
+  "1080": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Formation du mouvement rythmo-organique Medau, par période de 5 min."
+  },
+  "1081": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Ortho-Bionomy, par période de 5 min."
+  },
+  "1082": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie orthomoléculaire, par période de 5 min."
+  },
+  "1084": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par l’ozone, par période de 5 min."
+  },
+  "1085": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Phytothérapie, par période de 5 min."
+  },
+  "1087": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Polarity, par période de 5 min."
+  },
+  "1088": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Intégration posturale, par période de 5 min."
+  },
+  "1089": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Psychomotricité, par période de 5 min."
+  },
+  "1090": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage des zones psychogènes, par période de 5 min."
+  },
+  "1091": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie de théâtre de marionnettes, par période de 5 min."
+  },
+  "1092": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Qi Gong, par période de 5 min."
+  },
+  "1093": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Rebalancing, par période de 5 min."
+  },
+  "1094": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par nouvelle naissance, par période de 5 min."
+  },
+  "1096": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Reiki, par période de 5 min."
+  },
+  "1097": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Rolfing/intégration structurelle, par période de 5 min."
+  },
+  "1098": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massages rythmiques anthrop., par période de 5 min."
+  },
+  "1099": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Oxygénotherapie en plusieurs étapes, par période de 5 min."
+  },
+  "1100": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Shiatsu, par période de 5 min."
+  },
+  "1101": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Shin Tai, par période de 5 min."
+  },
+  "1102": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Sophrologie / Sophrologie Caycédienne, par période de 5 min."
+  },
+  "1103": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Ventouses, par période de 5 min."
+  },
+  "1104": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Sumathu, par période de 5 min."
+  },
+  "1105": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Sympathicothérapie, par période de 5 min."
+  },
+  "1106": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Tai Chi, par période de 5 min."
+  },
+  "1108": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par la danse, par période de 5 min."
+  },
+  "1111": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage thaï, par période de 5 min."
+  },
+  "1113": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thermographie, par période de 5 min."
+  },
+  "1114": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Médecine tibétaine, traitement/consultation, par période de 5 min."
+  },
+  "1115": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Touch for Health, par période de 5 min."
+  },
+  "1117": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Massage selon Trager, par période de 5 min."
+  },
+  "1118": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par du sang irradié (UV), par période de 5 min."
+  },
+  "1120": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Vitalpratique selon Vuille, par période de 5 min."
+  },
+  "1121": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Cataplasmes/enveloppements/fango, par période de 5 min."
+  },
+  "1122": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Équilibration vertébrale, par période de 5 min."
+  },
+  "1123": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Zilgrei, par période de 5 min."
+  },
+  "1127": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Homéopathie - Répertorisation, par période de 5 min."
+  },
+  "1128": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Adveda-Eugemed, par période de 5 min."
+  },
+  "1131": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie à médiation plastique, par période de 5 min."
+  },
+  "1132": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie intermédiale, par période de 5 min."
+  },
+  "1133": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie des méridiens, par période de 5 min."
+  },
+  "1134": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Réflexothérapie, par période de 5 min."
+  },
+  "1140": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Microkinésithérapie, par période de 5 min."
+  },
+  "1141": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Dorn/Breuss, par période de 5 min."
+  },
+  "1142": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Spagyrie, par période de 5 min."
+  },
+  "1143": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Cantharide, par période de 5 min."
+  },
+  "1144": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie du développement et de l'apprentissage selon PäPKi, par période de 5 min."
+  },
+  "1145": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Bowtech, par période de 5 min."
+  },
+  "1146": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Temps d'action en cas de traitement parallèle, par période de 5 min."
+  },
+  "1200": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Anamnèse / bilan / diagnostic / constatations médicales, par période de 5 min."
+  },
+  "1201": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie par le drame, par période de 5 min."
+  },
+  "1202": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Art de parole thérapeutique, par période de 5 min."
+  },
+  "1203": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Ostéopathie, par période de 5 min."
+  },
+  "1204": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Etiopathie, par période de 5 min."
+  },
+  "1205": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Méthodes de détoxication, par période de 5 min."
+  },
+  "1206": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie nutritionnelle, par période de 5 min."
+  },
+  "1207": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie de l'ordre / Diététique, par période de 5 min."
+  },
+  "1209": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Jets ayurvédique, par période de 5 min."
+  },
+  "1210": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Spiraldynamik, par période de 5 min."
+  },
+  "1214": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Orthonomie fonctionnelle et intégration, par période de 5 min."
+  },
+  "1218": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Lomilomi, par période de 5 min."
+  },
+  "1219": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Hyperthermie, par période de 5 min."
+  },
+  "1220": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie Boeger, par période de 5 min."
+  },
+  "1222": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Thérapie du sport et en activité physique adaptée, par période de 5 min."
+  },
+  "1223": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Premiers Secours Emotionnels, par période de 5 min."
+  },
+  "1250": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Consultation manquée"
+  },
+  "1251": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Supplément nuit, dimanche et jours fériés"
+  },
+  "1252": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Supplément consultation extraordinaire dans des situations aigües"
+  },
+  "1253": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Rapport formalisé"
+  },
+  "1254": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Rapport non formalisé"
+  },
+  "1255": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Leeches, par pièce"
+  },
+  "1256": {
+   "chapter": 1,
+   "chapter_f": "Numéros tarifaires Généralités",
+   "text_f": "Compensation de voyage"
+  },
+  "1259": {
+   "chapter": 2,
+   "chapter_f": "Préstations",
+   "text_f": "Liebscher & Bracht, par période de 5 min."
+  },
+  "1302": {
+   "chapter": 4,
+   "chapter_f": "Laboratoire",
+   "text_f": "Services de laboratoire médecine complémentaires"
+  },
+  "1310": {
+   "chapter": 3,
+   "chapter_f": "Remède",
+   "text_f": "Remèdes médecine complémentaire"
+  }
+ }
+}

@@ -1,0 +1,29 @@
+services:
+  runner:
+    image: code.forgejo.org/forgejo/runner:13.2.0
+    container_name: forgejo-runner
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${RUNNER_DATA_ROOT}:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["forgejo-runner", "daemon", "--config", "/data/config.yaml"]
+    # Runs as root. docker.sock on this host is root:root, mode 660 — the
+    # image's default non-root user (1000:1000) can't connect to it even
+    # with group_add: ["0"] (confirmed via an actual failed deploy; standard
+    # POSIX permission checks all passed, pointing at a Synology-level
+    # restriction beyond plain file permissions). Root bypasses it, and
+    # doesn't meaningfully change this container's already-accepted risk
+    # profile — docker.sock access is root-equivalent regardless of the
+    # process's nominal UID. See docs/ARCHITECTURE.md's CI section.
+    user: "0:0"
+    security_opt:
+      - no-new-privileges:true
+    # No cap_drop: [ALL] here — deliberately. docker.sock access already
+    # grants root-equivalent host access; dropping capabilities on this
+    # container's own process doesn't meaningfully reduce that. See
+    # docs/ARCHITECTURE.md's CI section.
+    deploy:
+      resources:
+        limits:
+          memory: 1G

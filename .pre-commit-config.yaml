@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  # Not redundant with gitleaks above: gitleaks looks for credentials, and the
+  # internal domain, NAS volume paths and LDAP UIDs are not credentials — which
+  # is exactly why they survived three separate cleanup passes.
+  - repo: local
+    hooks:
+      - id: no-real-values
+        name: no deployment-specific real values
+        entry: scripts/check-no-real-values.sh
+        language: script
+        pass_filenames: true
+
+  # Markdown for human readers: aligned table columns, consistent lists.
+  # Options in .prettierrc.yaml; keep the version in step with checks.yaml.
+  - repo: local
+    hooks:
+      - id: prettier-markdown
+        name: markdown formatting (prettier)
+        entry: prettier --write
+        language: node
+        additional_dependencies: ["prettier@3.6.2"]
+        files: \.md$

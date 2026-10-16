@@ -1,0 +1,35 @@
+# Re-include the shipped tariff table. The repo root ignores `**/data/`
+# (unanchored, any depth) for NAS state directories, which would otherwise
+# swallow paperless_tarmed/data/tariff_types.json — a 38 KB file the Dockerfile
+# COPYs into the image. The failure is silent at build time and only shows up as
+# empty `category` values at runtime.
+#
+# This MUST be a directory-level negation. `!paperless_tarmed/data/<file>` looks
+# equivalent and does nothing: git cannot re-include a file whose parent
+# directory is excluded.
+!paperless_tarmed/data/
+
+# The compose bind mount, anchored to this stack directory only — deliberately
+# NOT the package data dir negated above.
+/data/
+.cache/
+
+# Real justificatifs carry patient names, addresses, birth dates and insurance
+# numbers. The sample-based tests skip when absent. Do not remove: this repo is
+# meant to be publishable, and PHI in git history is not revocable.
+samples/
+
+# `report --csv` writes patient names and amounts. Same reasoning as samples/.
+*.csv
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.env
+
+# `uv run` (README Tests, CI) writes one; the image installs from pyproject.toml.
+uv.lock

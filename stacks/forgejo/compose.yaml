@@ -1,0 +1,36 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:16.0-rootless
+    container_name: forgejo
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - FORGEJO__service__DISABLE_REGISTRATION=true
+      - GITEA_WORK_DIR=/var/lib/gitea
+      - GITEA_CUSTOM=/var/lib/gitea/custom
+      - GITEA_TEMP=/tmp/gitea
+      - TMPDIR=/tmp/gitea
+      - GITEA_APP_INI=/var/lib/gitea/custom/conf/app.ini
+      - HOME=/var/lib/gitea/git
+    volumes:
+      - ${FORGEJO_DATA_ROOT}:/var/lib/gitea
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "222:2222"
+      - "3000:3000"
+    networks:
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  proxy:
+    external: true

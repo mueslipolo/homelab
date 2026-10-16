@@ -1,0 +1,21 @@
+# Site-specific patterns for scripts/check-no-real-values.sh.
+#
+# Copy to `.private-patterns` (gitignored) and fill in the real values. This
+# example file is tracked and must therefore stay free of them.
+#
+# One POSIX extended regex per line; `#` starts a comment. Matching is
+# case-sensitive, so include both cases where it matters. Every staged file is
+# checked against every pattern, and any match blocks the commit.
+#
+# Worth covering:
+#
+#   the internal domain, both cases        example\.lan|EXAMPLE\.LAN
+#   the LDAP/DSM realm                     @LH-EXAMPLE\.LAN
+#   real usernames / LDAP home dirs        \b(alice|bob)-[0-9]{7}\b
+#   household and personal names           \b(Alice|Bob)\b
+#   personal device names                  Pixel [0-9]+[a-z]?
+#   the real WAN IP                        203\.0\.113\.[0-9]+
+#
+# Generic patterns (Synology volume paths, numeric PUID/PGID, non-example
+# email addresses, private 10/172.16/192.168 host addresses, *.lan hostnames)
+# are built into the script and need no entry here.

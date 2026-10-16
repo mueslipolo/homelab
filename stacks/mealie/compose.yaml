@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mealie
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGUSER: mealie
+      TZ: Europe/Zurich
+    volumes:
+      - ${MEALIE_PGDATA_PATH}:/var/lib/postgresql/data
+    networks:
+      - mealie
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.28.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Zurich
+      ALLOW_SIGNUP: "false"
+      MAX_WORKERS: 1
+      WEB_CONCURRENCY: 1
+      BASE_URL: https://mealie.${INTERNAL_DOMAIN}
+      DEFAULT_GROUP: Home
+      DEFAULT_HOUSEHOLD: Family
+      DEFAULT_EMAIL: ${DEFAULT_EMAIL}
+      TOKEN_TIME: "48"
+      # Native OIDC — replaces the earlier Caddy forward_auth full-gate.
+      # Mealie has no trusted-header/auto-login support (confirmed: an open
+      # feature request, not implemented), so forward_auth + Mealie's own
+      # native login stacked into an unwanted double login. OIDC_AUTO_REDIRECT
+      # skips Mealie's login screen entirely, going straight to Authelia.
+      OIDC_AUTH_ENABLED: "true"
+      OIDC_AUTO_REDIRECT: "true"
+      OIDC_CONFIGURATION_URL: https://auth.${INTERNAL_DOMAIN}/.well-known/openid-configuration
+      OIDC_CLIENT_ID: mealie
+      OIDC_CLIENT_SECRET: ${MEALIE_OIDC_CLIENT_SECRET}
+      OIDC_SIGNING_ALGORITHM: RS256
+      ALLOW_PASSWORD_LOGIN: "false"
+      DB_ENGINE: postgres
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: mealie
+    volumes:
+      - ${MEALIE_DATA_PATH}:/app/data/
+    networks:
+      - mealie
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+networks:
+  mealie:
+    driver: bridge
+  proxy:
+    external: true

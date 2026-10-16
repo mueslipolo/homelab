@@ -1,0 +1,18 @@
+# Devices that must keep uploading to the NAS: phones backing up photos,
+# computers running Synology Drive Client. Copy to uploaders.conf next to
+# jobs.env (outside git: real names). Shown on the dashboard's Backups tab.
+#
+# owner    the DSM user (as in the Drive Admin Console's Client List)
+# kind     phone or computer
+# device   its name in Drive's Client List; for a phone also its photo folder
+#          <home>/Photos/MobileBackup/<device>
+# max days silent this long: red; half of it: amber (default 7)
+# photos   (phones, optional) the DCIM folder if not the usual one
+#
+# A device uploading but not listed here shows as "not monitored"; start from:
+#   sudo bash -c 'set -a; . <jobs.env>; set +a; bash scripts/dashboard-status.sh --suggest-uploaders'
+#
+# owner | kind     | device      | max days | photos folder (optional)
+alice   | computer | alice-laptop | 21
+alice   | phone    | Pixel 9a     | 7
+bob     | phone    | Pixel 7      | 7

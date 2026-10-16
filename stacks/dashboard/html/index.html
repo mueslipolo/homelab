@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homelab</title>
+<style>
+    /* Fonts are served from html/fonts/ (SIL Open Font License), not Google:
+       the page works with no internet and tells no third party it was opened. */
+    @font-face {
+        font-family: "Archivo";
+        src: url("fonts/Archivo-latin.woff2") format("woff2");
+        font-weight: 400 700;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: "Martian Mono";
+        src: url("fonts/MartianMono-latin.woff2") format("woff2");
+        font-weight: 400 500;
+        font-display: swap;
+    }
+
+    /* Front panel: the left plate stays dark in both themes, like the NAS
+       itself; only the bay around it follows the viewer's theme. */
+    :root {
+        --bg: #e8eaed;
+        --surface: #f7f8f9;
+        --line: #cdd1d6;
+        --ink: #1b1f24;
+        --muted: #5a616b;
+        --faint: #858c96;
+        --accent: #a86400;
+
+        --plate: #262b31;
+        --plate-2: #1f2328;
+        --plate-line: #3a4048;
+        --plate-ink: #e7e9ec;
+        --plate-muted: #9aa2ac;
+        --led-off: #4a5059;
+        --bezel: #ffffff;
+        --bezel-ink: #4a5059;
+
+        --ok: #3fae6a;
+        --warn: #e0a83a;
+        --bad: #ec5b5b;
+
+        --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --mono: "Martian Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            color-scheme: dark;
+            --bg: #111316;
+            --surface: #181b1f;
+            --line: #2a2f35;
+            --ink: #e3e6ea;
+            --muted: #9aa1ab;
+            --faint: #6c737d;
+            --accent: #f0a63a;
+            --plate: #1b1f24;
+            --plate-2: #15181c;
+            --plate-line: #30363e;
+            --bezel: #dfe2e6;
+        }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 var(--sans);
+        word-spacing: 0.05em;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    .rack {
+        display: grid;
+        grid-template-columns: minmax(290px, 360px) 1fr;
+        min-height: 100vh;
+    }
+
+    .lab {
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--plate-muted);
+    }
+
+    /* ---------------------------------------------------------- plate */
+
+    .plate {
+        background: var(--plate);
+        color: var(--plate-ink);
+        padding: 24px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+    }
+
+    .plate h1 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .plate-id {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .plate section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .gauge-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    /* One line whatever the numbers: the volume name gives way first. */
+    .gauge-row .lab { white-space: nowrap; }
+    .gauge-row .lab:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+    .big {
+        font-family: var(--mono);
+        font-size: 1.7rem;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }
+
+    .big small {
+        font-size: 0.78rem;
+        color: var(--plate-muted);
+    }
+
+    .track {
+        position: relative;
+        height: 10px;
+        background: var(--led-off);
+        border-radius: 2px;
+    }
+
+    .track .fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: 2px;
+        background: var(--ok);
+    }
+
+    .track .fill.warn { background: var(--warn); }
+    .track .fill.bad { background: var(--bad); }
+
+    .track .tick {
+        position: absolute;
+        top: -4px;
+        bottom: -4px;
+        width: 1px;
+        background: var(--plate-ink);
+        opacity: 0.55;
+    }
+
+    .ticks {
+        position: relative;
+        height: 14px;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        color: var(--plate-muted);
+    }
+
+    .ticks span { position: absolute; }
+
+    .leds {
+        display: flex;
+        flex-direction: column;
+        background: var(--plate-2);
+        border: 1px solid var(--plate-line);
+        border-radius: 6px;
+    }
+
+    .led {
+        display: grid;
+        grid-template-columns: 10px 1fr auto;
+        gap: 2px 12px;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--plate-line);
+    }
+
+    .led:last-child { border-bottom: 0; }
+
+    .led i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--led-off);
+    }
+
+    .led.ok i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+    .led.warn i { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+    .led.bad i { background: var(--bad); box-shadow: 0 0 8px var(--bad); }
+    .led.off i { background: transparent; border: 1px solid var(--faint); }
+
+    .led b { font-size: 0.86rem; font-weight: 600; }
+
+    .led em {
+        font-style: normal;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--plate-muted);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    .led small {
+        grid-column: 2 / 4;
+        font-size: 0.74rem;
+        color: var(--plate-muted);
+        overflow-wrap: anywhere;
+    }
+
+    .empty {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--plate-muted);
+    }
+
+    .empty code { font-family: var(--mono); font-size: 0.72rem; }
+
+    [data-deploy-list] { display: flex; flex-direction: column; gap: 8px; }
+
+    .deploy {
+        background: var(--plate-2);
+        border: 1px solid var(--plate-line);
+        border-radius: 6px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .deploy-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .deploy-head b { font-size: 0.86rem; font-weight: 600; }
+
+    .pill {
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 10px;
+        border: 1px solid currentColor;
+        white-space: nowrap;
+    }
+
+    .pill.ok { color: var(--ok); }
+    .pill.warn { color: var(--warn); }
+    .pill.bad { color: var(--bad); }
+
+    .stages {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        gap: 2px 10px;
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        color: var(--plate-muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .stages .now { color: var(--plate-ink); }
+
+    .deploy small { font-size: 0.74rem; color: var(--plate-muted); }
+
+    .net a {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px 10px;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--plate-line);
+        color: var(--plate-ink);
+        text-decoration: none;
+    }
+
+    .net a:hover b { color: var(--accent); }
+    .net b { font-size: 0.86rem; font-weight: 600; }
+
+    .net em {
+        font-style: normal;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        color: var(--plate-muted);
+    }
+
+    .net span {
+        grid-column: 1 / 3;
+        font-size: 0.74rem;
+        color: var(--plate-muted);
+    }
+
+    /* ------------------------------------------------------------ bay */
+
+    .bay {
+        padding: 24px clamp(16px, 3vw, 36px) 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        min-width: 0;
+    }
+
+    .bay-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px 20px;
+    }
+
+    .bay-head h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .filter button {
+        font: inherit;
+        font-size: 0.78rem;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        border-radius: 4px;
+        padding: 4px 10px;
+        cursor: pointer;
+    }
+
+    .filter button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--bg);
+        border-color: var(--ink);
+    }
+
+    [data-groups] {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+    }
+
+    .grp h3 {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin: 0 0 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .grp h3 .lab { color: var(--faint); }
+
+    .units {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 8px;
+    }
+
+    .units li { position: relative; }
+    .units[data-devices] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); margin-top: 16px; }
+
+    .unit {
+        display: grid;
+        grid-template-columns: 34px 1fr auto;
+        gap: 1px 12px;
+        align-items: start;
+        height: 100%;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px 12px;
+        text-decoration: none;
+        color: var(--ink);
+    }
+
+    a.unit:hover { border-color: var(--accent); }
+
+    .unit b { font-weight: 600; font-size: 0.92rem; }
+
+    /* Every logo sits in the same neutral bezel at the same size, so brand
+       colours and shapes read as one set. Icons: homarr-labs/dashboard-icons
+       (Apache-2.0); each logo is its project's trademark. */
+    .ico {
+        grid-row: 1 / 4;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        /* Light in both themes: several logos (Portainer, Radarr) are
+           black line art that vanishes on a dark ground. */
+        background: var(--bezel);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--bezel-ink);
+    }
+
+    .ico img, .ico svg {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        display: block;
+    }
+
+    .tag {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--faint);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 1px 5px;
+        align-self: center;
+    }
+
+    .tag.open { color: var(--accent); border-color: var(--accent); }
+
+    .unit .desc {
+        grid-column: 2 / 4;
+        color: var(--muted);
+        font-size: 0.8rem;
+        padding-right: 56px;
+    }
+
+    .unit .host {
+        grid-column: 2 / 4;
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        color: var(--faint);
+        overflow-wrap: anywhere;
+    }
+
+    /* README is a sibling of the card link: links cannot nest. */
+    .readme {
+        position: absolute;
+        right: 12px;
+        top: 33px;
+        font-size: 0.7rem;
+        color: var(--accent);
+        text-decoration: none;
+    }
+
+    .readme:hover { text-decoration: underline; }
+
+    /* -------------------------------------------------------- diagram */
+
+
+
+    .diagram {
+        margin-top: 10px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 20px;
+        overflow-x: auto;
+    }
+
+    .diagram svg { display: block; width: 100%; min-width: 560px; height: auto; }
+    .diagram text { font-family: var(--sans); }
+    .diagram .node-label { font-size: 13px; font-weight: 600; fill: var(--ink); }
+    .diagram .node-sub { font-size: 11px; fill: var(--muted); font-family: var(--mono); }
+    .diagram .tier-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; fill: var(--faint); text-transform: uppercase; }
+    .diagram .edge { stroke: var(--line); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .diagram .node { fill: var(--bg); stroke: var(--line); stroke-width: 1; }
+    .diagram .node.accent { fill: var(--surface); stroke: var(--accent); }
+
+    /* ------------------------------------------------- status and tabs */
+
+    .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--led-off);
+        flex: none;
+    }
+
+    .dot.ok { background: var(--ok); }
+    .dot.warn { background: var(--warn); }
+    .dot.bad { background: var(--bad); }
+
+    .status {
+        display: flex;
+        flex-direction: column;
+        background: var(--plate-2);
+        border: 1px solid var(--plate-line);
+        border-radius: 6px;
+    }
+
+    .status button {
+        font: inherit;
+        display: grid;
+        grid-template-columns: 8px auto 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        background: none;
+        border: 0;
+        border-bottom: 1px solid var(--plate-line);
+        color: var(--plate-ink);
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .status button:last-child { border-bottom: 0; }
+    .status button:hover b { color: var(--accent); }
+    .status b { font-size: 0.86rem; font-weight: 600; }
+
+    .status span {
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        color: var(--plate-muted);
+        text-align: right;
+    }
+
+    .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .tabs button {
+        font: inherit;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px 10px;
+        background: none;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        color: var(--muted);
+        cursor: pointer;
+    }
+
+    .tabs button:hover { color: var(--ink); }
+
+    .tabs button[aria-selected="true"] {
+        color: var(--ink);
+        font-weight: 600;
+        border-bottom-color: var(--accent);
+    }
+
+    [data-view] {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+    }
+
+    [data-view][hidden] { display: none; }
+
+    .view-title {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin: 0 0 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .view-title span {
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        letter-spacing: 0.08em;
+        color: var(--faint);
+        text-transform: none;
+    }
+
+    .empty-bay { margin: 0; color: var(--muted); font-size: 0.86rem; }
+    .empty-bay code { font-family: var(--mono); font-size: 0.78rem; }
+
+    .legend {
+        margin: 8px 0 0;
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        color: var(--faint);
+    }
+
+    /* The lists and cards the plate used to hold, on the light bay. */
+    .bay .leds, .bay .deploy {
+        background: var(--surface);
+        border-color: var(--line);
+        color: var(--ink);
+    }
+
+    .bay .led { border-bottom-color: var(--line); }
+    .bay .led em, .bay .led small, .bay .deploy small, .bay .stages { color: var(--muted); }
+    .bay .stages .now { color: var(--ink); }
+    .bay [data-deploy-list] { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+
+    /* Protection matrix: data sets x layers of protection. */
+    .tbl-wrap { overflow-x: auto; }
+
+    .mx {
+        border-collapse: separate;
+        border-spacing: 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        font-size: 0.86rem;
+        width: 100%;
+    }
+
+    .mx th, .mx td {
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .mx thead th { white-space: normal; }
+
+    .mx tr:last-child td { border-bottom: 0; }
+    .mx thead th { background: var(--bg); font-size: 0.8rem; font-weight: 600; vertical-align: bottom; }
+
+    .mx thead th small {
+        display: block;
+        margin-top: 2px;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 400;
+        color: var(--muted);
+    }
+
+    .mx td.data { text-align: left; font-weight: 500; }
+    .mx td.data small { display: block; font-size: 0.72rem; font-weight: 400; color: var(--muted); }
+    .mx .mark { font-size: 1rem; line-height: 1; }
+    .mx td small { display: block; margin-top: 2px; font-family: var(--mono); font-size: 0.62rem; color: var(--muted); }
+    .mx td.data small { font-family: inherit; }
+    .mx td.data small.note.warn { color: var(--warn); }
+    .mx td.data small.note.bad { color: var(--bad); }
+    .mx td.data.bare { color: var(--muted); }
+    .mx .mark.ok { color: var(--ok); }
+    .mx .mark.warn { color: var(--warn); }
+    .mx .mark.bad { color: var(--bad); }
+    .mx .mark.none { color: var(--faint); }
+    .mx .mark.unknown { color: var(--muted); opacity: 0.55; }
+
+    @media (max-width: 760px) {
+        .rack { grid-template-columns: 1fr; }
+    }
+
+    /* Storage tab (local/storage.json, scripts/storage-scan.sh). Part colours
+       follow size order; c1 is the largest part. */
+    :root {
+        --c1: #a86400; --c2: #4f6d8f; --c3: #8e5c86; --c4: #3f8a86;
+        --c5: #7d8a45; --c6: #5f7a99; --c7: #b07a52; --c8: #a3a9b1;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root { --c1: #f0a63a; --c2: #7f9dc0; --c3: #c08cb7; --c4: #6cbab5;
+                --c5: #a9b56e; --c6: #8aa3c0; --c7: #d3a27b; --c8: #5d646d; }
+    }
+    [data-view="storage"] section { margin-bottom: 30px; }
+    .storage-when { margin: 0 0 14px; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); }
+    .storage-sum { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
+    .storage-sum b { color: var(--ink); font-family: var(--mono); font-weight: 500; font-size: 0.84rem; }
+    .storage-sum b.up, .ft .num.up { color: var(--warn); }
+    .storage-sum b.down, .ft .num.down { color: var(--ok); }
+    .segbar { display: flex; height: 26px; border-radius: 3px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+    .seg { min-width: 3px; border-right: 1px solid var(--surface); }
+    .c1 { background: var(--c1); } .c2 { background: var(--c2); } .c3 { background: var(--c3); } .c4 { background: var(--c4); }
+    .c5 { background: var(--c5); } .c6 { background: var(--c6); } .c7 { background: var(--c7); } .c8 { background: var(--c8); }
+    .segbar .free, .seglegend i.free { background: repeating-linear-gradient(135deg, var(--surface) 0 5px, var(--line) 5px 6px); }
+    .seglegend { list-style: none; margin: 12px 0 0; padding: 0; display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 22px; }
+    .seglegend li { display: grid; grid-template-columns: 12px 1fr auto 3.2em; gap: 8px; align-items: center; font-size: 0.84rem; }
+    .seglegend i { width: 12px; height: 12px; border-radius: 2px; }
+    .seglegend b, .seglegend em { font-family: var(--mono); font-weight: 500; font-size: 0.74rem; font-style: normal; text-align: right; }
+    .seglegend em { color: var(--faint); }
+    .trend-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .trend-row { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; }
+    .panel .view-title { margin-top: 0; }
+    .trend { width: 100%; height: auto; display: block; }
+    .trend .grid { stroke: var(--line); stroke-width: 1; }
+    .trend .limit { stroke-dasharray: 4 4; stroke-width: 1; }
+    .trend .limit.warn { stroke: var(--warn); } .trend .limit.bad { stroke: var(--bad); }
+    .trend .axis { fill: var(--faint); font-family: var(--mono); font-size: 10px; }
+    .trend .axis.warn { fill: var(--warn); } .trend .axis.bad { fill: var(--bad); } .trend .axis.note { fill: var(--ok); }
+    .trend-area { fill: var(--accent); fill-opacity: 0.12; }
+    .trend-line { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linejoin: round; }
+    .trend-end { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+    .trend .drop { stroke: var(--ok); stroke-width: 1.5; }
+    .changes ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .changes li { display: grid; grid-template-columns: 5.6em 1fr; gap: 0 10px; font-size: 0.84rem; }
+    .changes li.none { display: block; color: var(--muted); }
+    .changes li b { font-family: var(--mono); font-weight: 500; font-size: 0.76rem; }
+    .changes li.up b { color: var(--warn); } .changes li.down b { color: var(--ok); }
+    .changes li small { grid-column: 2; color: var(--muted); font-size: 0.74rem; }
+    .ft { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface);
+        border: 1px solid var(--line); border-radius: 4px; font-size: 0.86rem; }
+    .ft th, .ft td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    .ft tr:last-child td { border-bottom: 0; }
+    .ft thead th { background: var(--bg); font-size: 0.74rem; font-weight: 600; color: var(--muted); }
+    .ft .num { text-align: right; font-family: var(--mono); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+    .ft .name { font-weight: 500; }
+    .ft .barcell { width: 30%; }
+    .ft .bar { display: block; height: 8px; border-radius: 2px; background: var(--accent); opacity: 0.75; }
+    .spark { display: block; }
+    .spark-area { fill: var(--accent); fill-opacity: 0.12; }
+    .spark-line { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+    .spark-end { fill: var(--accent); }
+    .faint { color: var(--faint); }
+    .media-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    .media-cols h4 { margin: 0 0 8px; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+    .top { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+    .top li { padding: 9px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 5px; }
+    .top li:last-child { border-bottom: 0; }
+    .top .row1, .top .row2 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .top .title { font-size: 0.88rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top .row1 b { font-family: var(--mono); font-weight: 500; font-size: 0.76rem; }
+    .top small { color: var(--muted); font-size: 0.74rem; }
+    .meter { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+    .meter span { display: block; height: 100%; background: var(--c1); }
+    .tag { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 10px;
+        border: 1px solid currentColor; white-space: nowrap; }
+    .tag.ok { color: var(--ok); } .tag.warn { color: var(--warn); } .tag.bad { color: var(--bad); }
+    .reclaim { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+    .reclaim li { display: grid; grid-template-columns: 14px minmax(140px, 15em) 6em 1fr; gap: 12px; align-items: baseline;
+        padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
+    .reclaim li:last-child { border-bottom: 0; }
+    .reclaim .what { font-weight: 500; }
+    .reclaim b { font-family: var(--mono); font-weight: 500; font-size: 0.76rem; text-align: right; }
+    .reclaim small { color: var(--muted); font-size: 0.76rem; }
+    @media (max-width: 640px) { .reclaim li { grid-template-columns: 14px 1fr auto; } .reclaim small { grid-column: 2 / -1; } }
+</style>
+</head>
+<body>
+
+<div class="rack">
+
+    <aside class="plate">
+        <div class="plate-id">
+            <h1>Homelab</h1>
+            <span class="lab"><span data-tagline></span><span data-domain></span></span>
+        </div>
+
+        <!-- Filled from local/status.json, written daily on the NAS by
+             scripts/dashboard-status.sh. -->
+        <section data-gauge hidden>
+            <div class="gauge-row">
+                <span class="lab" data-volume-name>Volume</span>
+                <span class="lab" data-volume-free></span>
+            </div>
+            <div class="big"><span data-volume-pct></span><small> % used</small></div>
+            <div class="track" role="img" data-volume-track>
+                <div class="fill" data-volume-fill></div>
+                <div class="tick" style="left: 80%"></div>
+                <div class="tick" style="left: 90%"></div>
+            </div>
+            <div class="ticks">
+                <span style="left: 0">0</span>
+                <span style="left: 80%; transform: translateX(-50%)">80</span>
+                <span style="left: 90%; transform: translateX(-20%)">90</span>
+            </div>
+        </section>
+
+        <!-- One line per area, each opening its tab; filled from status.json. -->
+        <nav class="status" aria-label="Status">
+            <button type="button" id="status-storage" data-tab-link="storage"><i class="dot"></i><b>Storage</b><span data-summary="storage">no storage scan</span></button>
+            <button type="button" id="status-backups" data-tab-link="backups"><i class="dot"></i><b>Backups</b><span data-summary="backups">no status report</span></button>
+            <button type="button" id="status-system" data-tab-link="system"><i class="dot"></i><b>System</b><span data-summary="system">no status report</span></button>
+            <button type="button" id="status-network" data-tab-link="network"><i class="dot"></i><b>Network</b><span data-summary="network">-</span></button>
+        </nav>
+    </aside>
+
+    <main class="bay">
+        <nav class="tabs" role="tablist" aria-label="Sections">
+            <button type="button" role="tab" id="tab-services" data-tab="services" aria-selected="true">Services</button>
+            <button type="button" role="tab" id="tab-storage" data-tab="storage" aria-selected="false">Storage <i class="dot"></i></button>
+            <button type="button" role="tab" id="tab-backups" data-tab="backups" aria-selected="false">Backups <i class="dot"></i></button>
+            <button type="button" role="tab" id="tab-system" data-tab="system" aria-selected="false">System <i class="dot"></i></button>
+            <button type="button" role="tab" id="tab-network" data-tab="network" aria-selected="false">Network</button>
+        </nav>
+
+        <div data-view="services" role="tabpanel" aria-labelledby="tab-services">
+        <div class="bay-head">
+                <h2>Services</h2>
+                <div class="filter" role="group" aria-label="Show">
+                    <button type="button" id="show-all" data-show="all" aria-pressed="true">All</button>
+                    <button type="button" id="show-apps" data-show="apps" aria-pressed="false">Apps</button>
+                    <button type="button" id="show-admin" data-show="admin" aria-pressed="false">Admin</button>
+                    <button type="button" id="show-ops" data-show="ops" aria-pressed="false">Ops</button>
+                </div>
+            </div>
+
+            <div data-groups></div>
+        </div>
+
+        <!-- Filled from local/storage.json (scripts/storage-scan.sh, nightly). -->
+        <div data-view="storage" role="tabpanel" aria-labelledby="tab-storage" hidden>
+            <div data-storage></div>
+            <p class="empty-bay" data-no-storage>No storage scan yet: the <code>storage-scan</code> job writes it every night (docs/OPERATIONS.md).</p>
+        </div>
+
+        <!-- Protection matrix: discovered on the NAS, in local/status.json. -->
+        <div data-view="backups" role="tabpanel" aria-labelledby="tab-backups" hidden>
+            <section data-matrix-section hidden>
+                <h3 class="view-title">What protects each shared folder <span>read from DSM</span></h3>
+                <div class="tbl-wrap" data-matrix></div>
+                <p class="legend">● whole folder · ◐ some of its folders (named; hover for the list) · – not covered · colour: the column's last run, or the newest snapshot (grey: unknown)</p>
+                <p class="legend" data-bare></p>
+            </section>
+            <p class="empty-bay" data-no-plan>No backup discovery yet: the NAS's <code>dashboard-status.sh</code> writes it on its next run (DSM only).</p>
+            <section>
+                <h3 class="view-title">Last runs</h3>
+                <div class="leds" data-leds-backups></div>
+            </section>
+            <section data-devices-section hidden>
+                <h3 class="view-title">Devices <span>phones and computers uploading to the NAS</span></h3>
+                <div class="leds" data-leds-devices></div>
+                <p class="legend" data-devices-note></p>
+            </section>
+        </div>
+
+        <div data-view="system" role="tabpanel" aria-labelledby="tab-system" hidden>
+            <section>
+                <h3 class="view-title">Stacks <span>deployed in Portainer, against git</span></h3>
+                <div class="leds" data-leds-stacks></div>
+                <p class="empty-bay" data-no-stacks>No stack list: set <code>PORTAINER_TOKEN</code> in <code>jobs.env</code> (dashboard README), or Portainer did not answer.</p>
+            </section>
+            <section data-deploys hidden>
+                <h3 class="view-title">Deployments <span>images built on the NAS</span></h3>
+                <div data-deploy-list></div>
+            </section>
+            <section>
+                <h3 class="view-title">Jobs and scheduler</h3>
+                <div class="leds" data-leds-system></div>
+            </section>
+        </div>
+
+        <div data-view="network" role="tabpanel" aria-labelledby="tab-network" hidden>
+            <div class="diagram">
+            <svg viewBox="0 0 900 390" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M0,0 L8,4 L0,8 z" fill="#8b93a1" fill-opacity="0.6" />
+                    </marker>
+                </defs>
+
+                <!-- edges -->
+                <path class="edge" d="M450,20 L450,30" />
+                <path class="edge" d="M450,80 L450,125" />
+                <path class="edge" d="M450,175 L450,200 L250,200 L250,225" />
+                <path class="edge" d="M450,175 L450,200 L650,200 L650,225" />
+                <path class="edge" d="M650,275 L650,295 L565,295 L565,310" />
+                <path class="edge" d="M650,275 L650,295 L735,295 L735,310" />
+
+                <!-- tier labels -->
+                <text x="450" y="16" class="tier-label" text-anchor="middle">Internet</text>
+                <text x="450" y="115" class="tier-label" text-anchor="middle">LAN</text>
+
+                <!-- ISP router -->
+                <rect class="node" x="325" y="30" width="250" height="50" rx="10" />
+                <text x="450" y="51" class="node-label" text-anchor="middle" data-node-label="isp">ISP router</text>
+                <text x="450" y="67" class="node-sub" text-anchor="middle" data-node-sub="isp"></text>
+
+                <!-- Router -->
+                <rect class="node accent" x="325" y="125" width="250" height="50" rx="10" />
+                <text x="450" y="146" class="node-label" text-anchor="middle" data-node-label="router">Router</text>
+                <text x="450" y="162" class="node-sub" text-anchor="middle" data-node-sub="router"></text>
+
+                <!-- WiFi AP -->
+                <rect class="node" x="140" y="225" width="220" height="50" rx="10" />
+                <text x="250" y="246" class="node-label" text-anchor="middle" data-node-label="ap">WiFi AP</text>
+                <text x="250" y="262" class="node-sub" text-anchor="middle" data-node-sub="ap"></text>
+
+                <!-- NAS -->
+                <rect class="node accent" x="540" y="225" width="220" height="50" rx="10" />
+                <text x="650" y="246" class="node-label" text-anchor="middle" data-node-label="nas">NAS</text>
+                <text x="650" y="262" class="node-sub" text-anchor="middle" data-node-sub="nas"></text>
+
+                <!-- Host services -->
+                <rect class="node" x="490" y="310" width="150" height="58" rx="10" />
+                <text x="565" y="333" class="node-label" text-anchor="middle" data-node-label="host">Host services</text>
+                <text x="565" y="350" class="node-sub" text-anchor="middle" data-node-sub="host"></text>
+
+                <!-- Caddy macvlan -->
+                <rect class="node accent" x="660" y="310" width="150" height="58" rx="10" />
+                <text x="735" y="333" class="node-label" text-anchor="middle" data-node-label="caddy">Caddy (macvlan)</text>
+                <text x="735" y="350" class="node-sub" text-anchor="middle" data-node-sub="caddy"></text>
+            </svg>
+            </div>
+            <ul class="units" data-devices></ul>
+        </div>
+    </main>
+
+</div>
+
+<noscript>
+    <p style="text-align:center">Service links are built from this page's own address; enable JavaScript to use them.</p>
+</noscript>
+
+<script>
+(function () {
+    // ------------------------------------------------------------ content
+    // [name, what it is, subdomain, stack (for its README; '' = repo root), not behind Authelia]
+    // Logo: icons/<subdomain>.svg, unless listed here.
+    var ICON = { paperless: 'paperless-ngx.svg', maintainerr: 'maintainerr.png' };
+    var GROUPS = [
+        { id: 'apps', name: 'Apps', items: [
+            ['Jellyfin', 'Streaming server', 'jellyfin', 'mediarr', true],
+            ['Jellyseerr', 'Media requests', 'jellyseerr', 'mediarr'],
+            ['Paperless', 'Documents', 'paperless', 'paperless'],
+            ['Mealie', 'Recipes', 'mealie', 'mealie'],
+            ['qBittorrent', 'Torrent client', 'qbittorrent', 'mediarr']
+        ]},
+        { id: 'admin', name: 'Admin', items: [
+            ['Sonarr', 'TV series', 'sonarr', 'mediarr'],
+            ['Radarr', 'Movies', 'radarr', 'mediarr'],
+            ['Prowlarr', 'Indexers', 'prowlarr', 'mediarr'],
+            ['Maintainerr', 'Library cleanup', 'maintainerr', 'mediarr'],
+            ['Portainer', 'Deploys every stack', 'portainer', ''],
+            ['Forgejo', 'Git, source of truth', 'forgejo', 'forgejo']
+        ]}
+    ];
+    // [name, what it is, path under the repo on Forgejo, tag, line icon]
+    var OPS = [
+        ['CI runs', 'Checks and Renovate workflows', 'actions', 'live', 'run'],
+        ['Dependency Dashboard', 'Pending Renovate updates', 'issues?type=all&state=open&q=Dependency%20Dashboard', 'live', 'box'],
+        ['Runbook', 'Backup, restore, rebuild order', 'src/branch/main/docs/OPERATIONS.md', 'doc', 'doc'],
+        ['Architecture', 'Why it is built this way', 'src/branch/main/docs/ARCHITECTURE.md', 'doc', 'tree']
+    ];
+    // Same repo path .forgejo/workflows/renovate.yaml names.
+    var REPO = 'yves/homelab';
+
+    // Hostnames are derived from the address this page is served at, rather
+    // than hardcoded, so this tracked file carries no real domain (README's
+    // placeholder policy). Served at dashboard.<internal-domain>, `base`
+    // resolves to <internal-domain>.
+    var host = location.hostname;
+    var isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+    var parts = host.split('.');
+    var base = (!isIp && parts.length > 1) ? parts.slice(1).join('.') : '';
+    var forgejo = base ? 'https://forgejo.' + base + '/' + REPO + '/' : '';
+
+    function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) { e.className = cls; }
+        if (text != null) { e.textContent = text; }
+        return e;
+    }
+    function link(e, href) {
+        // Reached by bare IP or single-label host: nothing to build a URL
+        // from, so leave the card unlinked rather than link somewhere wrong.
+        if (href) { e.href = href; }
+        return e;
+    }
+
+    document.querySelectorAll('[data-domain]').forEach(function (e) { e.textContent = base || host; });
+
+    // ---------------------------------------------------------- services
+    var groupsEl = document.querySelector('[data-groups]');
+    function group(id, name, count, items) {
+        var sec = el('section', 'grp');
+        sec.setAttribute('data-grp', id);
+        var h = el('h3', null, name + ' ');
+        h.appendChild(el('span', 'lab', count));
+        sec.appendChild(h);
+        var ul = el('ul', 'units');
+        items.forEach(function (li) { ul.appendChild(li); });
+        sec.appendChild(ul);
+        groupsEl.appendChild(sec);
+    }
+    // Line icons for entries without a logo, drawn in the bezel's text colour.
+    var GLYPH = {
+        run: '<path d="M7 5l11 7-11 7z"/>',
+        box: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',
+        doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+        tree: '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
+        net: '<rect x="4" y="13" width="16" height="7" rx="1.5"/><path d="M8 13V9M16 13V9M12 9V4M8 9h8"/><circle cx="8" cy="16.5" r=".8"/>'
+    };
+    function icon(file, glyph) {
+        var slot = el('span', 'ico');
+        slot.setAttribute('aria-hidden', 'true');
+        if (file) {
+            var img = el('img');
+            img.src = 'icons/' + file;
+            img.alt = '';
+            img.loading = 'lazy';
+            slot.appendChild(img);
+        } else {
+            slot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">' + GLYPH[glyph] + '</svg>';
+        }
+        return slot;
+    }
+    function unit(name, desc, tag, tagOpen, hostText, href, ico) {
+        var a = link(el('a', 'unit'), href);
+        a.appendChild(ico);
+        a.appendChild(el('b', null, name));
+        a.appendChild(el('span', 'tag' + (tagOpen ? ' open' : ''), tag));
+        a.appendChild(el('span', 'desc', desc));
+        a.appendChild(el('span', 'host', hostText));
+        var li = el('li');
+        li.appendChild(a);
+        return li;
+    }
+
+    GROUPS.forEach(function (g) {
+        group(g.id, g.name, g.items.length + ' services', g.items.map(function (s) {
+            var li = unit(s[0], s[1], s[4] ? 'no sso' : (s[3] || 'host'), s[4],
+                base ? s[2] + '.' + base : s[2], base ? 'https://' + s[2] + '.' + base : '',
+                icon(ICON[s[2]] || s[2] + '.svg'));
+            if (s[4]) { li.firstChild.title = 'Not behind Authelia: its own login only'; }
+            if (forgejo) {
+                var r = el('a', 'readme', 'README');
+                r.href = forgejo + 'src/branch/main/' + (s[3] ? 'stacks/' + s[3] + '/' : '') + 'README.md';
+                r.title = 'Stack notes on Forgejo';
+                li.appendChild(r);
+            }
+            return li;
+        }));
+    });
+    group('ops', 'Ops', 'on forgejo', OPS.map(function (o) {
+        return unit(o[0], o[1], o[3], false, o[2].split('?')[0].split('/').pop(), forgejo ? forgejo + o[2] : '',
+            icon(null, o[4]));
+    }));
+
+    document.querySelectorAll('[data-show]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var show = b.getAttribute('data-show');
+            document.querySelectorAll('[data-show]').forEach(function (x) {
+                x.setAttribute('aria-pressed', String(x === b));
+            });
+            document.querySelectorAll('.grp').forEach(function (g) {
+                g.hidden = !(show === 'all' || g.getAttribute('data-grp') === show);
+            });
+        });
+    });
+
+    // -------------------------------------------------------------- tabs
+    // Services is the page; Backups, System and Network are one click (or
+    // one bookmark: #backups...) away.
+    var TABS = ['services', 'storage', 'backups', 'system', 'network'];
+    function selectTab(name) {
+        if (TABS.indexOf(name) < 0) { name = 'services'; }
+        document.querySelectorAll('[data-tab]').forEach(function (t) {
+            t.setAttribute('aria-selected', String(t.getAttribute('data-tab') === name));
+        });
+        document.querySelectorAll('[data-view]').forEach(function (v) {
+            v.hidden = v.getAttribute('data-view') !== name;
+        });
+    }
+    document.querySelectorAll('[data-tab], [data-tab-link]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var name = b.getAttribute('data-tab') || b.getAttribute('data-tab-link');
+            history.replaceState(null, '', name === 'services' ? location.pathname : '#' + name);
+            selectTab(name);
+        });
+    });
+    window.addEventListener('hashchange', function () { selectTab(location.hash.slice(1)); });
+    selectTab(location.hash.slice(1));
+
+    // ------------------------------------------------------------ health
+    // Facts the NAS writes every 15 minutes (scripts/dashboard-status.sh).
+    // Ages are judged here, in the browser, so a stalled script shows as
+    // stale rather than as a frozen green.
+    var HOUR = 3600, DAY = 86400, RANK = { ok: 0, warn: 1, bad: 2 };
+    function ago(epoch, now) {
+        var s = now - epoch;
+        if (s < 2 * HOUR) { return Math.max(1, Math.round(s / 60)) + ' min ago'; }
+        if (s < 2 * DAY) { return Math.round(s / HOUR) + ' h ago'; }
+        return Math.round(s / DAY) + ' days ago';
+    }
+    // Fixed '11.10. 18:14' whatever the browser's locale.
+    function when(t) {
+        if (!t) { return '?'; }
+        var d = new Date(t * 1000);
+        function two(n) { return (n < 10 ? '0' : '') + n; }
+        return two(d.getDate()) + '.' + two(d.getMonth() + 1) + '. ' +
+            two(d.getHours()) + ':' + two(d.getMinutes());
+    }
+    // TB from 1000 GB: "1009 GB" was the longest label and broke the line.
+    function size(kb) {
+        var gb = kb / 1048576;
+        return gb >= 1000 ? (gb / 1024).toFixed(1) + ' TB' : gb.toFixed(0) + ' GB';
+    }
+    function worst(levels) {
+        return levels.reduce(function (a, b) { return RANK[b] > RANK[a] ? b : a; }, 'ok');
+    }
+    function led(list, level, name, value, detail) {
+        var row = el('div', 'led ' + level);
+        row.appendChild(el('i'));
+        row.appendChild(el('b', null, name));
+        row.appendChild(el('em', null, value));
+        if (detail) { row.appendChild(el('small', null, detail)); }
+        list.appendChild(row);
+    }
+    // One area's state: its light in the plate and on its tab, plus a line.
+    function area(name, level, summary) {
+        document.querySelectorAll('[data-tab-link="' + name + '"] .dot, [data-tab="' + name + '"] .dot')
+            .forEach(function (d) { d.className = 'dot ' + level; });
+        document.querySelector('[data-summary="' + name + '"]').textContent = summary;
+    }
+
+    // Each status source, as {level, line}: Hyper Backup tasks, dumps, jobs.
+    function hyperBackup(b, now) {
+        var level = b.result === 'failed' ? 'bad'
+            : (b.result === 'partial' || now - b.at > 2 * DAY) ? 'warn' : 'ok';
+        var word = { success: 'ok', partial: 'partial', failed: 'failed' }[b.result] || b.result;
+        return { level: level, value: word + ' · ' + ago(b.at, now), at: b.at,
+                 detail: b.result === 'success' ? '' : b.message };
+    }
+    function dump(d, now) {
+        if (!d.latest) { return { level: 'bad', value: 'none', detail: 'No dump yet: the live data is excluded on purpose' }; }
+        return { level: now - d.latest > 2 * DAY ? 'bad' : 'ok', value: ago(d.latest, now), at: d.latest, detail: d.file };
+    }
+    function job(j, now) {
+        var failed = j.exit !== 0;
+        return { level: failed ? 'bad' : now - j.ended > 26 * HOUR ? 'warn' : 'ok',
+                 value: (failed ? 'exit ' + j.exit : 'ok') + ' · ' + ago(j.ended, now),
+                 at: j.ended, detail: failed ? j.message : '' };
+    }
+
+    // A Portainer stack against git: Portainer's deployed commit vs the last
+    // commit that touched the stack's folder (scripts/lib/stacks.sh).
+    function stackRow(k) {
+        var dep = k.deployed, code = k.code;
+        function at(c) { return c ? c.commit + ' · ' + when(c.at) : '-'; }
+        if (!k.active) { return { level: 'warn', value: 'stopped', detail: '' }; }
+        if (!k.git) { return { level: 'ok', value: 'Web editor', detail: '' }; }
+        if (k.current === true) { return { level: 'ok', value: 'up to date', detail: '' }; }
+        var both = 'running ' + at(dep) + ', code ' + at(code);
+        if (k.current === false) {
+            return { level: 'warn', value: 'redeploy needed', detail: 'Pull and redeploy in Portainer: ' + both };
+        }
+        return { level: 'warn', value: 'unknown', detail: 'Deployed commit not found in the NAS clone: ' + both };
+    }
+
+    // Phones and computers uploading to the NAS (scripts/lib/devices.sh,
+    // uploaders.conf). The newer of "last connected" and "newest photo"
+    // counts: amber after half the device's max days, red after all of them.
+    function deviceRows(dv, now) {
+        var list = document.querySelector('[data-leds-devices]'), rows = [];
+        function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+        (dv.devices || []).forEach(function (d) {
+            var last = Math.max(d.last_seen || 0, d.newest_photo || 0) || null;
+            var age = last ? now - last : Infinity;
+            var level = age >= d.max_days * DAY ? 'bad' : age >= Math.ceil(d.max_days / 2) * DAY ? 'warn' : 'ok';
+            // A phone whose backup app never shows up in Drive's list is judged by its photos alone.
+            var value = d.online ? 'online now' : d.last_seen ? 'seen ' + ago(d.last_seen, now)
+                : d.newest_photo ? 'photo ' + ago(d.newest_photo, now) : 'no sign of it yet';
+            var detail = [d.kind === 'phone' ? 'phone' : 'computer'];
+            if (d.version) { detail.push('app ' + d.version); }
+            if (d.kind === 'phone') { detail.push(d.newest_photo ? 'newest photo ' + ago(d.newest_photo, now) : 'no photo folder found'); }
+            if (level !== 'ok') { detail.push('limit ' + d.max_days + ' days'); }
+            var name = cap(d.owner) + ' · ' + d.name;
+            led(list, level, name, value, detail.join(' · '));
+            rows.push([name, { level: level, value: value }]);
+        });
+        (dv.unlisted || []).forEach(function (d) {
+            var last = Math.max(d.last_seen || 0, d.newest_photo || 0);
+            led(list, 'off', cap(d.owner) + ' · ' + d.name, 'not monitored',
+                'uploading (' + ago(last, now) + ') but not in uploaders.conf: add "' + d.owner + ' | ' + d.kind + ' | ' + d.name + ' | 7"');
+        });
+        if (list.children.length) { document.querySelector('[data-devices-section]').hidden = false; }
+        if (!dv.configured) {
+            document.querySelector('[data-devices-note]').textContent =
+                'No uploaders.conf yet: the devices above were seen uploading. Create it next to jobs.env (dashboard README).';
+        }
+        return rows;
+    }
+
+    function deployCard(im, buildJob) {
+        var level, state, hint, built = im.built, run = im.running;
+        if (!run || run.state !== 'running') {
+            level = 'bad'; state = 'not running';
+            hint = built ? 'Image ready: redeploy the stack in Portainer.' : 'No image yet: wait for the build, then deploy.';
+        } else if (!built || !built.from_current_code) {
+            if (buildJob && buildJob.exit !== 0) {
+                level = 'bad'; state = 'build failed'; hint = buildJob.message;
+            } else {
+                level = 'warn'; state = 'build pending'; hint = 'New code; the scheduler builds it within 15 min.';
+            }
+        } else if (!run.same_image) {
+            level = 'warn'; state = 'redeploy needed'; hint = 'New image ready: Pull and redeploy in Portainer.';
+        } else {
+            level = 'ok'; state = 'up to date'; hint = '';
+        }
+        var card = el('div', 'deploy');
+        var head = el('div', 'deploy-head');
+        head.appendChild(el('b', null, im.stack));
+        head.appendChild(el('span', 'pill ' + level, state));
+        card.appendChild(head);
+        var stages = el('div', 'stages');
+        [
+            ['code', im.code && im.code.commit, im.code && when(im.code.at)],
+            ['built', built && built.commit, built && when(built.at)],
+            ['running', run && run.commit, run && 'since ' + when(run.started)]
+        ].forEach(function (row) {
+            stages.appendChild(el('span', null, row[0]));
+            stages.appendChild(el('span', 'now', row[1] || '-'));
+            stages.appendChild(el('span', null, row[2] || ''));
+        });
+        card.appendChild(stages);
+        if (hint) { card.appendChild(el('small', null, hint)); }
+        return { card: card, level: level, state: state };
+    }
+
+    // The protection matrix, discovered on the NAS (scripts/lib/protection.sh):
+    // rows are the shared folders, columns the snapshots and each Hyper Backup
+    // task. A cell's colour is that column's last run; a snapshot cell's, the
+    // folder's newest snapshot.
+    var DEST = { usb: 'USB disk', local: 'this NAS', s3: 'S3' };
+    var EXPORT_JOBS = { 'paperless-export': 'Paperless export' };
+    function matrix(prot, dumps, sources, now) {
+        var table = el('table', 'mx');
+        var head = el('tr');
+        var corner = el('th', null, 'Shared folder');
+        corner.style.textAlign = 'left';
+        head.appendChild(corner);
+        var snap = el('th', null, 'Snapshot');
+        snap.appendChild(el('small', null, 'on the NAS'));
+        head.appendChild(snap);
+        prot.tasks.forEach(function (t) {
+            var s = sources[t.name];
+            var cell = el('th', null, t.name);
+            var where = DEST[t.dest] || t.dest || '?';
+            if (t.dest !== 'usb' && t.dest !== 'local') { where = 'off-site · ' + where; }
+            cell.appendChild(el('small', null, where + (t.encrypted ? ' · encrypted' : '')));
+            cell.appendChild(el('small', null, t.enabled ? t.schedule : 'not scheduled'));
+            cell.appendChild(el('small', null, 'last ' + (s && s.at ? when(s.at) : '-')));
+            head.appendChild(cell);
+        });
+        var thead = el('thead');
+        thead.appendChild(head);
+        table.appendChild(thead);
+
+        function cell(mark, level, note, title) {
+            var td = el('td');
+            td.appendChild(el('span', 'mark ' + level, mark));
+            if (note) { td.appendChild(el('small', null, note)); }
+            if (title) { td.title = title; }
+            return td;
+        }
+        var body = el('tbody'), bare = [];
+        prot.shares.forEach(function (sh) {
+            var tr = el('tr'), covered = false;
+            var name = el('td', 'data', sh.name);
+            tr.appendChild(name);
+
+            var sn = sh.snapshot;
+            if (sn && sn.enabled) {
+                covered = true;
+                var sLevel = !sn.latest ? 'unknown' : now - sn.latest > 2 * DAY ? 'warn' : 'ok';
+                tr.appendChild(cell('●', sLevel, sn.schedule, sn.latest
+                    ? sn.count + ' snapshot(s), newest ' + when(sn.latest) : 'Snapshots not found on disk'));
+            } else {
+                tr.appendChild(cell('–', 'none', sn ? 'off' : ''));
+            }
+
+            prot.tasks.forEach(function (t) {
+                var root = '/' + sh.name;
+                var s = sources[t.name];
+                var level = s ? s.level : 'unknown';
+                var parts = t.folders.filter(function (f) { return f.indexOf(root + '/') === 0; })
+                    .map(function (f) { return f.slice(root.length + 1); });
+                if (t.folders.indexOf(root) >= 0) {
+                    covered = true;
+                    tr.appendChild(cell('●', level));
+                } else if (parts.length) {
+                    covered = true;
+                    tr.appendChild(cell('◐', level,
+                        parts.length === 1 ? parts[0] : parts.length + ' folders', parts.join('\n')));
+                } else {
+                    tr.appendChild(cell('–', 'none'));
+                }
+            });
+
+            // An app dump kept in this folder: what makes a partial copy enough.
+            dumps.filter(function (d) { return sh.path && d.dir && d.dir.indexOf(sh.path + '/') === 0; })
+                .forEach(function (d) {
+                    var s = sources[d.name];
+                    name.appendChild(el('small', 'note ' + s.level, d.name + ' · ' + s.value));
+                });
+            if (!covered) {
+                name.className = 'data bare';
+                name.appendChild(el('small', null, 'not protected'));
+                bare.push(sh.name);
+            }
+            body.appendChild(tr);
+        });
+        table.appendChild(body);
+        return { table: table, bare: bare };
+    }
+
+    function getJson(path) {
+        return fetch(path, { cache: 'no-cache' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function (err) { console.warn(path + ' unreadable:', err); return null; });
+    }
+
+    getJson('local/status.json').then(function (st) {
+        if (!st) { return; }
+        var now = Date.now() / 1000;
+
+        if (st.volume) {
+            var v = st.volume;
+            var vlevel = v.used_pct >= 90 ? 'bad' : v.used_pct >= 80 ? 'warn' : 'ok';
+            document.querySelector('[data-volume-name]').textContent = 'Volume ' + v.path;
+            document.querySelector('[data-volume-free]').textContent = size(v.avail_kb) + ' free of ' + size(v.size_kb);
+            document.querySelector('[data-volume-pct]').textContent = v.used_pct;
+            var fill = document.querySelector('[data-volume-fill]');
+            fill.className = 'fill ' + vlevel;
+            fill.style.width = Math.min(100, v.used_pct) + '%';
+            document.querySelector('[data-volume-track]').setAttribute('aria-label',
+                v.used_pct + '% used; warning at 80, critical at 90');
+            document.querySelector('[data-gauge]').hidden = false;
+        }
+
+        // Every status source by name: Hyper Backup task, dump or job.
+        var sources = {}, backupRows = [];
+        (st.backups || []).forEach(function (b) {
+            var s = hyperBackup(b, now);
+            sources[b.task] = s;
+            backupRows.push(['Hyper Backup · ' + b.task, s]);
+        });
+        if (!(st.backups || []).length) {
+            backupRows.push(['Hyper Backup', { level: 'warn', value: 'no result', detail: 'Nothing found in its log; see dashboard README' }]);
+        }
+        (st.dumps || []).forEach(function (d) {
+            var s = dump(d, now);
+            sources[d.name] = s;
+            backupRows.push([d.name, s]);
+        });
+        (st.jobs || []).forEach(function (j) {
+            sources[j.name] = job(j, now);
+            // Exports judged by their job: their files only change with the data.
+            if (EXPORT_JOBS[j.name]) { backupRows.push([EXPORT_JOBS[j.name], sources[j.name]]); }
+        });
+
+        // ---- Backups tab
+        var bList = document.querySelector('[data-leds-backups]');
+        backupRows.forEach(function (r) { led(bList, r[1].level, r[0], r[1].value, r[1].detail); });
+        if (st.devices) { backupRows = backupRows.concat(deviceRows(st.devices, now)); }
+        var bLevel = worst(backupRows.map(function (r) { return r[1].level; }));
+        var bad = backupRows.filter(function (r) { return r[1].level !== 'ok'; });
+        area('backups', bLevel, bad.length ? bad[0][0] + ': ' + bad[0][1].value : 'all ok');
+        var prot = st.protection;
+        if (prot && prot.shares && prot.shares.length) {
+            var mx = matrix(prot, st.dumps || [], sources, now);
+            document.querySelector('[data-matrix]').appendChild(mx.table);
+            if (mx.bare.length) {
+                document.querySelector('[data-bare]').textContent = 'Not protected: ' + mx.bare.join(', ') + '.';
+            }
+            document.querySelector('[data-matrix-section]').hidden = false;
+            document.querySelector('[data-no-plan]').hidden = true;
+        }
+
+        // ---- System tab: stacks, deployments, jobs, scheduler
+        var sList = document.querySelector('[data-leds-system]');
+        var sLevels = [], notes = [];
+        function note(level, text) { if (level !== 'ok') { notes.push([level, text]); } }
+        if (st.stacks) {
+            var kList = document.querySelector('[data-leds-stacks]'), behind = [];
+            st.stacks.slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (k) {
+                var r = stackRow(k);
+                led(kList, r.level, k.name, r.value, r.detail);
+                sLevels.push(r.level);
+                if (r.level !== 'ok') { behind.push(k.name + ': ' + r.value); }
+            });
+            if (behind.length) { note('warn', behind.length > 1 ? behind.length + ' stacks to redeploy' : behind[0]); }
+            document.querySelector('[data-no-stacks]').hidden = true;
+        }
+        var buildJob = (st.jobs || []).filter(function (j) { return j.name === 'build-images'; })[0];
+        var deploys = document.querySelector('[data-deploy-list]');
+        (st.images || []).forEach(function (im) {
+            var d = deployCard(im, buildJob);
+            deploys.appendChild(d.card);
+            sLevels.push(d.level);
+            note(d.level, im.stack + ': ' + d.state);
+        });
+        if (deploys.children.length) { document.querySelector('[data-deploys]').hidden = false; }
+        (st.jobs || []).forEach(function (j) {
+            var s = sources[j.name];
+            led(sList, s.level, 'Job · ' + j.name, s.value, s.detail);
+            sLevels.push(s.level);
+            note(s.level, j.name + ': ' + s.value);
+        });
+        var age = now - st.generated, sch = st.scheduler;
+        if (sch) {
+            var stale = age > 2 * HOUR;
+            var schLevel = stale ? 'bad' : sch.pull_ok ? 'ok' : 'warn';
+            led(sList, schLevel, 'Scheduler', ago(st.generated, now),
+                stale ? 'run-jobs.sh has stopped running'
+                    : 'version ' + sch.sha + (sch.pull_ok ? '' : ' · update failed: ' + sch.pull_error));
+            sLevels.push(schLevel);
+            note(schLevel, 'scheduler: ' + (stale ? 'stopped' : 'update failed'));
+        } else {
+            var rLevel = age > 36 * HOUR ? 'bad' : 'ok';
+            led(sList, rLevel, 'Status report', ago(st.generated, now),
+                age > 36 * HOUR ? 'dashboard-status.sh has stopped running' : '');
+            sLevels.push(rLevel);
+            note(rLevel, 'status report stopped');
+        }
+        // The summary names the worst problem; among equals, the first found.
+        var top = notes.filter(function (n) { return n[0] === 'bad'; })[0] || notes[0];
+        area('system', worst(sLevels), top ? top[1] : 'all ok');
+    });
+
+    // ----------------------------------------------------------- storage
+    // local/storage.json, written every night by scripts/storage-scan.sh.
+    // Sizes in binary units like DSM and df: 1 GB = 1024³ bytes.
+    var GIB = 1073741824, TIB = GIB * 1024, SVGNS = 'http://www.w3.org/2000/svg';
+    function bytes(b) {
+        var a = Math.abs(b);
+        if (a >= TIB) { return (b / TIB).toFixed(2) + ' TB'; }
+        if (a >= 10 * GIB) { return Math.round(b / GIB) + ' GB'; }
+        return (b / GIB).toFixed(1) + ' GB';
+    }
+    function signed(b) {
+        if (b == null) { return '–'; }
+        if (Math.abs(b) < 0.05 * GIB) { return '±0'; }
+        return (b > 0 ? '+' : '−') + bytes(Math.abs(b));
+    }
+    function dmy(s) { return s.slice(8, 10) + '.' + s.slice(5, 7) + '.'; }
+    function svg(tag, attrs, text) {
+        var e = document.createElementNS(SVGNS, tag);
+        Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+        if (text != null) { e.textContent = text; }
+        return e;
+    }
+    function section(title, sub) {
+        var s = el('section');
+        var h = el('h3', 'view-title', title);
+        if (sub) { h.appendChild(el('span', null, sub)); }
+        s.appendChild(h);
+        return s;
+    }
+    function spark(values) {
+        var v = values.filter(function (x) { return x != null; });
+        if (v.length < 2) { return el('span', 'faint', '–'); }
+        var w = 96, h = 22, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), rng = (hi - lo) || 1;
+        var pts = v.map(function (x, i) { return [i * w / (v.length - 1), h - 3 - (x - lo) / rng * (h - 6)]; });
+        var line = pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+        var s = svg('svg', { 'class': 'spark', viewBox: '0 0 ' + w + ' ' + h, width: w, height: h, 'aria-hidden': 'true' });
+        s.appendChild(svg('polygon', { points: '0,' + h + ' ' + line + ' ' + w + ',' + h, 'class': 'spark-area' }));
+        s.appendChild(svg('polyline', { points: line, 'class': 'spark-line' }));
+        var end = pts[pts.length - 1];
+        s.appendChild(svg('circle', { cx: end[0].toFixed(1), cy: end[1].toFixed(1), r: 2.4, 'class': 'spark-end' }));
+        return s;
+    }
+
+    // Used space per day, with the 80/90 % lines when they are in view and
+    // the biggest drops (clean-ups) labelled.
+    function trendChart(daily, total) {
+        var W = 720, H = 300, L = 62, R = 12, T = 14, B = 26;
+        var vals = daily.map(function (d) { return d[1]; });
+        // From 0, so the height of the line is how full the volume is, on
+        // round steps of the unit the labels use.
+        var max = Math.max.apply(null, vals), lo = 0;
+        var unit = max >= TIB ? TIB : GIB, rough = max / 4 / unit;
+        var mag = Math.pow(10, Math.floor(Math.log10(rough))), m = rough / mag;
+        var step = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * mag * unit;
+        var ticks = Math.ceil(max * 1.05 / step), hi = ticks * step;
+        function X(i) { return L + i * (W - L - R) / Math.max(1, daily.length - 1); }
+        function Y(v) { return T + (hi - v) / (hi - lo) * (H - T - B); }
+        var s = svg('svg', { 'class': 'trend', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Used space per day' });
+        for (var g = 0; g <= ticks; g++) {
+            var gv = g * step;
+            s.appendChild(svg('line', { x1: L, x2: W - R, y1: Y(gv), y2: Y(gv), 'class': 'grid' }));
+            s.appendChild(svg('text', { x: L - 8, y: Y(gv) + 4, 'class': 'axis', 'text-anchor': 'end' }, g ? bytes(gv) : '0'));
+        }
+        [[0.8, 'warn'], [0.9, 'bad']].forEach(function (lim) {
+            var v = total * lim[0];
+            if (v < lo || v > hi) { return; }
+            s.appendChild(svg('line', { x1: L, x2: W - R, y1: Y(v), y2: Y(v), 'class': 'limit ' + lim[1] }));
+            // Left end: the newest days, on the right, are where the line is.
+            s.appendChild(svg('text', { x: L + 6, y: Y(v) - 5, 'class': 'axis ' + lim[1], 'text-anchor': 'start' }, (lim[0] * 100) + ' %'));
+        });
+        var pts = daily.map(function (d, i) { return X(i).toFixed(1) + ',' + Y(d[1]).toFixed(1); }).join(' ');
+        s.appendChild(svg('polygon', { points: L + ',' + (H - B) + ' ' + pts + ' ' + X(daily.length - 1) + ',' + (H - B), 'class': 'trend-area' }));
+        s.appendChild(svg('polyline', { points: pts, 'class': 'trend-line' }));
+        // The two largest one-day drops of 10 GB or more.
+        var drops = [];
+        for (var i = 1; i < daily.length; i++) {
+            var d = daily[i][1] - daily[i - 1][1];
+            if (d <= -10 * GIB) { drops.push([d, i]); }
+        }
+        drops.sort(function (a, b) { return a[0] - b[0]; }).slice(0, 2).forEach(function (dr) {
+            var x = X(dr[1]);
+            s.appendChild(svg('line', { x1: x, x2: x, y1: Y(daily[dr[1] - 1][1]), y2: Y(daily[dr[1]][1]), 'class': 'drop' }));
+            s.appendChild(svg('text', { x: x - 6, y: Y(daily[dr[1]][1]) + 14, 'class': 'axis note', 'text-anchor': 'end' },
+                signed(dr[0]) + ' on ' + dmy(daily[dr[1]][0])));
+        });
+        var last = daily.length - 1;
+        daily.forEach(function (d, i) {
+            if (d[0].slice(8) === '01' || i === last || i === 0) {
+                s.appendChild(svg('text', { x: X(i), y: H - 8, 'class': 'axis', 'text-anchor': i === last ? 'end' : i === 0 ? 'start' : 'middle' }, dmy(d[0])));
+            }
+        });
+        s.appendChild(svg('circle', { cx: X(last), cy: Y(daily[last][1]), r: 3.5, 'class': 'trend-end' }));
+        return s;
+    }
+
+    function storageLevel(st, now) {
+        var pct = st.volume.used / st.volume.total * 100;
+        if (now - st.generated > 36 * HOUR) { return ['warn', 'scan stopped ' + ago(st.generated, now)]; }
+        var lvl = pct >= 90 ? 'bad' : pct >= 80 ? 'warn' : 'ok';
+        var g = st.growth;
+        if (!g) { return [lvl, 'history from ' + dmy(st.history_since)]; }
+        return [lvl, signed(g.delta) + ' since ' + dmy(g.since)];
+    }
+
+    function renderStorage(st) {
+        var now = Date.now() / 1000, box = document.querySelector('[data-storage]');
+        var v = st.volume, lv = storageLevel(st, now);
+        area('storage', lv[0], lv[1]);
+        document.querySelector('[data-no-storage]').hidden = true;
+        box.appendChild(el('p', 'storage-when', 'Measured ' + when(st.generated) + ' · every night'));
+
+        // ---- where the space goes
+        var parts = st.parts.slice().sort(function (a, b) { return b.bytes - a.bytes; });
+        var shown = parts.slice(0, 7), rest = parts.slice(7).reduce(function (n, p) { return n + p.bytes; }, 0) + st.other;
+        if (rest > 0) { shown.push({ name: 'Other', kind: 'other', bytes: rest }); }
+        var s1 = section('Where the space goes');
+        var sum = el('p', 'storage-sum');
+        sum.appendChild(el('b', null, bytes(v.used)));
+        sum.appendChild(document.createTextNode(' used of ' + bytes(v.total) + ' · '));
+        sum.appendChild(el('b', null, bytes(v.free)));
+        sum.appendChild(document.createTextNode(' free'));
+        if (st.growth) {
+            sum.appendChild(document.createTextNode(' · '));
+            sum.appendChild(el('b', st.growth.delta > 0 ? 'up' : 'down', signed(st.growth.delta)));
+            sum.appendChild(document.createTextNode(' since ' + dmy(st.growth.since)));
+            if (st.growth.per_day > 0) {
+                var months = v.free / st.growth.per_day / 30.4;
+                sum.appendChild(document.createTextNode(' · full in about '));
+                sum.appendChild(el('b', null, months >= 24 ? Math.round(months / 12) + ' years' : Math.max(1, Math.round(months)) + ' months'));
+                sum.appendChild(document.createTextNode(' at this pace'));
+            }
+        }
+        s1.appendChild(sum);
+        var bar = el('div', 'segbar'), legend = el('ul', 'seglegend');
+        bar.setAttribute('role', 'img');
+        bar.setAttribute('aria-label', 'Volume use by part');
+        shown.concat([{ name: 'Free', kind: 'free', bytes: v.free }]).forEach(function (p, i) {
+            var cls = p.kind === 'free' ? 'free' : 'c' + (i + 1);
+            var seg = el('span', 'seg ' + cls);
+            seg.style.flex = String(p.bytes);
+            seg.title = p.name + ': ' + bytes(p.bytes);
+            bar.appendChild(seg);
+            var li = el('li');
+            li.appendChild(el('i', cls));
+            li.appendChild(el('span', null, p.name));
+            li.appendChild(el('b', null, bytes(p.bytes)));
+            li.appendChild(el('em', null, Math.round(p.bytes / v.total * 100) + ' %'));
+            legend.appendChild(li);
+        });
+        s1.appendChild(bar);
+        s1.appendChild(legend);
+        if (st.counted_twice > 0) {
+            s1.appendChild(el('p', 'legend', bytes(st.counted_twice) + ' is shared between parts (snapshots, Drive history) and counted in each: btrfs does not report what each holds on its own here.'));
+        }
+        box.appendChild(s1);
+
+        // ---- trend and changes
+        var row = el('section', 'trend-row');
+        var p1 = el('div', 'panel'), h1 = el('h3', 'view-title', 'Used space');
+        h1.appendChild(el('span', null, 'last 90 days'));
+        p1.appendChild(h1);
+        if (st.daily.length >= 2) { p1.appendChild(trendChart(st.daily, v.total)); }
+        else { p1.appendChild(el('p', 'empty-bay', 'Fills in day by day: history started ' + dmy(st.history_since) + '.')); }
+        var p2 = el('div', 'panel changes'), h2 = el('h3', 'view-title', 'Changes');
+        h2.appendChild(el('span', null, st.growth ? 'since ' + dmy(st.growth.since) : ''));
+        p2.appendChild(h2);
+        var ul = el('ul');
+        st.changes.forEach(function (c) {
+            var li = el('li', c.delta > 0 ? 'up' : 'down');
+            li.appendChild(el('b', null, signed(c.delta)));
+            li.appendChild(el('span', null, c.kind === 'series' ? 'tv / ' + c.name : c.kind === 'films' ? 'movies' : c.name));
+            var why = c.kind === 'series' && c.new > 0 ? c.new + ' new episode' + (c.new > 1 ? 's' : '')
+                : c.kind === 'films' && c.new > 0 ? c.new + ' new film' + (c.new > 1 ? 's' : '')
+                : c.kind === 'share' ? 'shared folder' : '';
+            if (why) { li.appendChild(el('small', null, why)); }
+            ul.appendChild(li);
+        });
+        if (!st.changes.length) {
+            ul.appendChild(el('li', 'none', st.growth ? 'Nothing changed by 0.5 GB or more.' : 'Shown once there is a day to compare with.'));
+        }
+        p2.appendChild(ul);
+        row.appendChild(p1);
+        row.appendChild(p2);
+        box.appendChild(row);
+
+        // ---- shared folders
+        var s3 = section('Shared folders'), wrap = el('div', 'tbl-wrap'), t = el('table', 'ft');
+        var head = el('tr');
+        [['Folder', ''], ['Size', 'num'], ['', ''], ['7 days', 'num'], ['30 days', 'num'], ['12 weeks', '']].forEach(function (c) { head.appendChild(el('th', c[1], c[0])); });
+        var thead = el('thead');
+        thead.appendChild(head);
+        t.appendChild(thead);
+        var tb = el('tbody'), shares = st.shares.slice().sort(function (a, b) { return b.bytes - a.bytes; });
+        var fmax = shares.length ? shares[0].bytes : 1;
+        shares.forEach(function (f) {
+            var tr = el('tr');
+            tr.appendChild(el('td', 'name', f.name));
+            tr.appendChild(el('td', 'num', bytes(f.bytes)));
+            var bc = el('td', 'barcell'), b = el('span', 'bar');
+            b.style.width = (f.bytes / fmax * 100).toFixed(1) + '%';
+            bc.appendChild(b);
+            tr.appendChild(bc);
+            [f.d7, f.d30].forEach(function (d) {
+                var big = d != null && Math.abs(d) >= 0.05 * GIB;
+                tr.appendChild(el('td', 'num ' + (big ? (d > 0 ? 'up' : 'down') : ''), signed(d)));
+            });
+            var sc = el('td', 'sparkcell');
+            sc.appendChild(spark(f.weekly));
+            tr.appendChild(sc);
+            tb.appendChild(tr);
+        });
+        t.appendChild(tb);
+        wrap.appendChild(t);
+        s3.appendChild(wrap);
+        box.appendChild(s3);
+
+        // ---- media library
+        var m = st.media;
+        if (m.series.count || m.film.count) {
+            var s4 = section('Media library', bytes(m.series.bytes + m.film.bytes) + ' · TV ' + bytes(m.series.bytes) + ' in ' +
+                m.series.count + ' series · films ' + bytes(m.film.bytes) + ' in ' + m.film.count + ' films');
+            var cols = el('div', 'media-cols');
+            [['Largest series', m.series.top, 'series'], ['Largest films', m.film.top, 'film']].forEach(function (c) {
+                var col = el('div');
+                col.appendChild(el('h4', null, c[0]));
+                var ol = el('ol', 'top'), max = c[1].length ? c[1][0].bytes : 1;
+                c[1].forEach(function (it) {
+                    var li = el('li'), r1 = el('div', 'row1'), r2 = el('div', 'row2'), meter = el('div', 'meter'), fill = el('span');
+                    r1.appendChild(el('span', 'title', it.name));
+                    r1.appendChild(el('b', null, bytes(it.bytes)));
+                    fill.style.width = (it.bytes / max * 100).toFixed(1) + '%';
+                    meter.appendChild(fill);
+                    var meta = [];
+                    if (c[2] === 'series') { meta.push(it.episodes + ' episode' + (it.episodes > 1 ? 's' : '')); }
+                    if (it.gb_per_hour != null) { meta.push(it.gb_per_hour.toFixed(1) + ' GB/h'); }
+                    r2.appendChild(el('small', null, meta.join(' · ') || ' '));
+                    var tag = null;
+                    if (it.hevc) { tag = el('span', 'tag ok', 'HEVC'); }
+                    else if (it.saving >= GIB) {
+                        tag = el('span', 'tag warn', (it.remux ? 'remux · ' : '') + 're-encode · ' + c[2] + ' ≈ −' + bytes(it.saving));
+                    } else if (it.remux) { tag = el('span', 'tag warn', 'remux'); }
+                    if (tag) { r2.appendChild(tag); }
+                    li.appendChild(r1);
+                    li.appendChild(meter);
+                    li.appendChild(r2);
+                    ol.appendChild(li);
+                });
+                col.appendChild(ol);
+                cols.appendChild(col);
+            });
+            s4.appendChild(cols);
+            box.appendChild(s4);
+        }
+
+        // ---- what could be freed
+        var r = st.reclaim, s5 = section('What could be freed'), rl = el('ul', 'reclaim');
+        [
+            [r.reencode, 50 * GIB, 'Re-encode candidates', 'reencode.sh -n series /mnt/media/media/tv (and film for movies) lists them'],
+            [r.drive, 100 * GIB, 'Drive version history', 'fewer versions in the Synology Drive Admin Console; snapshots and Hyper Backup cover the rest'],
+            [r.snapshots, Infinity, 'Snapshots', r.snapshots == null ? 'unknown: btrfs does not report each snapshot\'s own space here' : 'frees itself as old snapshots expire'],
+            [r.docker, 20 * GIB, 'Unused Docker images', 'removed every night by the docker-prune job'],
+            [r.recycle, 10 * GIB, 'Recycle bins', 'empty them in Control Panel → Shared Folder']
+        ].forEach(function (x) {
+            var lvl = x[0] != null && x[0] >= x[1] ? 'warn' : 'ok';
+            var li = el('li', lvl);
+            li.appendChild(el('i', 'dot ' + lvl));
+            li.appendChild(el('span', 'what', x[2]));
+            li.appendChild(el('b', null, x[0] == null ? '?' : (x[2] === 'Re-encode candidates' ? '≈ ' : '') + bytes(x[0])));
+            li.appendChild(el('small', null, x[3]));
+            rl.appendChild(li);
+        });
+        s5.appendChild(rl);
+        box.appendChild(s5);
+    }
+    getJson('local/storage.json').then(function (st) {
+        if (st && st.volume) { renderStorage(st); }
+    });
+
+    // ----------------------------------------------------------- network
+    // Device names and addresses are deployment-specific, so they live in an
+    // untracked local/devices.json mounted from the NAS (README.md). Without
+    // it the Network tab shows the diagram with generic labels only.
+    getJson('local/devices.json').then(function (cfg) {
+        if (!cfg) { return; }
+        if (cfg.tagline) {
+            document.querySelector('[data-tagline]').textContent = cfg.tagline + ' · ';
+        }
+        var list = document.querySelector('[data-devices]');
+        (cfg.devices || []).forEach(function (d) {
+            list.appendChild(unit(d.name || '', d.desc || '', 'device', false,
+                d.label || d.url || '', d.url || '', icon(null, 'net')));
+        });
+        area('network', 'ok', list.children.length + ' device(s)');
+        Object.keys(cfg.diagram || {}).forEach(function (key) {
+            var node = cfg.diagram[key];
+            var label = document.querySelector('[data-node-label="' + key + '"]');
+            var sub = document.querySelector('[data-node-sub="' + key + '"]');
+            if (label && node.label) { label.textContent = node.label; }
+            if (sub && node.sub) { sub.textContent = node.sub; }
+        });
+    });
+})();
+</script>
+</body>
+</html>

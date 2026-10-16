@@ -1,0 +1,214 @@
+services:
+  sonarr:
+    image: linuxserver/sonarr:4.0.20.3014-ls326
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Zurich
+      - UMASK=022
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/sonarr:/config
+      - ${MEDIA_ROOT}:/data
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  radarr:
+    image: linuxserver/radarr:6.4.4.10685-ls318
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Zurich
+      - UMASK=022
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/radarr:/config
+      - ${MEDIA_ROOT}:/data
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  prowlarr:
+    image: linuxserver/prowlarr:2.6.5.5623-ls162
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Zurich
+      - UMASK=022
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/prowlarr:/config
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  qbittorrent:
+    image: linuxserver/qbittorrent:5.2.3_v2.0.15-ls478
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Zurich
+      - WEBUI_PORT=8090
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/qbittorrent:/config
+      - ${MEDIA_ROOT}/torrents:/data/torrents
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  flaresolverr:
+    image: flaresolverr/flaresolverr:v3.5.2
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Zurich
+    networks:
+      - mediarr_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  jellyfin:
+    image: linuxserver/jellyfin:10.11.11ubu2604-ls47
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Zurich
+      - UMASK=022
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.${INTERNAL_DOMAIN}
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/jellyfin:/config
+      - ${MEDIA_ROOT}/media:/data/media
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card0:/dev/dri/card0
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  jellyseerr:
+    # TODO: confirm current tag — this image sets no org.opencontainers.image.version
+    # label, `docker inspect` couldn't resolve one. Check the actual running
+    # container's behavior/changelog, or accept :latest here as a documented
+    # exception rather than an oversight.
+    image: fallenbagel/jellyseerr:latest
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=Europe/Zurich
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/jellyseerr:/app/config
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  maintainerr:
+    image: ghcr.io/maintainerr/maintainerr:3.29.0
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=Europe/Zurich
+    volumes:
+      - ${MEDIARR_CONFIG_ROOT}/maintainerr:/opt/data
+    networks:
+      - mediarr_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  mediarr_net:
+    driver: bridge
+  proxy:
+    external: true
