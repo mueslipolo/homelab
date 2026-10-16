@@ -16,20 +16,18 @@
 Real paths, the backup target and restore-test results belong in your own
 private notes; this page is the shape.
 
-```mermaid
-flowchart LR
-  subgraph nas["NAS"]
-    task["DSM task, every 15 min<br/>run-jobs.sh"] -- "20:00–20:10" --> dumps[("app dumps<br/>Forgejo, Mealie,<br/>Paperless export")]
-    shares[("shared folders")]
-    snap["Snapshot Replication<br/>immutable snapshots"] -. "homes, paperless" .-> shares
-  end
-  hb["Hyper Backup"]
-  shares & dumps --> hb
-  hb -- "20:40, encrypted" --> s3[("off-site S3")]
-  hb -- "03:00" --> usb[("USB disk")]
-  task -- "ping per job" --> hc["healthchecks.io"]
-  task -- "status.json" --> dash["dashboard"]
-```
+A night, in order:
+
+| Time  | What                                                                     |
+| ----- | ------------------------------------------------------------------------ |
+| 20:00 | `forgejo-dump`, then `mealie-backup` (20:05), `paperless-export` (20:10) |
+| 20:40 | Hyper Backup → off-site S3, client-side encrypted                        |
+| 03:00 | Hyper Backup → USB disk                                                  |
+| 04:30 | `docker-prune`; 05:00 `storage-scan`                                     |
+
+Snapshot Replication takes its daily immutable snapshots of `homes` and
+`paperless` on its own schedule. Every job pings healthchecks.io and lands on
+the dashboard.
 
 ## What is backed up
 

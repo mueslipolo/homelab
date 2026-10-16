@@ -9,17 +9,7 @@ Ask for a series or film in Jellyseerr; it is found, downloaded, renamed into
 the library and playable in Jellyfin, with hardware transcoding. Old, unwatched
 items are cleaned up by rules.
 
-```mermaid
-flowchart LR
-  user["user"] -- request --> jellyseerr["Jellyseerr"]
-  jellyseerr --> sonarr["Sonarr (TV)"] & radarr["Radarr (films)"]
-  sonarr & radarr -- search --> prowlarr["Prowlarr"] --> indexers["indexers"]
-  prowlarr -. "Cloudflare challenge" .-> flare["FlareSolverr"]
-  sonarr & radarr -- "send torrent" --> qbit["qBittorrent"] --> torrents[("/data/torrents/#lt;category#gt;")]
-  torrents -- "done: hardlink + rename" --> media[("/data/media/{tv,movies}")]
-  media --> jellyfin["Jellyfin"] --> user
-  maintainerr["Maintainerr<br/>cleanup rules"] -. "unmonitor + delete" .-> sonarr & radarr
-```
+![A request goes from Jellyseerr to Sonarr or Radarr, which search through Prowlarr and send the torrent to qBittorrent. The finished download is hardlinked into the library, which Jellyfin streams; Maintainerr's rules clean it up.](../images/mediarr.excalidraw.svg)
 
 | Service      | Port | Hostname                       | Role                                      |
 | ------------ | ---- | ------------------------------ | ----------------------------------------- |

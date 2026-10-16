@@ -8,14 +8,13 @@
 This repo hosted on the NAS, Portainer deploying every stack from it, and
 weekly Renovate PRs for image updates, checked by CI.
 
-```mermaid
-flowchart LR
-  laptop["laptop"] -- "git push" --> forgejo[("Forgejo<br/>NAS :3000 / :222")]
-  forgejo -- "every push: checks<br/>weekly: Renovate" --> runner["Actions runner"]
-  runner -. "update PRs" .-> forgejo
-  forgejo -- "polled every 5 min,<br/>or Pull and redeploy" --> portainer["Portainer"] --> stacks["stacks"]
-  forgejo -- "pulled every 15 min (guide 10)" --> sched["scheduler clone"]
-```
+Who reads the repo, and when:
+
+| Reader         | Trigger                                     | Does                                             |
+| -------------- | ------------------------------------------- | ------------------------------------------------ |
+| Actions runner | every push; Renovate weekly                 | runs the checks; Renovate opens image-update PRs |
+| Portainer      | polls every 5 min                           | redeploys the stacks whose files changed         |
+| Scheduler      | every 15 min ([10](10-backups-and-jobs.md)) | pulls its clone, then runs the due jobs as root  |
 
 - **Self-hosted, not GitHub:** Portainer CE authenticates private git sources by
   token only, and the toolchain stays on the NAS. Forgejo over Gitea for its

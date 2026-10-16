@@ -9,6 +9,12 @@ Each part has a guide you can follow on its own: take what you need.
 
 ![The dashboard's home page, with made-up data: service links, and the state of storage, backups and the system](docs/images/dashboard-services.png)
 
+## How it fits together
+
+![Overview: LAN clients, Caddy, Authelia, the apps, Forgejo and Portainer, backups](docs/images/overview.excalidraw.svg)
+
+Why each piece is there: [architecture](docs/architecture.md).
+
 ## Guides
 
 | Guide                                                              | You get                                                                                                                                           |

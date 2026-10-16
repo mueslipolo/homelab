@@ -9,18 +9,6 @@ One account per person, kept in Synology's LDAP Server and shared by DSM, SMB,
 Drive and every web app. One login at `https://auth.home.example.com` covers
 all apps for a year of consent.
 
-```mermaid
-flowchart LR
-  browser["browser"] -- https --> caddy["Caddy"]
-  caddy -- "gate: forward_auth" --> authelia["Authelia"]
-  caddy -- "gate: allowed" --> gated["gated app<br/>(own login off)"]
-  caddy --> oidc["OIDC app<br/>Portainer, Forgejo,<br/>Paperless, Mealie"]
-  oidc -. "redirect to login,<br/>code back" .-> authelia
-  caddy --> bypass["bypass: Jellyfin<br/>(own login)"]
-  authelia -- "ldap://proxy gateway:389" --> ldap[("DSM LDAP Server<br/>users, groups")]
-  authelia --- pg[("Postgres<br/>sessions, consent")]
-```
-
 Each app uses one of three modes, chosen by how it logs in:
 
 | Mode       | How                                                                                   | Use for                                                                                      |

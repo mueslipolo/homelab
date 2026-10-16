@@ -9,13 +9,14 @@ A static page at `https://dashboard.home.example.com` (unprivileged nginx,
 read-only container): a card per service, and tabs for backups, deployments,
 jobs, storage and the network.
 
-```mermaid
-flowchart LR
-  sched["scheduler<br/>DSM task, every 15 min"] -- writes --> local[("dashboard-local/<br/>status.json, storage.json")]
-  you["you"] -- "by hand" --> devices[("devices.json")]
-  local & devices -- "mounted read-only<br/>at html/local/" --> nginx["dashboard<br/>nginx, html/ from git"]
-  browser["browser"] -- https --> caddy["Caddy"] --> nginx
-```
+| File (`html/local/`) | Written by                                    | When         |
+| -------------------- | --------------------------------------------- | ------------ |
+| `status.json`        | the scheduler (`scripts/dashboard-status.sh`) | every 15 min |
+| `storage.json`       | the `storage-scan` job                        | nightly      |
+| `devices.json`       | you                                           | by hand      |
+
+The folder is mounted read-only into the container; the page itself comes
+from git.
 
 - **No backend, no secrets:** the page reads JSON files. The scripts that
   write them run as root on the NAS ([10 Backups and jobs](10-backups-and-jobs.md));

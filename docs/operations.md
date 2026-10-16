@@ -95,7 +95,10 @@ Web editor stacks from it until Forgejo is back.
   header (_Needs_ / _Optional_ / _Used by_ / _Reference_) → What you get →
   Before you start → Steps, each ending with a **Check** → Troubleshooting →
   Next. Concrete examples (`home.example.com`, `192.0.2.x`, `/volume1`), never
-  real values. Add it to the map in the root `README.md`.
+  real values. Add it to the guide table in the root `README.md`.
+- Diagrams only where a flow needs a picture; otherwise a table. Drawn in
+  Excalidraw and saved as `docs/images/<name>.excalidraw.svg` (export with
+  "Embed scene", so the file stays editable), white background.
 - Markdown is formatted with Prettier (`.prettierrc.yaml`: aligned tables, line
   breaks kept); pre-commit fixes it, CI checks it.
 - Every service: `restart: unless-stopped`,

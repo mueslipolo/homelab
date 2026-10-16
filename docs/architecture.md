@@ -4,28 +4,9 @@ One Synology NAS, one operator, a family of users. The shape of the system and
 the reason behind each non-obvious choice — one or two lines each. Git history
 has the long versions.
 
-```
-LAN ─── router DNS: *.<internal-domain> → Caddy's own LAN IP (macvlan)
-                                         │
-                    ┌────────────────────┴─────────────────────┐
-                    │ Caddy (edge) — real cert, Infomaniak DNS-01 │
-                    └───────┬───────────────────────┬───────────┘
-                            │ proxy (bridge)         │ PROXY_GATEWAY_IP
-              ┌─────────────┴──────────────┐         │ (host services)
-              │ app containers on `proxy`  │         │
-              │ dashboard mealie paperless │         │
-              │ sonarr radarr prowlarr     │         │
-              │ qbittorrent jellyseerr     │         │
-              │ maintainerr                │         │
-              │ jellyfin (no Authelia)     │         │
-              │ authelia                   │         │
-              └──────┬─────────────────────┘         │
-                     │ forward_auth / OIDC           │
-              ┌──────┴──────┐                 ┌──────┴──────────────┐
-              │  Authelia   │──── ldap:// ───▶│ host: Portainer,    │
-              └─────────────┘                 │ Synology LDAP Server│
-                                              └─────────────────────┘
-```
+![LAN clients reach Caddy on its own LAN IP; Caddy proxies to the apps on the proxy network, asks Authelia (backed by the LDAP Server) for gated hosts, and gets its certificate by DNS-01. Portainer deploys the stacks from Forgejo; scheduled jobs write dumps before Hyper Backup copies them off-site.](images/overview.excalidraw.svg)
+
+The drawing is an Excalidraw file: open it in [excalidraw.com](https://excalidraw.com) to edit, then export as SVG with "Embed scene" over the same file.
 
 ## Deployment
 
