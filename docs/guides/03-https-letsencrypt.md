@@ -12,13 +12,23 @@ certificate, on the LAN only: nothing is port-forwarded.
 (Cloudflare, OVH, Gandi, deSEC, Route 53, …) works the same way: only the
 token and two lines change, see [Another DNS provider](#another-dns-provider).
 
-```
-browser ──DNS (LAN only)── *.home.example.com → 192.0.2.20
-   │
-   └─https─▶ Caddy, own LAN IP 192.0.2.20 (macvlan) ──proxy network──▶ app containers
-                │
-                └─ DNS-01: TXT _acme-challenge.home.example.com via the Infomaniak API
-                   → Let's Encrypt wildcard *.home.example.com, renewed automatically
+```mermaid
+flowchart LR
+  subgraph lan["LAN"]
+    browser["browser"]
+    dns["LAN DNS<br/>*.home.example.com → 192.0.2.20"]
+    subgraph nas["NAS"]
+      caddy["Caddy<br/>own LAN IP 192.0.2.20 (macvlan)"]
+      apps["app containers<br/>on the proxy network"]
+    end
+  end
+  infomaniak["Infomaniak DNS API"]
+  le["Let's Encrypt"]
+  browser -- "1 · lookup" --> dns
+  browser -- "2 · https" --> caddy -- "by container name" --> apps
+  caddy -. "DNS-01: writes TXT _acme-challenge" .-> infomaniak
+  le -. "reads the TXT record" .-> infomaniak
+  le -. "wildcard *.home.example.com" .-> caddy
 ```
 
 - **DNS-01, not HTTP-01:** Let's Encrypt checks a TXT record, not a request to

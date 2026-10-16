@@ -1,11 +1,12 @@
 # tools
 
 Run from the laptop, not the NAS, against the NAS shares mounted with cifs
-(mount line: `stacks/mediarr/README.md`, "Re-encoding").
+(mount line: [media re-encoding](../docs/guides/media-reencoding.md)).
 
-| Script          | Does                                                                                   |
-| --------------- | -------------------------------------------------------------------------------------- |
-| `duplicates.sh` | finds identical files inside one folder and deletes the extra copies, keeping one each |
+| Script                          | Does                                                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `duplicates.sh`                 | finds identical files inside one folder and deletes the extra copies, keeping one each                   |
+| `dashboard-demo/screenshots.sh` | regenerates `docs/images/dashboard-*.png`: the dashboard with made-up data, in Playwright's Docker image |
 
 ## duplicates.sh
 

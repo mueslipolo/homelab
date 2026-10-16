@@ -9,10 +9,20 @@ Paperless-ngx at `https://paperless.home.example.com`: scanned or dropped
 documents are OCR'd (French + English), classified and searchable. Office files
 and emails are converted by Tika and Gotenberg.
 
-```
-consume folder (SMB share) ──▶ webserver ──▶ media/ (originals + archive PDFs)
-                                 │  paperless_net: db (postgres), broker (redis), tika, gotenberg
-                                 └─ proxy ──▶ Caddy ──▶ browser
+```mermaid
+flowchart LR
+  scan["scanner, laptop"] -- SMB --> consume[("consume folder")]
+  consume --> web["webserver"]
+  web --> data[("media/: originals<br/>+ archive PDFs")]
+  subgraph net["paperless_net (private)"]
+    db[("postgres")]
+    redis[("redis")]
+    tika["Tika"]
+    gotenberg["Gotenberg"]
+  end
+  web --- db & redis & tika & gotenberg
+  browser["browser"] -- https --> caddy["Caddy"] -- proxy --> web
+  web -. "webhook (optional)" .-> tarmed["paperless-tarmed"]
 ```
 
 - **Two roots on purpose:** `PAPERLESS_DOCKER_ROOT` holds the disposable

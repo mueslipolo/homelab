@@ -9,12 +9,12 @@ A static page at `https://dashboard.home.example.com` (unprivileged nginx,
 read-only container): a card per service, and tabs for backups, deployments,
 jobs, storage and the network.
 
-```
-scheduler (DSM task, every 15 min) ──writes──▶ /volume1/docker/dashboard-local/
-                                                 status.json, storage.json   (by the jobs)
-                                                 devices.json                (by hand)
-                                                         │ mounted read-only at html/local/
-browser ◀── Caddy ◀── dashboard (nginx, html/ from git) ─┘
+```mermaid
+flowchart LR
+  sched["scheduler<br/>DSM task, every 15 min"] -- writes --> local[("dashboard-local/<br/>status.json, storage.json")]
+  you["you"] -- "by hand" --> devices[("devices.json")]
+  local & devices -- "mounted read-only<br/>at html/local/" --> nginx["dashboard<br/>nginx, html/ from git"]
+  browser["browser"] -- https --> caddy["Caddy"] --> nginx
 ```
 
 - **No backend, no secrets:** the page reads JSON files. The scripts that
@@ -24,6 +24,28 @@ browser ◀── Caddy ◀── dashboard (nginx, html/ from git) ─┘
   than staying green.
 - **Real hostnames stay out of git:** they live in `devices.json`, next to the
   generated files.
+
+The tabs, with made-up data (`tools/dashboard-demo/screenshots.sh` regenerates
+them):
+
+| Tab      | Shows                                                                                                    |
+| -------- | -------------------------------------------------------------------------------------------------------- |
+| Services | a card per app, with its stack's README; the left panel sums up every tab                                |
+| Storage  | where the space goes, 90 days of used space, per-folder trends, the largest media, what could be freed   |
+| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading |
+| System   | each Portainer stack against git, locally built images, scheduled jobs, the scheduler itself             |
+
+![Services tab](../images/dashboard-services.png)
+
+<details><summary>Storage, Backups and System tabs</summary>
+
+![Storage tab](../images/dashboard-storage.png)
+
+![Backups tab](../images/dashboard-backups.png)
+
+![System tab](../images/dashboard-system.png)
+
+</details>
 
 ## Before you start
 

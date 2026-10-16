@@ -9,11 +9,14 @@ A web UI that deploys each `stacks/<name>/compose.yaml` as a **stack**, keeps
 its variables (secrets included) out of git, and redeploys from git with one
 button.
 
-```
-git (Forgejo on the NAS, or a GitHub fork)
-   │ clone on deploy / "Pull and redeploy"
-   ▼
-Portainer ──docker.sock──▶ stack = one compose project, variables stored in Portainer
+```mermaid
+flowchart LR
+  git[("git repo<br/>Forgejo on the NAS, or a GitHub fork")]
+  ui["Portainer<br/>stack = one compose project,<br/>variables stored in Portainer"]
+  docker["Docker engine<br/>(docker.sock)"]
+  git -- "clone: on deploy, every 5 min (GitOps polling),<br/>or Pull and redeploy" --> ui
+  paste["Web editor<br/>(pasted compose)"] --> ui
+  ui --> docker --> c["containers"]
 ```
 
 - **Portainer, not Container Manager's projects:** Container Manager cannot

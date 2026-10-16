@@ -8,12 +8,13 @@
 This repo hosted on the NAS, Portainer deploying every stack from it, and
 weekly Renovate PRs for image updates, checked by CI.
 
-```
-laptop ──git push──▶ Forgejo (NAS, :3000 / :222)
-                        │  ├─ Actions runner ── checks on every push, Renovate weekly ──▶ PRs
-                        │  └─ scheduler clone (pull every 15 min, [10])
-                        ▼
-                    Portainer ── "Pull and redeploy" ──▶ stacks
+```mermaid
+flowchart LR
+  laptop["laptop"] -- "git push" --> forgejo[("Forgejo<br/>NAS :3000 / :222")]
+  forgejo -- "every push: checks<br/>weekly: Renovate" --> runner["Actions runner"]
+  runner -. "update PRs" .-> forgejo
+  forgejo -- "polled every 5 min,<br/>or Pull and redeploy" --> portainer["Portainer"] --> stacks["stacks"]
+  forgejo -- "pulled every 15 min (guide 10)" --> sched["scheduler clone"]
 ```
 
 - **Self-hosted, not GitHub:** Portainer CE authenticates private git sources by

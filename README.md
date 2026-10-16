@@ -7,6 +7,8 @@ port-forwarded.
 
 Each part has a guide you can follow on its own: take what you need.
 
+![The dashboard's home page, with made-up data: service links, and the state of storage, backups and the system](docs/images/dashboard-services.png)
+
 ## Guides
 
 | Guide                                                              | You get                                                                                                                                           |
@@ -22,19 +24,6 @@ Each part has a guide you can follow on its own: take what you need.
 | [09 Dashboard](docs/guides/09-dashboard.md)                        | a home page with every service and the health of jobs, backups, storage                                                                           |
 | [10 Backups and jobs](docs/guides/10-backups-and-jobs.md)          | Hyper Backup, snapshots, app dumps, one scheduler for every job                                                                                   |
 | [Media re-encoding](docs/guides/media-reencoding.md)               | shrink H.264 files to HEVC on a desktop GPU                                                                                                       |
-
-What needs what:
-
-```mermaid
-flowchart LR
-  syn[01 Synology prep] --> port[02 Portainer] --> https[03 HTTPS]
-  port --> forgejo[04 Forgejo]
-  https --> sso[05 Authelia]
-  https --> apps["06–09 apps"]
-  sso -. optional .-> apps
-  forgejo -. optional: deploy from git .-> apps
-  apps --> jobs[10 Backups and jobs]
-```
 
 The whole thing on a new NAS, in order: [install everything](docs/install-everything.md).
 
@@ -54,7 +43,7 @@ stacks/<name>/     one Portainer stack each: compose.yaml, .env.example (every v
                    git deploy only resolves paths inside the stack's folder)
 docs/guides/       the guides above
 scripts/           the scheduler (run-jobs.sh, jobs.conf) and its jobs, bootstrap.sh
-tools/             run from a workstation: duplicates.sh
+tools/             run from a workstation: duplicates.sh, dashboard screenshots
 .forgejo/          CI: checks and Renovate
 ```
 

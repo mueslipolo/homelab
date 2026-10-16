@@ -16,6 +16,21 @@
 Real paths, the backup target and restore-test results belong in your own
 private notes; this page is the shape.
 
+```mermaid
+flowchart LR
+  subgraph nas["NAS"]
+    task["DSM task, every 15 min<br/>run-jobs.sh"] -- "20:00–20:10" --> dumps[("app dumps<br/>Forgejo, Mealie,<br/>Paperless export")]
+    shares[("shared folders")]
+    snap["Snapshot Replication<br/>immutable snapshots"] -. "homes, paperless" .-> shares
+  end
+  hb["Hyper Backup"]
+  shares & dumps --> hb
+  hb -- "20:40, encrypted" --> s3[("off-site S3")]
+  hb -- "03:00" --> usb[("USB disk")]
+  task -- "ping per job" --> hc["healthchecks.io"]
+  task -- "status.json" --> dash["dashboard"]
+```
+
 ## What is backed up
 
 | Mechanism (DSM)                                                                    | Covers                     | Against                                                                       |

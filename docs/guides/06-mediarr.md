@@ -9,14 +9,16 @@ Ask for a series or film in Jellyseerr; it is found, downloaded, renamed into
 the library and playable in Jellyfin, with hardware transcoding. Old, unwatched
 items are cleaned up by rules.
 
-```
-Jellyseerr ─request─▶ Sonarr (TV) / Radarr (films) ─search─▶ Prowlarr ─▶ indexers (via FlareSolverr if Cloudflare)
-                           │ send torrent
-                           ▼
-                      qBittorrent ─▶ /data/torrents/<category>
-                           │ done: hardlink + rename
-                           ▼
-                      /data/media/{tv,movies} ◀── Jellyfin ◀── Maintainerr (cleanup rules)
+```mermaid
+flowchart LR
+  user["user"] -- request --> jellyseerr["Jellyseerr"]
+  jellyseerr --> sonarr["Sonarr (TV)"] & radarr["Radarr (films)"]
+  sonarr & radarr -- search --> prowlarr["Prowlarr"] --> indexers["indexers"]
+  prowlarr -. "Cloudflare challenge" .-> flare["FlareSolverr"]
+  sonarr & radarr -- "send torrent" --> qbit["qBittorrent"] --> torrents[("/data/torrents/#lt;category#gt;")]
+  torrents -- "done: hardlink + rename" --> media[("/data/media/{tv,movies}")]
+  media --> jellyfin["Jellyfin"] --> user
+  maintainerr["Maintainerr<br/>cleanup rules"] -. "unmonitor + delete" .-> sonarr & radarr
 ```
 
 | Service      | Port | Hostname                       | Role                                      |
