@@ -32,3 +32,4 @@ Thumbs.db
 # is the backstop if something from here is ever staged by mistake.
 /PRIVATE-real-values-do-not-publish/
 .private-patterns
+CLAUDE.local.md
