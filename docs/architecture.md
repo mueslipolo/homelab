@@ -50,6 +50,8 @@ LAN ─── router DNS: *.<internal-domain> → Caddy's own LAN IP (macvlan)
 - **Containers reach Caddy via a DNS alias** for `auth.<internal-domain>` on
   `proxy`: a macvlan IP is unreachable from the same host (OIDC clients need
   it). Portainer must be connected to `proxy` for that.
+  A macvlan shim on the host was rejected: host state that DSM reboots and
+  updates do not keep.
 - **LAN-only.** Nothing is port-forwarded; the public certificate is for
   trusted TLS, not reachability. That is why Authelia is single-factor and
   Caddy sets no security headers — revisit both before exposing anything.

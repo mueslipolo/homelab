@@ -15,14 +15,14 @@ services:
     # restriction beyond plain file permissions). Root bypasses it, and
     # doesn't meaningfully change this container's already-accepted risk
     # profile — docker.sock access is root-equivalent regardless of the
-    # process's nominal UID. See docs/ARCHITECTURE.md's CI section.
+    # process's nominal UID. See docs/architecture.md's CI section.
     user: "0:0"
     security_opt:
       - no-new-privileges:true
     # No cap_drop: [ALL] here — deliberately. docker.sock access already
     # grants root-equivalent host access; dropping capabilities on this
     # container's own process doesn't meaningfully reduce that. See
-    # docs/ARCHITECTURE.md's CI section.
+    # docs/architecture.md's CI section.
     deploy:
       resources:
         limits:

@@ -52,8 +52,10 @@ for file in "$@"; do
 	[ "$file" = "$PRIVATE_PATTERNS" ] && continue
 	grep -qI . -- "$file" 2>/dev/null || continue
 
-	scan "$file" '/volume[0-9]+/' \
-		'Synology volume path — the placeholder table says <nas-volume-path>, and .env.example files use /path/to/...'
+	# /volume1 is the docs' example volume (Synology's default). If your real
+	# volume is /volume1 too, add it to .private-patterns.
+	scan "$file" '/volume([02-9]|1[0-9])[0-9]*/' \
+		'Synology volume path — the placeholder table says <nas-volume-path>; guides use /volume1 as the example'
 	# Any *UID= / *GID= with a number (PUID, PAPERLESS_UID, USER_GID...), except
 	# the generic 0 and 1000 that images document as their fixed defaults.
 	while IFS= read -r hit; do

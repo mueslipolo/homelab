@@ -16,7 +16,8 @@ services:
       PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
     mac_address: ${CADDY_LAN_MAC}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # CADDYFILE=Caddyfile.minimal for the guide's one-app start.
+      - ./${CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

@@ -1,0 +1,26 @@
+# Starting point for docs/guides/03-https-letsencrypt.md: one test app, no
+# Authelia. Copy it, add one block per app. The full setup is `Caddyfile`.
+{
+	email {env.ACME_EMAIL}
+	# While testing: staging certificates are untrusted but not rate-limited.
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+(tls_wildcard) {
+	tls {
+		dns infomaniak {env.INFOMANIAK_API_TOKEN}
+	}
+}
+
+# One block per app: its container name on the `proxy` network, and its port.
+whoami.{$INTERNAL_DOMAIN} {
+	import tls_wildcard
+	reverse_proxy whoami:80
+}
+
+# Catch-all. It also makes Caddy get a single wildcard certificate, which
+# every block above then uses (Caddy 2.10+).
+*.{$INTERNAL_DOMAIN} {
+	import tls_wildcard
+	respond "Not found — no app registered at this hostname." 404
+}

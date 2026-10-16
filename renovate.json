@@ -18,11 +18,11 @@
     {
       "customType": "regex",
       "description": [
-        "Portainer is bootstrapped with `docker run` (docs/INSTALL.md) rather than as a Stack —",
+        "Portainer is bootstrapped with `docker run` (docs/guides/02-portainer.md) rather than as a Stack —",
         "it is what deploys the Stacks — so its pin lives in prose no built-in manager",
         "parses. Without this it would rot silently."
       ],
-      "managerFilePatterns": ["/^docs/INSTALL\\.md$/"],
+      "managerFilePatterns": ["/^docs/guides/02-portainer\\.md$/"],
       "matchStrings": ["(?<depName>portainer/portainer-ce):(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "datasourceTemplate": "docker"
     }

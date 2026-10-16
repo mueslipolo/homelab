@@ -4,7 +4,8 @@ Reads Swiss **"Justificatif de remboursement"** / **"Rückforderungsbeleg"** for
 (the TARMED / TARDOC standard every provider issues) in
 [Paperless-ngx](https://docs.paperless-ngx.com) and fills custom fields and,
 optionally, the title. Runs as a webhook for new documents and as a CLI for
-audits and backfills. First-time setup: **[INSTALL.md](INSTALL.md)**.
+audits and backfills. First-time setup: **[INSTALL.md](INSTALL.md)**; Paperless
+itself: [guide 07](../../docs/guides/07-paperless.md).
 
 - **Ports**: none published; in-cluster `http://paperless-tarmed:8000/hook` and `/health`.
 - **Network**: `proxy` (external), only because Paperless's `webserver` is there.

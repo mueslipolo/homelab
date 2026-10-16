@@ -831,7 +831,7 @@
         <!-- Filled from local/storage.json (scripts/storage-scan.sh, nightly). -->
         <div data-view="storage" role="tabpanel" aria-labelledby="tab-storage" hidden>
             <div data-storage></div>
-            <p class="empty-bay" data-no-storage>No storage scan yet: the <code>storage-scan</code> job writes it every night (docs/OPERATIONS.md).</p>
+            <p class="empty-bay" data-no-storage>No storage scan yet: the <code>storage-scan</code> job writes it every night (docs/guides/10-backups-and-jobs.md).</p>
         </div>
 
         <!-- Protection matrix: discovered on the NAS, in local/status.json. -->
@@ -959,8 +959,8 @@
     var OPS = [
         ['CI runs', 'Checks and Renovate workflows', 'actions', 'live', 'run'],
         ['Dependency Dashboard', 'Pending Renovate updates', 'issues?type=all&state=open&q=Dependency%20Dashboard', 'live', 'box'],
-        ['Runbook', 'Backup, restore, rebuild order', 'src/branch/main/docs/OPERATIONS.md', 'doc', 'doc'],
-        ['Architecture', 'Why it is built this way', 'src/branch/main/docs/ARCHITECTURE.md', 'doc', 'tree']
+        ['Runbook', 'Backup, restore, rebuild order', 'src/branch/main/docs/operations.md', 'doc', 'doc'],
+        ['Architecture', 'Why it is built this way', 'src/branch/main/docs/architecture.md', 'doc', 'tree']
     ];
     // Same repo path .forgejo/workflows/renovate.yaml names.
     var REPO = 'yves/homelab';

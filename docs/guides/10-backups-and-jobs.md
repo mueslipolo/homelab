@@ -1,10 +1,22 @@
-# Operations
+# Backups and scheduled jobs
 
-Backups, restore, scheduled jobs, and the conventions every stack follows.
-Real paths, the backup target and test results live in the gitignored
-`PRIVATE-real-values-do-not-publish/BACKUP.md`; this file is the shape.
+> **Needs:** [01 Synology prep](01-synology-prep.md) · **Optional:** [04 Forgejo](04-forgejo-gitops.md) (the scheduler pulls its scripts from git), [09 dashboard](09-dashboard.md) (shows the jobs' state)
+> **Used by:** [04 Forgejo](04-forgejo-gitops.md), [07 Paperless](07-paperless.md), [08 Mealie](08-mealie.md) (their dump jobs) · **Restore:** [operations](../operations.md#restore)
 
-## Backups
+## What you get
+
+- DSM's own tools for the files: **Hyper Backup** off-site and to USB,
+  **Snapshot Replication** with immutable snapshots.
+- App-level exports (Forgejo, Mealie, Paperless) that restore into any app
+  version, written every evening before the backup window.
+- **One** DSM Task Scheduler entry, every 15 minutes, that runs every job
+  listed in git (`scripts/jobs.conf`), with timeouts, logs, catch-up after
+  downtime, and a healthchecks.io ping per job.
+
+Real paths, the backup target and restore-test results belong in your own
+private notes; this page is the shape.
+
+## What is backed up
 
 | Mechanism (DSM)                                                                    | Covers                     | Against                                                                       |
 | ---------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
@@ -23,6 +35,14 @@ Real paths, the backup target and test results live in the gitignored
 
 **Dumps-only means the dump job must run** — the dashboard turns its light red
 after 2 days without one.
+
+Set up in DSM:
+
+1. **Hyper Backup:** one task per destination, sources as in the table; schedule
+   it after the dump jobs (here 20:40 off-site, 03:00 USB).
+2. **Snapshot Replication:** scheduled, immutable snapshots of the shares that
+   must survive ransomware (`homes`, `paperless`).
+3. **Check:** restore one file and one dump into a scratch folder.
 
 ## Scheduled jobs
 
@@ -48,7 +68,7 @@ heartbeat that also fails when the clone is a day stale).
 
 Every push to `main` therefore runs as root on the NAS within 15 minutes.
 
-### Setup (once)
+### Set up the scheduler
 
 1. _Git Server_ package installed (`/usr/bin/git`).
 2. Clone as root with a read-only Forgejo **deploy key** (repo → Settings →
@@ -57,23 +77,23 @@ Every push to `main` therefore runs as root on the NAS within 15 minutes.
    ```bash
    sudo ssh-keygen -t ed25519 -N '' -f /root/.ssh/homelab-deploy   # add the .pub as deploy key
    sudo GIT_SSH_COMMAND='ssh -i /root/.ssh/homelab-deploy -o StrictHostKeyChecking=accept-new' \
-     git clone ssh://git@localhost:222/<owner>/homelab.git <nas-volume-path>/docker/homelab-ops
-   sudo git -C <nas-volume-path>/docker/homelab-ops config core.sshCommand 'ssh -i /root/.ssh/homelab-deploy'
+     git clone ssh://git@localhost:222/admin/homelab.git /volume1/docker/homelab-ops
+   sudo git -C /volume1/docker/homelab-ops config core.sshCommand 'ssh -i /root/.ssh/homelab-deploy'
    ```
 3. `jobs.env`, outside the clone, `chmod 600`:
    ```bash
-   OPS_HOME=<nas-volume-path>/docker/homelab-ops-local      # state and logs
+   OPS_HOME=/volume1/docker/homelab-ops-local      # state and logs
    HC_PING_KEY=<healthchecks.io project ping key>           # Project Settings → Ping key (not a check's UUID)
-   FORGEJO_DUMP_DIR=<nas-volume-path>/forgejo/dumps         # mkdir, chmod 700
-   MEALIE_DUMP_DIR=<nas-volume-path>/mealie/dumps           # mkdir, chmod 700
+   FORGEJO_DUMP_DIR=/volume1/forgejo/dumps         # mkdir, chmod 700
+   MEALIE_DUMP_DIR=/volume1/mealie/dumps           # mkdir, chmod 700
    MEALIE_API_TOKEN=<token>                                  # Mealie, admin user: profile → API Tokens
-   DASHBOARD_LOCAL_DIR=<nas-volume-path>/docker/dashboard-local
-   STORAGE_MEDIA_DIR=<nas-volume-path>/media/media           # holds tv/ and movies/; Storage tab's media section
+   DASHBOARD_LOCAL_DIR=/volume1/docker/dashboard-local
+   STORAGE_MEDIA_DIR=/volume1/media/media           # holds tv/ and movies/; Storage tab's media section
    # uploaders.conf next to this file: devices that must keep uploading (scripts/uploaders.conf.example)
    PORTAINER_TOKEN=<token>                                   # Portainer → My account → Access tokens; dashboard's stack list
-   STATUS_VOLUME=<nas-volume-path>
+   STATUS_VOLUME=/volume1
    ```
-4. Test once: `sudo bash <clone>/scripts/run-jobs.sh <path>/jobs.env`, then
+4. **Check:** run it once by hand: `sudo bash <clone>/scripts/run-jobs.sh <path>/jobs.env`, then
    `cat $OPS_HOME/state/_scheduler.json` shows `"pull_ok": true`.
 5. DSM → Task Scheduler → Create → Scheduled Task → User-defined script: user
    **root**; Schedule _Daily_, first run 00:00, **Frequency every 15 minutes**,
@@ -86,41 +106,15 @@ Every push to `main` therefore runs as root on the NAS within 15 minutes.
 **Adding a job:** a script in `scripts/` that exits non-zero on failure, plus
 one line in `jobs.conf` (`name  HH:MM|tick  timeout  script [args]`).
 
-## Restore
+## Troubleshooting
 
-Restore into a scratch location first; nothing counts as backed up until it
-has been restored once.
+| Symptom                                    | Cause → fix                                                                                                                                         |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_scheduler.json` shows `"pull_ok": false` | The clone can't pull: deploy key, Forgejo down, or the branch was force-pushed (`git fetch && git reset --hard origin/main` in the clone, as root). |
+| healthchecks.io: `homelab-run-jobs` down   | The DSM task stopped or fails before the ping: run the command from step 4 by hand.                                                                 |
+| A dump job red on the dashboard            | Its log in `$OPS_HOME/logs/<job>/`; the job retries an hour later.                                                                                  |
 
-- **Forgejo** (from a dump):
-  1. Stop the stack, unzip the dump.
-  2. Recreate `FORGEJO_DATA_ROOT` owned by `1000:1000`.
-  3. Copy `data/` into it, `repos/` to the repository root named in
-     `app.ini`, `app.ini` to `custom/conf/app.ini`.
-  4. `sqlite3 <[database] PATH from app.ini> < forgejo-db.sql`
-  5. Start, then `forgejo admin regenerate hooks` in the container.
-- **Authelia**: restore the secrets folder, redeploy; users log in again.
-- **Paperless**: restore the share, or `document_importer` the `export/` folder into a fresh install.
+## Next
 
-**After a total loss**, rebuild in `docs/INSTALL.md`'s order, restoring each
-stack's data before deploying it; Forgejo's dump goes back at step 4. If
-Forgejo cannot be restored, any clone of this repo works: deploy the stacks as
-Web editor stacks from it until Forgejo is back.
-
-## Conventions (for a new stack)
-
-- Files: `compose.yaml`, `.env.example` (every `${VAR}`, no real values),
-  `README.md` (shape: summary table → Deploy → Gotchas).
-- Markdown is formatted with Prettier (`.prettierrc.yaml`: aligned tables, line
-  breaks kept); pre-commit fixes it, CI checks it.
-- Every service: `restart: unless-stopped`,
-  `security_opt: [no-new-privileges:true]`, `cap_drop: [ALL]` plus only the commented
-  `cap_add` it needs, a `deploy.resources.limits.memory`.
-- Images pinned to an exact tag (Renovate updates them). A locally built image
-  is built by the `build-images` job (`scripts/jobs.conf`), not by Portainer:
-  compose gets `pull_policy: never` and no `build:` (as `paperless-tarmed`).
-- `container_name` only when a host command uses it (`forgejo`,
-  `forgejo-runner`, `paperless-tarmed`); containers reach each other by
-  service name.
-- User IDs follow the image's own convention: `PUID`/`PGID` (linuxserver),
-  `PAPERLESS_UID`/`PAPERLESS_GID`, a fixed `user:` where on-disk ownership
-  requires it (Forgejo `1000:1000`).
+- [Restore](../operations.md#restore), and test it once: nothing counts as backed up before.
+- [09 dashboard](09-dashboard.md) shows each job's state.

@@ -5,7 +5,7 @@
 #
 # Mealie's backup export is portable across versions, unlike a raw Postgres
 # data directory, which is why Hyper Backup takes these dumps and not
-# MEALIE_PGDATA_PATH (docs/OPERATIONS.md).
+# MEALIE_PGDATA_PATH (docs/guides/10-backups-and-jobs.md).
 set -euo pipefail
 
 # shellcheck source=scripts/lib/dump.sh

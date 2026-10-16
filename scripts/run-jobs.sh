@@ -12,7 +12,7 @@
 #   3. refreshes the dashboard's status.json.
 #
 # jobs.env is local to the NAS (root-only, not in git): paths, and the
-# healthchecks.io ping key. See docs/OPERATIONS.md for its variables.
+# healthchecks.io ping key. See docs/guides/10-backups-and-jobs.md for its variables.
 set -uo pipefail # no -e: one failing job must not stop the others
 
 readonly ENV_FILE="${1:?usage: run-jobs.sh /path/to/jobs.env}"

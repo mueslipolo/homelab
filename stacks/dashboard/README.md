@@ -1,25 +1,20 @@
 # dashboard
 
-Static homepage (nginx-unprivileged) linking every service. Tabs: **Services** (default), **Backups**, **System** (deployments, jobs), **Network**; the left panel sums up each tab's state and opens it. Tabs have links (`#backups`, ...). No secrets, no database.
+Static homepage (nginx-unprivileged) linking every service. Tabs: **Services**
+(default), **Backups**, **System** (deployments, jobs), **Network**; the left
+panel sums up each tab's state and opens it. Tabs have links (`#backups`, ...).
+No secrets, no database.
 
-|            |                                                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Reached at | `https://dashboard.<internal-domain>` — login: Authelia gate                                                              |
-| Data       | `DASHBOARD_LOCAL_DIR` → `devices.json` (by hand), `status.json` (by script); mounted read-only at `html/local/`           |
-| Needs      | `proxy` network only, `edge` (→ `dashboard:8080`), `authelia`; scheduled jobs (`docs/OPERATIONS.md`) for the health panel |
-| Config     | `.env.example` (every variable)                                                                                           |
+**Setting it up: [guide 09, Dashboard](../../docs/guides/09-dashboard.md).**
+This page is the reference.
 
-## Deploy
-
-See `docs/INSTALL.md` for the install order.
-
-1. Create the local folder; optionally add `devices.json` (below), mode 644:
-   ```bash
-   mkdir -p <nas-volume-path>/docker/dashboard-local
-   ```
-2. Portainer → Stacks → Add stack → Repository, compose path `stacks/dashboard/compose.yaml`, `DASHBOARD_LOCAL_DIR` (required, deploy fails without it) → Deploy.
-3. Health panel: set up `scripts/run-jobs.sh` with the same `DASHBOARD_LOCAL_DIR` in `jobs.env` (`docs/OPERATIONS.md`, "Scheduled jobs").
-4. **Check:** the page shows the service cards; within 15 min the left panel's "No status report" turns into status lights.
+|            |                                                                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reached at | `https://dashboard.<internal-domain>` (Caddy → `dashboard:8080`). Login: Authelia gate                                                                                                |
+| Data       | `DASHBOARD_LOCAL_DIR` → `devices.json` (by hand), `status.json`, `storage.json` (by the scheduler); mounted read-only at `html/local/`                                                |
+| Needs      | `proxy` network only, [edge](../edge/README.md), [authelia](../authelia/README.md); the scheduler ([guide 10](../../docs/guides/10-backups-and-jobs.md)) for everything but the cards |
+| Used by    | —                                                                                                                                                                                     |
+| Config     | `.env.example` (`DASHBOARD_LOCAL_DIR`, required); `jobs.env` for what the scripts read                                                                                                |
 
 ## `devices.json`
 
@@ -95,7 +90,7 @@ Which devices: `uploaders.conf` next to `jobs.env` (`UPLOADERS_CONF` overrides),
 
 ## Storage tab
 
-`storage.json` is written nightly by the `storage-scan` job (`scripts/storage-scan.sh`, `docs/OPERATIONS.md`). Its history (one line per day) and its probe cache live in `$OPS_HOME/storage/`, so trends fill in day by day from the first run.
+`storage.json` is written nightly by the `storage-scan` job (`scripts/storage-scan.sh`, [guide 10](../../docs/guides/10-backups-and-jobs.md)). Its history (one line per day) and its probe cache live in `$OPS_HOME/storage/`, so trends fill in day by day from the first run.
 
 | Part                                               | Source                                                                                                                                                                                                                                                                                                                                                                                   |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

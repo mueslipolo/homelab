@@ -1,5 +1,7 @@
 # Installing paperless-tarmed
 
+> **Needs:** [07 Paperless-ngx](../../docs/guides/07-paperless.md), [10 Backups and jobs](../../docs/guides/10-backups-and-jobs.md) (the scheduler builds the image) · **Reference:** [README.md](README.md)
+
 First-time setup on a NAS with Paperless-ngx, Portainer and this repository on
 Forgejo. Reference, CLI and troubleshooting: [README.md](README.md). Run commands
 over SSH on the NAS.
@@ -14,7 +16,7 @@ chown -R 1000:1000 <nas-volume-path>/docker/paperless-tarmed/data
 ```
 
 The `chown` is required (the container runs as uid 1000). The scheduler
-([docs/OPERATIONS.md](../../docs/OPERATIONS.md)) must already run: its
+([guide 10](../../docs/guides/10-backups-and-jobs.md)) must already run: its
 `build-images` job builds this image.
 
 **Check:** `ls -ln <nas-volume-path>/docker/paperless-tarmed` shows `data` owned by `1000 1000`.
