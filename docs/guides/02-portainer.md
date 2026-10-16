@@ -95,19 +95,24 @@ they have a healthcheck).
 
 ### 4. Update a stack
 
-1. Change the stack in git (or merge a Renovate PR, [04](04-forgejo-gitops.md)), push.
-2. Portainer → Stacks → the stack → **Pull and redeploy**.
+Turn on **GitOps updates** for each Repository stack (stack → Edit →
+GitOps updates):
 
-**Automatic updates** (stack → GitOps updates) suit image-only stacks:
+- **Polling** every 5 minutes. Not the webhook: Forgejo would have to reach
+  `portainer:9443` over `proxy`, never a public hostname.
+- **Force redeployment off**: only stacks whose files changed are redeployed.
 
-- **Polling**, e.g. every 5 minutes. Not the webhook: Forgejo would have to
-  reach `portainer:9443` over `proxy`, never a public hostname.
-- **Force redeployment off.**
-- Not for stacks that build (`edge`, see below). A merge then restarts
-  containers at any hour: decide per stack.
+Then an update is: change the stack in git (or merge a Renovate PR,
+[04](04-forgejo-gitops.md)), push, and Portainer redeploys within 5 minutes.
+A merge restarts containers at any hour. **Pull and redeploy** does the same
+by hand, for a stack without polling.
 
-**Check:** after a redeploy, the stack's page shows the new commit, and
-`docker ps` shows the containers recreated (`CREATED` column).
+Stacks that build an image are the exception: a redeploy may reuse the old
+image (Troubleshooting). This repo's are listed in
+[operations: updating a stack](../operations.md#updating-a-stack).
+
+**Check:** after a push, within 5 minutes, the stack's page shows the new
+commit, and `docker ps` shows its containers recreated (`CREATED` column).
 
 ### 5. Behind Caddy (optional)
 

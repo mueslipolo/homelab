@@ -105,7 +105,7 @@ Which devices: `uploaders.conf` next to `jobs.env` (`UPLOADERS_CONF` overrides),
 The System tab lists every Portainer stack:
 
 - **up to date**: the commit Portainer deployed includes the last commit that touched the stack's folder
-- **redeploy needed**: the folder changed since; use Pull and redeploy
+- **redeploy needed**: the folder changed since. Normal for up to 5 minutes after a push (GitOps polling); longer means polling is off or failing: Pull and redeploy
 - **unknown**: the deployed commit is not in the NAS clone
 - **stopped**
 - **Web editor**: not deployed from git, so there is nothing to compare

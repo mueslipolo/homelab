@@ -79,8 +79,9 @@ Portainer → Add stack → **Repository** ([02](02-portainer.md), step 3) with:
 ### 4. The update loop
 
 1. Change a stack on the laptop, commit, `git push forgejo main`.
-2. Portainer → the stack → **Pull and redeploy** (or automatic polling,
-   [02](02-portainer.md), step 4).
+2. Portainer polls every 5 minutes and redeploys the stacks whose files
+   changed ([02](02-portainer.md), step 4). **Pull and redeploy** does it
+   at once, by hand.
 3. Forgejo's own stack is the exception: paste the new `compose.yaml` into the
    Web editor by hand, Renovate bumps included.
 

@@ -42,21 +42,29 @@ pytest.
 
 ## Updating a stack
 
-1. Change it here (or merge Renovate's PR), push to Forgejo.
-2. Portainer → Stacks → the stack → **Pull and redeploy**.
+Every Repository stack has Portainer's **GitOps updates** on: polling every
+5 minutes, _Force redeployment_ off. So:
 
-- **paperless-tarmed's image is never built by Portainer** (it rebuilt
-  unreliably): the `build-images` job builds it within 15 minutes of a push,
-  the dashboard shows amber "update waiting", then you redeploy. `edge` still
-  builds in Portainer (`pull_policy: build`); check after a `Dockerfile` change
-  that its container was recreated.
-- Portainer's **Automatic updates** are fine for image-only stacks: use
-  _polling_ (5 min matches Renovate's weekly cadence), not the webhook (it
-  would need Forgejo → `portainer:9443` over `proxy`, never a public hostname),
-  and leave _Force redeployment_ off. Not for `edge`. A merge then
-  restarts containers at any hour — weigh it per stack.
-- `stacks/forgejo` is a Web editor stack: paste the new compose file into
-  Portainer by hand.
+1. Change it here (or merge Renovate's PR), push to Forgejo.
+2. Within 5 minutes Portainer sees the new commit and redeploys the stacks
+   whose files changed. Nothing to click. A merge therefore restarts
+   containers at any hour.
+
+Exceptions:
+
+- **`forgejo`** is a Web editor stack: paste the new `compose.yaml` into
+  Portainer by hand, Renovate bumps included.
+- **`paperless-tarmed`**: Portainer never builds its image (it rebuilt
+  unreliably). The poll redeploys on the push, before the `build-images` job
+  has built the new image (within 15 minutes), so the old one keeps running;
+  the dashboard shows amber "update waiting". Then **Pull and redeploy** by
+  hand.
+- **`edge`** builds in Portainer (`pull_policy: build`), and a redeploy may
+  still reuse the old image. After a `Dockerfile` change, check its container
+  was recreated (`docker inspect --format '{{.Created}}' <caddy-container>`);
+  if not, Pull and redeploy by hand.
+- Not the webhook instead of polling: Forgejo would have to reach
+  `portainer:9443` over `proxy`, never a public hostname.
 
 ## Restore
 
