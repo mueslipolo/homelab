@@ -19,11 +19,11 @@ This page is the reference.
 
 ## Modes per app
 
-| Mode                            | Apps                                                                      | Configured in                                                           |
-| ------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Gate** (Caddy `forward_auth`) | dashboard, sonarr, radarr, prowlarr, qbittorrent, jellyseerr, maintainerr | `import authelia` in the Caddyfile + an `access_control` rule           |
-| **OIDC**                        | Paperless, Mealie (`one_factor`); Portainer, Forgejo (`admins_only`)      | a client block in `configuration.yml` + a `<client>_client_secret_hash` |
-| **Bypass**                      | Jellyfin                                                                  | neither                                                                 |
+| Mode                            | Apps                                                                 | Configured in                                                           |
+| ------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Gate** (Caddy `forward_auth`) | dashboard, sonarr, radarr, prowlarr, qbittorrent, seerr, maintainerr | `import authelia` in the Caddyfile + an `access_control` rule           |
+| **OIDC**                        | Paperless, Mealie (`one_factor`); Portainer, Forgejo (`admins_only`) | a client block in `configuration.yml` + a `<client>_client_secret_hash` |
+| **Bypass**                      | Jellyfin                                                             | neither                                                                 |
 
 ## Gotchas
 

@@ -49,12 +49,12 @@ The drawing is an Excalidraw file: open it in [excalidraw.com](https://excalidra
 
 Authelia in front of everything that can take it, by how each app logs in:
 
-| Mode                            | Apps                                                                      | Why                                                                                                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gate** (Caddy `forward_auth`) | dashboard, sonarr, radarr, prowlarr, qbittorrent, jellyseerr, maintainerr | their own login disabled (`AuthenticationRequired`, qBittorrent subnet whitelist); they talk to each other over Docker networks, never the public hostname |
-| **OIDC** (app is a client)      | Paperless, Portainer, Forgejo, Mealie                                     | Portainer/Forgejo limited to the `infra-admins` group; Mealie moved here from the gate to avoid a double login                                             |
-| **Bypass**                      | Jellyfin                                                                  | Chromecast cannot complete a browser login; LAN-only is the control                                                                                        |
-| **Not exposed**                 | paperless-tarmed                                                          | webhook on `proxy` only, shared-secret header                                                                                                              |
+| Mode                            | Apps                                                                 | Why                                                                                                                                                        |
+| ------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Gate** (Caddy `forward_auth`) | dashboard, sonarr, radarr, prowlarr, qbittorrent, seerr, maintainerr | their own login disabled (`AuthenticationRequired`, qBittorrent subnet whitelist); they talk to each other over Docker networks, never the public hostname |
+| **OIDC** (app is a client)      | Paperless, Portainer, Forgejo, Mealie                                | Portainer/Forgejo limited to the `infra-admins` group; Mealie moved here from the gate to avoid a double login                                             |
+| **Bypass**                      | Jellyfin                                                             | Chromecast cannot complete a browser login; LAN-only is the control                                                                                        |
+| **Not exposed**                 | paperless-tarmed                                                     | webhook on `proxy` only, shared-secret header                                                                                                              |
 
 - **Accounts come from Synology's LDAP Server**, shared by DSM, SMB, Drive and
   Authelia — one account everywhere (Authelia alone cannot authenticate SMB).

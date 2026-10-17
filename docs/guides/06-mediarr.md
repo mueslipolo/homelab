@@ -5,16 +5,16 @@
 
 ## What you get
 
-Ask for a series or film in Jellyseerr; it is found, downloaded, renamed into
+Ask for a series or film in Seerr; it is found, downloaded, renamed into
 the library and playable in Jellyfin, with hardware transcoding. Old, unwatched
 items are cleaned up by rules.
 
-![A request goes from Jellyseerr to Sonarr or Radarr, which search through Prowlarr and send the torrent to qBittorrent. The finished download is hardlinked into the library, which Jellyfin streams; Maintainerr's rules clean it up.](../images/mediarr.excalidraw.svg)
+![A request goes from Seerr to Sonarr or Radarr, which search through Prowlarr and send the torrent to qBittorrent. The finished download is hardlinked into the library, which Jellyfin streams; Maintainerr's rules clean it up.](../images/mediarr.excalidraw.svg)
 
 | Service      | Port | Hostname                       | Role                                      |
 | ------------ | ---- | ------------------------------ | ----------------------------------------- |
 | jellyfin     | 8096 | `jellyfin.home.example.com`    | streaming, own login (TVs, Chromecast)    |
-| jellyseerr   | 5055 | `jellyseerr.home.example.com`  | requests                                  |
+| seerr        | 5055 | `seerr.home.example.com`       | requests                                  |
 | sonarr       | 8989 | `sonarr.home.example.com`      | TV series                                 |
 | radarr       | 7878 | `radarr.home.example.com`      | films                                     |
 | prowlarr     | 9696 | `prowlarr.home.example.com`    | indexers, pushed to Sonarr/Radarr         |
@@ -40,6 +40,7 @@ The apps talk to each other by service name on the stack's `mediarr_net`
 ### 1. Create the folders
 
 ```bash
+# jellyseerr/ holds Seerr's config: the folder kept Jellyseerr's name
 sudo mkdir -p /volume1/docker/mediarr-config/{sonarr,radarr,prowlarr,qbittorrent,jellyfin,jellyseerr,maintainerr}
 sudo mkdir -p /volume1/media/{torrents,media/tv,media/movies}
 sudo chown -R 1000:1000 /volume1/docker/mediarr-config /volume1/media
@@ -165,7 +166,7 @@ Settings → Download Clients → Add → qBittorrent:
 
 No remote path mapping: qBittorrent and the \*arrs see the same `/data/torrents`.
 
-Note each app's API key (Settings → General) for Prowlarr and Jellyseerr.
+Note each app's API key (Settings → General) for Prowlarr and Seerr.
 
 **Check:** Test on the download client is green; System → Status shows no
 root folder or download client warning.
@@ -198,9 +199,9 @@ with "(Prowlarr)".
 **Check:** play a file at a lower quality; Dashboard → Activity shows
 `Transcoding` with a hardware codec, and the CPU stays low.
 
-### 9. Jellyseerr
+### 9. Seerr
 
-At `https://jellyseerr.home.example.com`:
+At `https://seerr.home.example.com`:
 
 1. Sign in with Jellyfin: server `http://jellyfin:8096`, the Jellyfin admin.
    Sync the libraries.
@@ -216,7 +217,7 @@ minute.
 ### 10. Maintainerr
 
 Settings → add Jellyfin (`http://jellyfin:8096`, an API key from Jellyfin's
-Dashboard → API Keys), Sonarr, Radarr and Jellyseerr (same hosts and keys as
+Dashboard → API Keys), Sonarr, Radarr and Seerr (same hosts and keys as
 above). Then Rules, e.g. "not watched for 90 days and not requested in the
 last 30 → unmonitor and delete".
 

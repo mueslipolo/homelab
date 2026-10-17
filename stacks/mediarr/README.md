@@ -1,7 +1,7 @@
 # mediarr
 
 Media automation and streaming: sonarr, radarr, prowlarr, qbittorrent,
-flaresolverr, jellyfin, jellyseerr, maintainerr.
+flaresolverr, jellyfin, seerr, maintainerr.
 
 **Setting it up: [guide 06, media](../../docs/guides/06-mediarr.md).** Shrinking
 files with `reencode*.sh`: [media re-encoding](../../docs/guides/media-reencoding.md).
@@ -9,7 +9,7 @@ This page is the reference.
 
 |            |                                                                                                                                   |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Reached at | `https://<app>.<internal-domain>` for sonarr, radarr, prowlarr, qbittorrent, jellyseerr, maintainerr. Login: Authelia gate        |
+| Reached at | `https://<app>.<internal-domain>` for sonarr, radarr, prowlarr, qbittorrent, seerr, maintainerr. Login: Authelia gate             |
 |            | `https://jellyfin.<internal-domain>`. Login: Jellyfin's own (no Authelia: Chromecast, [architecture](../../docs/architecture.md)) |
 |            | flaresolverr: internal only, no hostname                                                                                          |
 | Data       | `MEDIARR_CONFIG_ROOT` → one subfolder per service                                                                                 |
@@ -27,8 +27,12 @@ This page is the reference.
   network is recreated with another subnet.
 - **Same `/data/torrents` path in qBittorrent and the \*arrs**: hardlinks, no
   remote path mapping. Don't mount downloads and library separately.
-- **`jellyseerr` stays `:latest`.** The image has no version label to pin;
-  Renovate can't track it, upgrade by hand. Other images are pinned.
+- **Seerr, not Jellyseerr.** Jellyseerr was deprecated on 2026-02-14 and its
+  Jellyfin login fails on newer Jellyfin. Seerr migrated its config in place on
+  first start, so the config folder is still `MEDIARR_CONFIG_ROOT/jellyseerr`,
+  and the service keeps a `jellyseerr` network alias for integrations set up
+  with that host. `jellyseerr.<internal-domain>` redirects to `seerr.`.
+- **Seerr needs `init: true`**: the image has no init process of its own.
 - **Keep linuxserver tags as `…-lsNNN`.** `renovate.json`'s regex rule for
   `linuxserver/**` needs it; a bare tag silently stops getting updates.
 - **Jellyfin transcoding** maps `/dev/dri/renderD128` and `/dev/dri/card0`;

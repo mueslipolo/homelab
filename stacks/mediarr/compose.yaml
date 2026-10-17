@@ -158,30 +158,40 @@ services:
         limits:
           memory: 2G
 
-  jellyseerr:
-    # TODO: confirm current tag — this image sets no org.opencontainers.image.version
-    # label, `docker inspect` couldn't resolve one. Check the actual running
-    # container's behavior/changelog, or accept :latest here as a documented
-    # exception rather than an oversight.
-    image: fallenbagel/jellyseerr:latest
+  # Seerr replaced Jellyseerr (deprecated 2026-02-14; its Jellyfin login
+  # breaks on newer Jellyfin). Seerr migrates Jellyseerr's config on its first
+  # start, so it keeps the old config folder. The `jellyseerr` alias keeps
+  # integrations configured with http://jellyseerr:5055 (Maintainerr) working.
+  seerr:
+    image: ghcr.io/seerr-team/seerr:v3.5.0
     restart: unless-stopped
+    # The image no longer ships an init process.
+    init: true
+    # Seerr runs as `node` (1000) by default and supports --user; PUID:PGID
+    # already owns the config folder, so no chown is needed.
     user: "${PUID}:${PGID}"
     environment:
       - TZ=Europe/Zurich
     volumes:
       - ${MEDIARR_CONFIG_ROOT}/jellyseerr:/app/config
     networks:
-      - mediarr_net
-      - proxy
+      mediarr_net:
+        aliases:
+          - jellyseerr
+      proxy:
+        aliases:
+          - jellyseerr
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     security_opt:
       - no-new-privileges:true
+    # Runs as a non-root user: needs no capabilities.
     cap_drop:
       - ALL
-    cap_add:
-      - CHOWN
-      - SETUID
-      - SETGID
-      - DAC_OVERRIDE
     deploy:
       resources:
         limits:

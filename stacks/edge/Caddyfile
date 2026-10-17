@@ -70,10 +70,16 @@ jellyfin.{$INTERNAL_DOMAIN} {
 	reverse_proxy jellyfin:8096
 }
 
-jellyseerr.{$INTERNAL_DOMAIN} {
+seerr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia
-	reverse_proxy jellyseerr:5055
+	reverse_proxy seerr:5055
+}
+
+# Old name, kept for bookmarks: Jellyseerr became Seerr.
+jellyseerr.{$INTERNAL_DOMAIN} {
+	import tls_wildcard
+	redir https://seerr.{$INTERNAL_DOMAIN}{uri} permanent
 }
 
 maintainerr.{$INTERNAL_DOMAIN} {

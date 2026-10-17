@@ -11,11 +11,11 @@ all apps for a year of consent.
 
 Each app uses one of three modes, chosen by how it logs in:
 
-| Mode       | How                                                                                   | Use for                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Gate**   | `import authelia` in the Caddyfile + an `access_control` rule; the app's login is off | apps without OIDC: Sonarr, Radarr, Prowlarr, qBittorrent, Jellyseerr, Maintainerr, dashboard |
-| **OIDC**   | the app is an OIDC client of Authelia; no `import authelia`                           | apps with OIDC: Paperless, Mealie, Portainer, Forgejo                                        |
-| **Bypass** | neither; the app keeps its own login                                                  | clients that cannot do a browser login (Jellyfin on a Chromecast or TV)                      |
+| Mode       | How                                                                                   | Use for                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Gate**   | `import authelia` in the Caddyfile + an `access_control` rule; the app's login is off | apps without OIDC: Sonarr, Radarr, Prowlarr, qBittorrent, Seerr, Maintainerr, dashboard |
+| **OIDC**   | the app is an OIDC client of Authelia; no `import authelia`                           | apps with OIDC: Paperless, Mealie, Portainer, Forgejo                                   |
+| **Bypass** | neither; the app keeps its own login                                                  | clients that cannot do a browser login (Jellyfin on a Chromecast or TV)                 |
 
 Single factor only: the setup is LAN-only. Add a second factor before
 exposing anything to the internet.

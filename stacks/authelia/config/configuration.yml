@@ -212,7 +212,7 @@ access_control:
       policy: 'one_factor'
     - domain: 'qbittorrent.{{ mustEnv "INTERNAL_DOMAIN" }}'
       policy: 'one_factor'
-    - domain: 'jellyseerr.{{ mustEnv "INTERNAL_DOMAIN" }}'
+    - domain: 'seerr.{{ mustEnv "INTERNAL_DOMAIN" }}'
       policy: 'one_factor'
     - domain: 'maintainerr.{{ mustEnv "INTERNAL_DOMAIN" }}'
       policy: 'one_factor'
