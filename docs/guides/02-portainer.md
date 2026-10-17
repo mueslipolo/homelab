@@ -63,8 +63,8 @@ needs a restart.
 ¹ Stacks with `build:` (like `edge`) build on deploy, but Portainer sometimes
 reuses the old image: see Troubleshooting.
 
-Repository stacks also mount files next to `compose.yaml` (Caddyfile,
-Authelia's config): Portainer clones the repo, so `./…` paths work, **only
+Repository stacks also mount files next to `compose.yaml` (Caddy's and
+Authelia's config folders): Portainer clones the repo, so `./…` paths work, **only
 inside the stack's own folder**.
 
 ### 3. Deploy a Repository stack
@@ -140,7 +140,7 @@ warning.
 | Portainer exits at start after adding `--trusted-origins`      | A scheme or port in the value. Bare hostname only.                                                                                                                                                                                                                |
 | Caddy: `502` for Portainer                                     | Portainer was recreated and left `proxy`: `docker network connect proxy portainer`.                                                                                                                                                                               |
 | Redeploy "succeeds" but a built image is old                   | Portainer skipped the build. Keep `pull_policy: build` and no `image:` key; check `docker inspect -f '{{.Created}}' <container>` moved. This repo builds `paperless-tarmed` outside Portainer for that reason ([10](10-backups-and-jobs.md), `build-images` job). |
-| A changed config file is not picked up after Pull and redeploy | Single-file bind mount: the container keeps the old file. Mount the folder, or restart the container.                                                                                                                                                             |
+| A changed config file is not picked up after Pull and redeploy | A redeploy only recreates a container when its compose definition changed, not when a mounted file did. Mount the folder (a single file can stay pinned to the old one), and make the app reload (Caddy: `--watch`) or restart the container.                     |
 | Repository stack: `authentication required`                    | Private repo: add the git user and token under Authentication.                                                                                                                                                                                                    |
 | A bind mount to `../something` is empty                        | Paths outside `stacks/<name>/` are not resolved in Portainer's clone. Keep mounted files in the stack's folder.                                                                                                                                                   |
 

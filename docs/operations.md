@@ -62,7 +62,12 @@ Exceptions:
 - **`edge`** builds in Portainer (`pull_policy: build`), and a redeploy may
   still reuse the old image. After a `Dockerfile` change, check its container
   was recreated (`docker inspect --format '{{.Created}}' <caddy-container>`);
-  if not, Pull and redeploy by hand.
+  if not, Pull and redeploy by hand. A Caddyfile change needs nothing: Caddy
+  reloads it itself (`--watch`).
+- **`authelia`**: a redeploy does not restart it when only
+  `config/configuration.yml` changed, and it reads the file at start. After an
+  access-rule or OIDC client change, restart its container (Portainer →
+  Containers → Restart).
 - Not the webhook instead of polling: Forgejo would have to reach
   `portainer:9443` over `proxy`, never a public hostname.
 

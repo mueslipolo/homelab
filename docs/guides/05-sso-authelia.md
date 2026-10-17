@@ -118,7 +118,9 @@ sonarr.{$INTERNAL_DOMAIN} {
 }
 ```
 
-plus its `access_control` rule (step 2), then restart Authelia and Caddy.
+plus its `access_control` rule (step 2), then restart Authelia: it reads its
+configuration only at start, and a Portainer redeploy does not restart it for
+a config change. Caddy reloads its Caddyfile by itself.
 Turn the app's own login off for requests from Caddy, or users log in twice:
 [06 mediarr](06-mediarr.md#4-turn-off-the-apps-own-logins) has the commands
 for the \*arr apps and qBittorrent.

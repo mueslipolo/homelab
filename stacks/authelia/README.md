@@ -36,10 +36,14 @@ This page is the reference.
 - **Keep `X_AUTHELIA_CONFIG_FILTERS: template`**, else `{{ mustEnv … }}` stays
   literal and fails URL parsing. Keys use `secret` (strips trailing newlines),
   not `fileContent`.
-- **Mount the `config/` folder, never `configuration.yml` alone.** A
-  single-file bind mount keeps the file the container started with; after a
-  Git redeploy Authelia ran the old access rules (a new host got 403) until
-  restarted. Check: `docker exec <authelia> grep -c <new rule> /config/configuration.yml`.
+- **Restart after a config change.** Authelia reads `configuration.yml` only
+  at start, and a Portainer redeploy does not recreate the container when only
+  that file changed: a new host gets 403 until Authelia restarts (Portainer →
+  Containers → Restart). Check what it runs:
+  `docker exec <authelia> grep -c <new rule> /config/configuration.yml`.
+- **Mount the `config/` folder, never `configuration.yml` alone**: a
+  single-file bind mount can stay pinned to the file the container started
+  with.
 - **`config/` can't be `:ro`**: the entrypoint chowns `/config`.
 - **Caps:** `cap_drop: [ALL]` + `CHOWN, FOWNER, SETUID, SETGID, DAC_OVERRIDE`
   on both services (root-then-drop entrypoints).

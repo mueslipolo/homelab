@@ -41,14 +41,16 @@ token and two lines change, see [Another DNS provider](#another-dns-provider).
 
 ### 1. Get the files onto the NAS
 
-You need `stacks/edge/` (`compose.yaml`, `Dockerfile`, a Caddyfile).
+You need `stacks/edge/`: `compose.yaml`, `Dockerfile`, and the Caddyfiles in
+`caddy/`.
 
 - **Portainer:** fork this repo (Git stacks need a repository you can push
   your Caddyfile to), then deploy from your fork in step 3.
 - **docker compose:** copy the folder, e.g. `scp -r stacks/edge <admin>@<nas-ip>:~/edge`.
 
 Start from the minimal Caddyfile, with one test app and no Authelia:
-`CADDYFILE=Caddyfile.minimal`. The full `Caddyfile` is this homelab's own setup
+`CADDYFILE=Caddyfile.minimal` (`caddy/Caddyfile.minimal`). The full
+`caddy/Caddyfile` is this homelab's own setup
 and needs [05 Authelia](05-sso-authelia.md).
 
 ### 2. Start a test app
@@ -138,26 +140,27 @@ Then remove the test app: its block in your Caddyfile and `sudo docker rm -f who
    	reverse_proxy jellyfin:8096
    }
    ```
-3. Restart Caddy: `sudo docker restart <caddy-container>`, or Pull and
-   redeploy in Portainer. Not `caddy reload`: the Caddyfile is a single-file
-   bind mount, and after an editor or `git pull` replaces the file the running
-   container still sees the old one. The wildcard covers the new name: no new
-   certificate, and no DNS change unless your DNS needs one entry per host.
+3. Nothing to restart: Caddy runs with `--watch` and reloads within seconds
+   of the file changing, whether you edit it on the NAS or Portainer pulls it
+   from git. Its log says `config file changed; reloading`. The wildcard
+   covers the new name: no new certificate, and no DNS change unless your DNS
+   needs one entry per host.
 
 To put a login in front of it, see [05 Authelia](05-sso-authelia.md).
 
 ## Troubleshooting
 
-| Symptom                                                     | Cause → fix                                                                                                                                                                    |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `curl` from the NAS to `192.0.2.20` times out               | Expected: the host cannot reach its own macvlan IP. Test from another machine. Containers on `proxy` reach Caddy through a network alias (reference: "Reaching Caddy itself"). |
-| `module not registered: dns.providers.infomaniak`           | Caddy runs the stock image: the build did not happen. Rebuild (`up -d --build`, or Portainer with `pull_policy: build`) and check `docker inspect -f '{{.Created}}'` moved.    |
-| Log: `401`/`403` from `api.infomaniak.com`                  | Token wrong or missing a scope (`domain:read`, `dns:read`, `dns:write`). A token change needs a redeploy: Caddy reads it at start.                                             |
-| Log: `rateLimited`                                          | Too many failed or repeated orders. Switch to staging (the `acme_ca` line in the Caddyfile) until it works, then remove the line: Caddy then gets a real certificate.          |
-| Certificate obtained, browser says `NXDOMAIN` or another IP | LAN DNS (step 4), or the client uses DNS-over-HTTPS.                                                                                                                           |
-| Caddy does not start: `address already in use` or no LAN IP | `CADDY_LAN_IP` in use, or `LAN_PARENT_INTERFACE` wrong (`ovs_eth0`?). `sudo docker network ls`, then `inspect` the stack's `…_lan`.                                            |
-| `exec: operation not permitted`                             | `cap_add: [NET_BIND_SERVICE]` removed from `compose.yaml`: the built binary needs it.                                                                                          |
-| `502` for an app                                            | The app is not on `proxy`, or the name/port in `reverse_proxy` is wrong: `sudo docker exec <caddy-container> wget -qO- http://<app>:<port>`.                                   |
+| Symptom                                                     | Cause → fix                                                                                                                                                                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `curl` from the NAS to `192.0.2.20` times out               | Expected: the host cannot reach its own macvlan IP. Test from another machine. Containers on `proxy` reach Caddy through a network alias (reference: "Reaching Caddy itself").                                            |
+| `module not registered: dns.providers.infomaniak`           | Caddy runs the stock image: the build did not happen. Rebuild (`up -d --build`, or Portainer with `pull_policy: build`) and check `docker inspect -f '{{.Created}}'` moved.                                               |
+| Log: `401`/`403` from `api.infomaniak.com`                  | Token wrong or missing a scope (`domain:read`, `dns:read`, `dns:write`). A token change needs a redeploy: Caddy reads it at start.                                                                                        |
+| Log: `rateLimited`                                          | Too many failed or repeated orders. Switch to staging (the `acme_ca` line in the Caddyfile) until it works, then remove the line: Caddy then gets a real certificate.                                                     |
+| Certificate obtained, browser says `NXDOMAIN` or another IP | LAN DNS (step 4), or the client uses DNS-over-HTTPS.                                                                                                                                                                      |
+| Caddy does not start: `address already in use` or no LAN IP | `CADDY_LAN_IP` in use, or `LAN_PARENT_INTERFACE` wrong (`ovs_eth0`?). `sudo docker network ls`, then `inspect` the stack's `…_lan`.                                                                                       |
+| `exec: operation not permitted`                             | `cap_add: [NET_BIND_SERVICE]` removed from `compose.yaml`: the built binary needs it.                                                                                                                                     |
+| A Caddyfile change has no effect                            | Log: `unable to load latest config` = a syntax error; Caddy keeps the last good config until the file is fixed. No log line at all: the container is not running with `--watch` (an old `compose.yaml`): restart it once. |
+| `502` for an app                                            | The app is not on `proxy`, or the name/port in `reverse_proxy` is wrong: `sudo docker exec <caddy-container> wget -qO- http://<app>:<port>`.                                                                              |
 
 ## Another DNS provider
 

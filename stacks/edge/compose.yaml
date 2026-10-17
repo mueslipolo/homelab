@@ -8,6 +8,12 @@ services:
     # new Dockerfile/Caddyfile, starts the old binary, and reports success. Same
     # failure as stacks/paperless-tarmed, which is where it was first diagnosed.
     pull_policy: build
+    # --watch: Caddy re-reads its Caddyfile every second and reloads it when it
+    # changes. A Portainer redeploy does not recreate the container for a
+    # Caddyfile change alone, so without it the old config keeps running. A
+    # broken Caddyfile fails the reload and the last good config stays.
+    # CADDYFILE=Caddyfile.minimal for guide 03's one-app start.
+    command: ["caddy", "run", "--config", "/etc/caddy/${CADDYFILE:-Caddyfile}", "--adapter", "caddyfile", "--watch"]
     restart: unless-stopped
     environment:
       ACME_EMAIL: ${ACME_EMAIL}
@@ -16,8 +22,9 @@ services:
       PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
     mac_address: ${CADDY_LAN_MAC}
     volumes:
-      # CADDYFILE=Caddyfile.minimal for the guide's one-app start.
-      - ./${CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
+      # The folder, not the file: a single-file mount can stay pinned to the
+      # old file after Portainer re-clones the repo.
+      - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
