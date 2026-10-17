@@ -107,6 +107,7 @@ The System tab lists every Portainer stack:
 - **up to date**: the commit Portainer deployed includes the last commit that touched the stack's folder
 - **redeploy needed**: the folder changed since. Normal for up to 5 minutes after a push (GitOps polling); longer means polling is off or failing: Pull and redeploy
 - **unknown**: the deployed commit is not in the NAS clone
+- **not checked**: the scheduler's clone cannot pull (e.g. after a force-push), so its "code" is old. The Scheduler row says why and how to reset it; the stacks themselves need nothing
 - **stopped**
 - **Web editor**: not deployed from git, so there is nothing to compare
 

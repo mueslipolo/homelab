@@ -1155,12 +1155,18 @@
 
     // A Portainer stack against git: Portainer's deployed commit vs the last
     // commit that touched the stack's folder (scripts/lib/stacks.sh).
-    function stackRow(k) {
+    // cloneStuck: the scheduler's clone can't pull, so "code" is old and a
+    // stack running a newer commit would look behind. Say so instead.
+    function stackRow(k, cloneStuck) {
         var dep = k.deployed, code = k.code;
         function at(c) { return c ? c.commit + ' · ' + when(c.at) : '-'; }
         if (!k.active) { return { level: 'warn', value: 'stopped', detail: '' }; }
         if (!k.git) { return { level: 'ok', value: 'Web editor', detail: '' }; }
         if (k.current === true) { return { level: 'ok', value: 'up to date', detail: '' }; }
+        if (cloneStuck) {
+            return { level: 'warn', value: 'not checked',
+                     detail: 'running ' + at(dep) + ' · the scheduler\'s clone is stuck (see Scheduler); nothing to redeploy' };
+        }
         var both = 'running ' + at(dep) + ', code ' + at(code);
         if (k.current === false) {
             return { level: 'warn', value: 'redeploy needed', detail: 'Pull and redeploy in Portainer: ' + both };
@@ -1392,15 +1398,17 @@
         var sList = document.querySelector('[data-leds-system]');
         var sLevels = [], notes = [];
         function note(level, text) { if (level !== 'ok') { notes.push([level, text]); } }
+        var sch = st.scheduler, cloneStuck = !!(sch && !sch.pull_ok);
         if (st.stacks) {
             var kList = document.querySelector('[data-leds-stacks]'), behind = [];
             st.stacks.slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (k) {
-                var r = stackRow(k);
+                var r = stackRow(k, cloneStuck);
                 led(kList, r.level, k.name, r.value, r.detail);
                 sLevels.push(r.level);
                 if (r.level !== 'ok') { behind.push(k.name + ': ' + r.value); }
             });
-            if (behind.length) { note('warn', behind.length > 1 ? behind.length + ' stacks to redeploy' : behind[0]); }
+            // A stuck clone explains these rows: the scheduler's note covers them.
+            if (behind.length && !cloneStuck) { note('warn', behind.length > 1 ? behind.length + ' stacks to redeploy' : behind[0]); }
             document.querySelector('[data-no-stacks]').hidden = true;
         }
         var buildJob = (st.jobs || []).filter(function (j) { return j.name === 'build-images'; })[0];
@@ -1418,15 +1426,25 @@
             sLevels.push(s.level);
             note(s.level, j.name + ': ' + s.value);
         });
-        var age = now - st.generated, sch = st.scheduler;
+        var age = now - st.generated;
         if (sch) {
             var stale = age > 2 * HOUR;
             var schLevel = stale ? 'bad' : sch.pull_ok ? 'ok' : 'warn';
+            // Not a fast-forward: the history on Forgejo was rewritten
+            // (force-push). The clone needs a reset by hand; it never heals.
+            var rewritten = /fast-forward|diverg/i.test(sch.pull_error || '');
+            var why = rewritten
+                ? 'git history was rewritten on Forgejo (force-push). Reset the clone as root: git -C <clone> fetch origin && git -C <clone> reset --hard origin/main'
+                : 'cannot update its git clone: ' + sch.pull_error;
             led(sList, schLevel, 'Scheduler', ago(st.generated, now),
                 stale ? 'run-jobs.sh has stopped running'
-                    : 'version ' + sch.sha + (sch.pull_ok ? '' : ' · update failed: ' + sch.pull_error));
+                    : 'version ' + sch.sha + (sch.pull_ok ? '' : ' · ' + why + '. Jobs and the stack check use this old copy until then.'));
             sLevels.push(schLevel);
-            note(schLevel, 'scheduler: ' + (stale ? 'stopped' : 'update failed'));
+            // First in the summary: it explains the other warnings.
+            if (schLevel !== 'ok') {
+                notes.unshift([schLevel, stale ? 'scheduler stopped'
+                    : rewritten ? 'scheduler: git history rewritten, reset its clone' : 'scheduler cannot update its clone']);
+            }
         } else {
             var rLevel = age > 36 * HOUR ? 'bad' : 'ok';
             led(sList, rLevel, 'Status report', ago(st.generated, now),
