@@ -34,7 +34,7 @@ sudo docker run -d --name portainer --restart=always \
   -v /volume1/docker/portainer-data:/volume1/docker/portainer-data \
   portainer/portainer-ce:2.45.2 \
   --data /volume1/docker/portainer-data \
-  --trusted-origins portainer.home.example.com
+  --trusted-origins https://portainer.home.example.com
 sudo docker network connect proxy portainer
 ```
 
@@ -42,8 +42,10 @@ sudo docker network connect proxy portainer
   `--data` points at it. Portainer clones Git stacks into its data folder and
   hands those paths to the Docker daemon for bind mounts; with the usual
   `-v …:/data`, Git stacks fail with `Bind mount failed: ... does not exist`.
-- **`--trusted-origins`:** a bare hostname, no scheme and no port (either
-  crashes Portainer at start). Omit it if you don't use Caddy.
+- **`--trusted-origins`:** `scheme://host` since 2.45
+  (`https://portainer.home.example.com`); a bare hostname now stops Portainer
+  at start with `invalid trusted origin`. Up to 2.39 it was the opposite: bare
+  hostname only. Omit it if you don't use Caddy.
 - **`docker network connect proxy portainer`** again after every re-creation
   of the container (upgrades included).
 - **Upgrade:** `docker rm -f portainer`, the same `docker run` with the new
@@ -137,7 +139,7 @@ warning.
 | Symptom                                                        | Cause → fix                                                                                                                                                                                                                                                       |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Bind mount failed: ... does not exist` on a Repository stack  | Portainer's data path differs inside and outside the container. Recreate it with the identical `-v` path and `--data` (step 1).                                                                                                                                   |
-| Portainer exits at start after adding `--trusted-origins`      | A scheme or port in the value. Bare hostname only.                                                                                                                                                                                                                |
+| Portainer restarts in a loop, log `invalid trusted origin`     | 2.45+ wants `https://<host>` in `--trusted-origins`; 2.39 and older wanted the bare hostname. Match the value to the version.                                                                                                                                     |
 | Caddy: `502` for Portainer                                     | Portainer was recreated and left `proxy`: `docker network connect proxy portainer`.                                                                                                                                                                               |
 | Redeploy "succeeds" but a built image is old                   | Portainer skipped the build. Keep `pull_policy: build` and no `image:` key; check `docker inspect -f '{{.Created}}' <container>` moved. This repo builds `paperless-tarmed` outside Portainer for that reason ([10](10-backups-and-jobs.md), `build-images` job). |
 | A changed config file is not picked up after Pull and redeploy | A redeploy only recreates a container when its compose definition changed, not when a mounted file did. Mount the folder (a single file can stay pinned to the old one), and make the app reload (Caddy: `--watch`) or restart the container.                     |
