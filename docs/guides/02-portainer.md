@@ -32,7 +32,7 @@ sudo docker run -d --name portainer --restart=always \
   -p 9443:9443 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /volume1/docker/portainer-data:/volume1/docker/portainer-data \
-  portainer/portainer-ce:2.39.5 \
+  portainer/portainer-ce:2.45.2 \
   --data /volume1/docker/portainer-data \
   --trusted-origins portainer.home.example.com
 sudo docker network connect proxy portainer
