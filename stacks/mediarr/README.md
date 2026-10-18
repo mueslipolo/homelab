@@ -23,6 +23,11 @@ This page is the reference.
 - **Never set `AuthenticationMethod` to `None`.** Recent versions reject it and
   lock the app. Leave `Basic`/`Forms`; `DisabledForLocalAddresses` suffices
   because Caddy's requests come from a Docker private range.
+- **Caddy drops `X-Forwarded-For` for Sonarr, Radarr and Prowlarr**
+  (`arr_no_client_ip` in the Caddyfile). With the header, they treat even a
+  LAN client as remote and show their own login after Authelia's (seen on
+  Prowlarr 2.6: `200` without the header, `302 /login` with
+  `X-Forwarded-For: 192.168.x.x`). Their logs then show Caddy's address.
 - **qBittorrent whitelist = `proxy` subnet**, not the LAN. Update it if the
   network is recreated with another subnet.
 - **Same `/data/torrents` path in qBittorrent and the \*arrs**: hardlinks, no

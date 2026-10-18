@@ -14,6 +14,16 @@
 # can't complete a browser SSO redirect), mealie (needs the hybrid bypass
 # pattern instead, its mobile app hits /api directly — Step 2b, not done
 # yet), auth itself (a login portal gated behind login is unreachable).
+# For the *arrs: their "Disabled for Local Addresses" only skips their own
+# login for a request with no X-Forwarded-For. With the header, even a LAN
+# address gets the login form (tested on Prowlarr 2.6). Without it they see
+# Caddy's Docker address, which counts as local; Authelia's gate still decides
+# who gets through. Caddy never forwards a client-supplied X-Forwarded-For, so
+# this cannot be used to look local from outside.
+(arr_no_client_ip) {
+	header_up -X-Forwarded-For
+}
+
 (authelia) {
 	forward_auth authelia:9091 {
 		uri /api/authz/forward-auth
@@ -44,19 +54,25 @@ paperless.{$INTERNAL_DOMAIN} {
 sonarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia
-	reverse_proxy sonarr:8989
+	reverse_proxy sonarr:8989 {
+		import arr_no_client_ip
+	}
 }
 
 radarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia
-	reverse_proxy radarr:7878
+	reverse_proxy radarr:7878 {
+		import arr_no_client_ip
+	}
 }
 
 prowlarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia
-	reverse_proxy prowlarr:9696
+	reverse_proxy prowlarr:9696 {
+		import arr_no_client_ip
+	}
 }
 
 qbittorrent.{$INTERNAL_DOMAIN} {

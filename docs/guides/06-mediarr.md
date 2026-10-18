@@ -228,17 +228,18 @@ what it selects, then enable the action.
 
 ## Troubleshooting
 
-| Symptom                                               | Cause → fix                                                                                                                            |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Imports are slow and use double the space             | Not hardlinks: downloads and library on different mounts or shares. Keep the single `MEDIA_ROOT` layout (step 1).                      |
-| Sonarr: "path does not exist" for a finished download | qBittorrent saves outside `/data/torrents`, or the paths differ between containers. Fix the save path; don't add remote path mappings. |
-| `Permission denied` writing to `/data` or `/config`   | Folders not owned by `PUID`/`PGID` (step 1).                                                                                           |
-| Locked out of Sonarr/Radarr/Prowlarr                  | `AuthenticationMethod` set to `None`. Stop the app, set it back to `Forms` in `config.xml`, start.                                     |
-| qBittorrent asks for a login behind Authelia          | Its whitelist is not the `proxy` subnet, or `proxy` was recreated with another subnet (step 4).                                        |
-| Indexer fails with a Cloudflare challenge             | Tag it `flaresolverr`. Some challenges FlareSolverr cannot solve; disable those indexers. FlareSolverr needs about 1 GB of memory.     |
-| Jellyfin transcodes on the CPU                        | `/dev/dri` not mapped, or `PUID` cannot open it: `ls -l /dev/dri`, check the group (`video`/`render`) and that the user is in it.      |
-| A `.mkv` in AV1 stutters                              | The NAS's GPU cannot decode AV1: CPU transcode. Prefer HEVC ([media re-encoding](media-reencoding.md)).                                |
-| 3D files show two pictures side by side               | `3D`/`SBS`/`HOU` releases. Block them with a custom format scored -10000 in Sonarr/Radarr.                                             |
+| Symptom                                                      | Cause → fix                                                                                                                                                                |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Imports are slow and use double the space                    | Not hardlinks: downloads and library on different mounts or shares. Keep the single `MEDIA_ROOT` layout (step 1).                                                          |
+| Sonarr: "path does not exist" for a finished download        | qBittorrent saves outside `/data/torrents`, or the paths differ between containers. Fix the save path; don't add remote path mappings.                                     |
+| `Permission denied` writing to `/data` or `/config`          | Folders not owned by `PUID`/`PGID` (step 1).                                                                                                                               |
+| Locked out of Sonarr/Radarr/Prowlarr                         | `AuthenticationMethod` set to `None`. Stop the app, set it back to `Forms` in `config.xml`, start.                                                                         |
+| Sonarr/Radarr/Prowlarr show their own login after Authelia's | `AuthenticationRequired` is not `DisabledForLocalAddresses`, or the Caddy block lacks `import arr_no_client_ip`: with `X-Forwarded-For` they treat every client as remote. |
+| qBittorrent asks for a login behind Authelia                 | Its whitelist is not the `proxy` subnet, or `proxy` was recreated with another subnet (step 4).                                                                            |
+| Indexer fails with a Cloudflare challenge                    | Tag it `flaresolverr`. Some challenges FlareSolverr cannot solve; disable those indexers. FlareSolverr needs about 1 GB of memory.                                         |
+| Jellyfin transcodes on the CPU                               | `/dev/dri` not mapped, or `PUID` cannot open it: `ls -l /dev/dri`, check the group (`video`/`render`) and that the user is in it.                                          |
+| A `.mkv` in AV1 stutters                                     | The NAS's GPU cannot decode AV1: CPU transcode. Prefer HEVC ([media re-encoding](media-reencoding.md)).                                                                    |
+| 3D files show two pictures side by side                      | `3D`/`SBS`/`HOU` releases. Block them with a custom format scored -10000 in Sonarr/Radarr.                                                                                 |
 
 ## Next
 
