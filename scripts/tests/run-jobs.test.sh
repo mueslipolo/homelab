@@ -297,6 +297,57 @@ check "no token: no stack list" [ "$(stacks '')" = null ]
 check "Portainer unreachable: no stack list" [ "$(CURL_FAIL=1 stacks)" = null ]
 rm -rf "$K"
 
+echo "renovate-notify.sh"
+N=$(mktemp -d)
+mkdir -p "$N/bin" "$N/ops/state"
+# Fake Forgejo and ntfy: GETs return the issue list, POSTs are recorded.
+cat >"$N/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >>"$N_DIR/curl.args"
+cat >>"$N_DIR/curl.stdin"
+case "$*" in
+*--data-binary*) printf '%s\n---\n' "$*" >>"$N_DIR/posts" ;;
+*) cat "$N_DIR/issues.json" ;;
+esac
+EOF
+chmod +x "$N/bin/curl"
+dash() { # <pending lines...>: an issue list with a Dependency Dashboard holding them
+	local body='This issue lists Renovate updates.\n\n## Pending Approval\n\nThe following branches are pending approval.\n\n' l
+	for l in "$@"; do body+=" - [ ] <!-- approve-branch=renovate/x -->$l\n"; done
+	body+=' - [ ] <!-- approve-all-pending-prs -->Create all pending approval PRs at once\n\n## Open\n\n - [ ] <!-- rebase-branch=renovate/y -->chore(deps): update y to v1.2\n'
+	printf '[{"number": 7, "title": "Other"}, {"number": 1, "title": "Dependency Dashboard", "html_url": "https://forgejo.example.com/admin/homelab/issues/1", "body": "%s"}]' "$body" >"$N/issues.json"
+}
+notify() {
+	N_DIR=$N PATH="$N/bin:$PATH" OPS_HOME=$N/ops FORGEJO_TOKEN=fj_secret FORGEJO_REPO=admin/homelab \
+		NTFY_TOKEN=tk_secret bash "$ROOT/scripts/renovate-notify.sh" >/dev/null
+}
+posts() { if [ -f "$N/posts" ]; then grep -c -- '^---$' "$N/posts"; else echo 0; fi; }
+dash 'chore(deps): update jellyfin to v13' 'chore(deps): update forgejo to v17.1'
+notify
+check "new approvals are pushed" [ "$(posts)" = 1 ]
+check "with each update named" grep -q 'update jellyfin to v13' "$N/posts"
+check "and a count in the title" grep -q 'Title: 2 updates waiting for your approval' "$N/posts"
+check "tapping opens the Dependency Dashboard" grep -q 'Click: https://forgejo.example.com/admin/homelab/issues/1' "$N/posts"
+check "open PRs and the approve-all line are not updates" not_in_file 'update y to' "$N/posts"
+check "to the homelab topic on the loopback port" grep -q 'http://127.0.0.1:2586/homelab' "$N/posts"
+check "tokens go in on stdin" grep -q 'Bearer tk_secret' "$N/curl.stdin"
+check "never on the command line" not_in_file _secret "$N/curl.args"
+notify
+check "the same updates are not pushed again" [ "$(posts)" = 1 ]
+dash 'chore(deps): update jellyfin to v13' 'chore(deps): update forgejo to v17.1' 'chore(deps): update postgres to v18'
+notify
+check "only the new one is pushed" grep -q 'Title: 1 update waiting for your approval' "$N/posts"
+check "with the total" grep -q '(3 waiting in all)' "$N/posts"
+dash
+notify
+check "nothing waiting: no push" [ "$(posts)" = 2 ]
+dash 'chore(deps): update jellyfin to v13'
+notify
+check "approved, then back again: pushed again" [ "$(posts)" = 3 ]
+echo '[]' >"$N/issues.json"
+check "no dashboard yet: not a failure" notify
+rm -rf "$N"
+
 echo "docker-prune"
 D=$(mktemp -d)
 mkdir -p "$D/bin"

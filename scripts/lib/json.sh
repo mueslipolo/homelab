@@ -26,3 +26,10 @@ write_atomic() { # <path>
 	chmod 644 -- "$tmp"
 	mv -f -- "$tmp" "$1"
 }
+
+# jq for reading API responses. DSM ships none: use the local one if any, else
+# a pinned image.
+JQ_IMAGE="ghcr.io/jqlang/jq:1.8.1"
+_jq() {
+	if command -v jq >/dev/null; then jq "$@"; else docker run --rm -i "$JQ_IMAGE" "$@"; fi
+}

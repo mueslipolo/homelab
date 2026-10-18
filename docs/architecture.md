@@ -53,7 +53,7 @@ Authelia in front of everything that can take it, by how each app logs in:
 | ------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Gate** (Caddy `forward_auth`) | dashboard, sonarr, radarr, prowlarr, qbittorrent, seerr, maintainerr | their own login disabled (`AuthenticationRequired`, qBittorrent subnet whitelist); they talk to each other over Docker networks, never the public hostname |
 | **OIDC** (app is a client)      | Paperless, Portainer, Forgejo, Mealie                                | Portainer/Forgejo limited to the `infra-admins` group; Mealie moved here from the gate to avoid a double login                                             |
-| **Bypass**                      | Jellyfin                                                             | Chromecast cannot complete a browser login; LAN-only is the control                                                                                        |
+| **Bypass**                      | Jellyfin, ntfy                                                       | Chromecast cannot complete a browser login, and ntfy's apps and senders call its API: each keeps its own login (ntfy: users and tokens, anonymous denied)  |
 | **Not exposed**                 | paperless-tarmed                                                     | webhook on `proxy` only, shared-secret header                                                                                                              |
 
 - **Accounts come from Synology's LDAP Server**, shared by DSM, SMB, Drive and

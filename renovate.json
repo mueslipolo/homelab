@@ -63,8 +63,33 @@
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?[^-]*-ls(?<build>\\d+)$"
     },
     {
+      "description": [
+        "Minor and patch updates merge themselves: Renovate commits them straight to",
+        "main (no PR) once the checks workflow has passed on its branch, on its next",
+        "run (daily). Portainer's GitOps polling then deploys them within 5 minutes."
+      ],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": [
+        "Majors wait for approval on the Dependency Dashboard; the scheduler's",
+        "renovate-notify job pushes each new one to ntfy (docs/guides/11-notifications.md)."
+      ],
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": [
+        "Updates that a merge does not deploy wait for approval too, whatever their",
+        "size: Forgejo is a Web editor stack (paste the compose file by hand) and",
+        "Portainer is a docker run on the NAS (guide 02). Listed and notified like",
+        "majors, so they are not merged and then forgotten."
+      ],
+      "matchPackageNames": ["codeberg.org/forgejo/forgejo", "portainer/portainer-ce"],
+      "automerge": false,
       "dependencyDashboardApproval": true
     },
     {

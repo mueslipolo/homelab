@@ -1,8 +1,10 @@
 name: renovate
 
 on:
+  # Daily: automerged updates land the day after their checks pass, and the
+  # 07:00 renovate-notify job sees new approvals the same morning.
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 jobs:

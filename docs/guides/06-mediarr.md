@@ -242,6 +242,8 @@ what it selects, then enable the action.
 
 ## Next
 
+- [11 Notifications](11-notifications.md): Sonarr, Radarr, Prowlarr and Seerr
+  push downloads, failures and requests to your phone.
 - [09 dashboard](09-dashboard.md): storage per folder, including the media library.
 - [Media re-encoding](media-reencoding.md): shrink large H.264 files to HEVC from a desktop.
 - [10 backups](10-backups-and-jobs.md): back up `MEDIARR_CONFIG_ROOT` if you

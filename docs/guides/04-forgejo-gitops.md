@@ -6,13 +6,15 @@
 ## What you get
 
 This repo hosted on the NAS, Portainer deploying every stack from it, and
-weekly Renovate PRs for image updates, checked by CI.
+Renovate checking image updates daily: minor and patch updates merge themselves
+once CI passes, majors wait for your approval and reach your phone
+([11](11-notifications.md)).
 
 Who reads the repo, and when:
 
 | Reader         | Trigger                                     | Does                                             |
 | -------------- | ------------------------------------------- | ------------------------------------------------ |
-| Actions runner | every push; Renovate weekly                 | runs the checks; Renovate opens image-update PRs |
+| Actions runner | every push; Renovate daily                  | runs the checks; Renovate opens image-update PRs |
 | Portainer      | polls every 5 min                           | redeploys the stacks whose files changed         |
 | Scheduler      | every 15 min ([10](10-backups-and-jobs.md)) | pulls its clone, then runs the due jobs as root  |
 
@@ -91,7 +93,15 @@ Portainer → Add stack → **Repository** ([02](02-portainer.md), step 3) with:
 
 The runner executes `.forgejo/workflows/`: `checks.yaml` on every push
 (gitleaks, the no-real-values check, shellcheck, tests) and `renovate.yaml`
-every Monday at 06:00.
+daily at 06:00.
+
+What Renovate does with an update (`renovate.json`):
+
+| Update                        | What happens                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| minor, patch                  | commits it to `main` itself (no PR) once `checks` passed on its branch; Portainer deploys it           |
+| major                         | waits on the Dependency Dashboard issue until you tick it; the `renovate-notify` job pushes it to ntfy |
+| Forgejo, Portainer (any size) | same as a major: a merge deploys nothing, you update them by hand                                      |
 
 1. Register the runner **in the Forgejo container** (not with a web UI token):
    ```bash

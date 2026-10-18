@@ -9,12 +9,6 @@
 # NAS's own Portainer (self-signed certificate, hence -k on localhost only).
 
 PORTAINER_URL="${PORTAINER_URL:-https://127.0.0.1:9443}"
-# DSM ships no jq: use the local one if any, else a pinned image.
-JQ_IMAGE="ghcr.io/jqlang/jq:1.8.1"
-
-_jq() {
-	if command -v jq >/dev/null; then jq "$@"; else docker run --rm -i "$JQ_IMAGE" "$@"; fi
-}
 
 # One line per stack: name, id, status (1 active, 2 stopped), compose path,
 # deployed commit, update time; \x1f-separated (a tab would collapse empty

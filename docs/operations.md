@@ -14,8 +14,11 @@ conventions a new stack follows. Setting things up is in the
   live in the gitignored `CLAUDE.local.md` and
   `PRIVATE-real-values-do-not-publish/`. The tree is publishable as is; the
   history was squashed before publishing, and stays clean.
-- **Images are pinned** to exact tags; Renovate opens weekly update PRs
-  (major updates wait for approval on its Dependency Dashboard).
+- **Images are pinned** to exact tags. Renovate runs daily: minor and patch
+  updates merge themselves once CI passes; majors (and Forgejo, Portainer)
+  wait for approval on its Dependency Dashboard, and ntfy tells you
+  ([guide 04](guides/04-forgejo-gitops.md#5-ci-runner-checks-renovate-optional),
+  [guide 11](guides/11-notifications.md)).
 
 | Real value              | Placeholder in reference pages          | Example in guides   |
 | ----------------------- | --------------------------------------- | ------------------- |
@@ -45,7 +48,8 @@ pytest.
 Every Repository stack has Portainer's **GitOps updates** on: polling every
 5 minutes, _Force redeployment_ off. So:
 
-1. Change it here (or merge Renovate's PR), push to Forgejo.
+1. Change it here and push to Forgejo; or Renovate commits a minor update
+   itself; or you approve a major on the Dependency Dashboard and merge its PR.
 2. Within 5 minutes Portainer sees the new commit and redeploys the stacks
    whose files changed. Nothing to click. A merge therefore restarts
    containers at any hour.

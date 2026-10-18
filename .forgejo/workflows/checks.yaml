@@ -20,7 +20,7 @@ jobs:
       - name: Install tools
         run: |
           apt-get update -qq
-          apt-get install -y -qq --no-install-recommends git shellcheck curl ca-certificates >/dev/null
+          apt-get install -y -qq --no-install-recommends git shellcheck curl ca-certificates jq >/dev/null
           curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             | tar -xz -C /usr/local/bin gitleaks
           pip install -q uv

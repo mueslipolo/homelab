@@ -29,6 +29,7 @@ Why each piece is there: [architecture](docs/architecture.md).
 | [08 Mealie](docs/guides/08-mealie.md)                              | recipes and meal plans                                                                                                                            |
 | [09 Dashboard](docs/guides/09-dashboard.md)                        | a home page with every service and the health of jobs, backups, storage                                                                           |
 | [10 Backups and jobs](docs/guides/10-backups-and-jobs.md)          | Hyper Backup, snapshots, app dumps, one scheduler for every job                                                                                   |
+| [11 Notifications](docs/guides/11-notifications.md)                | ntfy push notifications on your phone: updates waiting for approval, downloads, DSM alerts                                                        |
 | [Media re-encoding](docs/guides/media-reencoding.md)               | shrink H.264 files to HEVC on a desktop GPU                                                                                                       |
 
 The whole thing on a new NAS, in order: [install everything](docs/install-everything.md).

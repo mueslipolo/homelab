@@ -82,6 +82,13 @@ jellyseerr.{$INTERNAL_DOMAIN} {
 	redir https://seerr.{$INTERNAL_DOMAIN}{uri} permanent
 }
 
+# No Authelia gate: the ntfy apps and the *arrs talk to its API directly. ntfy
+# has its own users and tokens, with anonymous access denied.
+ntfy.{$INTERNAL_DOMAIN} {
+	import tls_wildcard
+	reverse_proxy ntfy:8080
+}
+
 maintainerr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia

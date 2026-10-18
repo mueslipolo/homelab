@@ -43,6 +43,7 @@ the dashboard.
 | `mealie`                                                  | **dumps only** (`MEALIE_DUMP_DIR`)                                            | same; Mealie's own backup export, by the `mealie-backup` job. It contains Mealie's secret keys: dumps are root-only |
 | `paperless`                                               | the whole share, including the `export/` folder of the `paperless-export` job | originals are irreplaceable; the export restores into any version                                                   |
 | `authelia`                                                | **secrets folder only**                                                       | losing `storage_encryption_key` or the JWKS key breaks every OIDC client; its Postgres is only sessions             |
+| `ntfy`                                                    | nothing                                                                       | users and tokens are quick to recreate; messages are a 3-day cache                                                  |
 | `mediarr`                                                 | nothing                                                                       | re-downloadable                                                                                                     |
 | `edge`, `dashboard`, `forgejo-runner`, `paperless-tarmed` | nothing                                                                       | rebuilt from git; keep `dashboard`'s `devices.json` with your private notes                                         |
 
@@ -69,6 +70,7 @@ The jobs and their times are in `scripts/jobs.conf` (git), not in DSM.
 | `paperless-export` | after 20:10 (before the 20:40 S3 backup) | `document_exporter -d` into `PAPERLESS_DATA_ROOT/export`: incremental, mirrors the archive                                                                                               |
 | `docker-prune`     | after 04:30                              | deletes images no container uses and build cache, both older than a week                                                                                                                 |
 | `storage-scan`     | after 05:00                              | the dashboard's Storage tab: size per shared folder (btrfs), Docker, recycle bins, the media library (ffprobe in the Jellyfin container, new files only), and a daily history for trends |
+| `renovate-notify`  | after 07:00                              | pushes to ntfy what newly waits for approval on Renovate's Dependency Dashboard ([11](11-notifications.md)); once per update                                                             |
 | `build-images`     | every tick                               | builds locally built images (paperless-tarmed) when their code changed; dashboard shows amber "update waiting" until redeployed                                                          |
 
 Each tick: `git pull --ff-only` its own clone (if Forgejo is down, the last
@@ -105,6 +107,9 @@ Every push to `main` therefore runs as root on the NAS within 15 minutes.
    # uploaders.conf next to this file: devices that must keep uploading (scripts/uploaders.conf.example)
    PORTAINER_TOKEN=<token>                                   # Portainer → My account → Access tokens; dashboard's stack list
    STATUS_VOLUME=/volume1
+   FORGEJO_TOKEN=<token>                                     # renovate-notify: Forgejo token that can read the repo's issues
+   FORGEJO_REPO=admin/homelab
+   NTFY_TOKEN=<token>                                        # renovate-notify: ntfy token that can publish ([11](11-notifications.md))
    ```
 4. **Check:** run it once by hand: `sudo bash <clone>/scripts/run-jobs.sh <path>/jobs.env`, then
    `cat $OPS_HOME/state/_scheduler.json` shows `"pull_ok": true`.

@@ -17,6 +17,7 @@ Only want one part? Start at its guide: the header lists what it needs.
 | 6   | apps, any order: [06 mediarr](guides/06-mediarr.md), [07 Paperless](guides/07-paperless.md) (then paperless-tarmed), [08 Mealie](guides/08-mealie.md), [09 dashboard](guides/09-dashboard.md) | the services                                                                | each guide's last check                           |
 | 7   | [04 Forgejo](guides/04-forgejo-gitops.md), CI part                                                                                                                                            | checks on every push, Renovate's update PRs                                 | a push runs `checks` green                        |
 | 8   | [10 Backups and jobs](guides/10-backups-and-jobs.md)                                                                                                                                          | Hyper Backup, snapshots, the scheduler                                      | the dashboard's left panel is green               |
+| 9   | [11 Notifications](guides/11-notifications.md)                                                                                                                                                | ntfy, and the apps and DSM sending to it                                    | a test message on your phone                      |
 
 Why this order:
 
