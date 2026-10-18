@@ -133,7 +133,7 @@ sudo bash -c 'set -a; . <path>/jobs.env; bash <clone>/scripts/renovate-notify.sh
 
 ### 7. Sonarr, Radarr, Prowlarr
 
-Each app: Settings → **Connect** → + → **ntfy**:
+Each app: Settings → **Connect** (Prowlarr: **Notifications**) → + → **ntfy**:
 
 | Field        | Value                                                                                         |
 | ------------ | --------------------------------------------------------------------------------------------- |
