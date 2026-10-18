@@ -95,18 +95,30 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer tk_…' -d te
 ### 5. The phone
 
 1. ntfy app → Settings → **Default server** `https://ntfy.home.example.com`,
-   and **Manage users** → add your account for that server.
-2. Subscribe to `homelab`, `media` and `nas`. Android: keep **instant
-   delivery** on (the app keeps a connection open; that is how it receives).
-3. The VPN, so it works away from home:
+   and **Manage users** → add your account for that server. Do this first:
+   every topic you add then uses your server, with no per-topic server field.
+2. Subscribe to `homelab`, `media` and `nas` (+ → topic name). Subscriptions
+   live in each app, not on the server: the web app and every phone need their
+   own, and a fresh login shows none.
+3. Android: keep **instant delivery** on (the app keeps a connection open; that
+   is how it receives), and Settings → **Connection protocol** →
+   **WebSockets**, which the app suggests: it uses less battery, and Caddy
+   passes WebSockets through as is.
+4. The VPN, so it works away from home:
    - **iPhone, WireGuard app:** the tunnel → **On-Demand activation** → on
      cellular, and on Wi-Fi except your home network's name.
    - **Android:** the official WireGuard app has no on-demand rule; use
      Settings → Network → VPN → the tunnel → **Always-on VPN**, or a client
      with automatic tunnelling on untrusted networks (e.g. WG Tunnel).
 
-**Check:** the test from step 4 arrives on the phone; then once more on mobile
-data, Wi-Fi off.
+**Check:** send a test, from the web app (a topic → the message field at the
+bottom), the phone app (a topic → ⋮ → **Send test notification**) or the NAS:
+
+```bash
+curl -H 'Authorization: Bearer tk_…' -H 'Title: Test' -d 'ntfy works' http://127.0.0.1:2586/homelab
+```
+
+It arrives on the phone; then once more on mobile data, Wi-Fi off.
 
 ### 6. Updates waiting for approval
 
@@ -167,24 +179,35 @@ set an `Authorization` header: the token goes in an `auth` URL parameter.
    Application webhooks) → Add → provider **Custom**:
    - URL `http://127.0.0.1:2586/?auth=<parameter>`, method **POST**, content
      type `application/json`
-   - body fields: `topic` = `nas`, `title` = `DSM`, `message` = the
-     message-content variable DSM offers
-3. Notification → **Rules** (or Advanced): pick the events for the webhook:
-   at least storage, Hyper Backup and Snapshot Replication failures.
+   - body, with DSM's `@@TEXT@@` placeholder for the message. Quote every
+     value, and the key is `message` (ntfy ignores `text`):
+     ```json
+     { "topic": "nas", "title": "DSM", "message": "@@TEXT@@" }
+     ```
+   - If test messages arrive but some real alerts don't, DSM probably sent a
+     message with a quote or line break unescaped, which breaks the JSON. Use
+     plain text instead: URL `http://127.0.0.1:2586/nas?auth=<parameter>&title=DSM`,
+     content type `text/plain`, body `@@TEXT@@`.
+3. Notification → **Rules**: assign a rule to the webhook. DSM's preset
+   `default_pushservice` (what its mobile app gets) is a good start; check it
+   includes storage, Hyper Backup and Snapshot Replication failures, and make
+   a narrower copy if it is noisy.
 
 **Check:** DSM's **Send test message**.
 
 ## Troubleshooting
 
-| Symptom                                               | Cause → fix                                                                                                                                     |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| A sender gets `403`                                   | Token missing or wrong, or no `write` access to that topic: `ntfy access` in the container lists the rules.                                     |
-| An \*arr or Seerr test: connection refused or timeout | Use `http://ntfy:8080`, not `https://ntfy.<domain>`: containers can't reach Caddy's macvlan IP. The app must be on `proxy`.                     |
-| DSM's test fails                                      | URL `http://127.0.0.1:2586/…` (not the hostname, for the same reason); `auth` parameter built from `Bearer <token>`, without trailing `=`.      |
-| Nothing on the phone away from home                   | The VPN didn't connect: check the on-demand rule. Messages are kept 3 days and arrive once the phone reaches the server.                        |
-| iPhone: nothing, or "new message" without text        | The ping came, but the app couldn't fetch the message: same VPN cause.                                                                          |
-| `renovate-notify`: "No open Dependency Dashboard"     | Renovate hasn't run yet, or its dashboard issue is closed.                                                                                      |
-| An update was not notified                            | It was already in the previous run's list (`$OPS_HOME/state/renovate-notified.txt`); delete the file to be told about everything waiting again. |
+| Symptom                                               | Cause → fix                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logged in, but no topics                              | Normal: subscriptions are per app. Add `homelab`, `media`, `nas` with **+**.                                                                                                                                                                                                                                                                                                                                                    |
+| A sender gets `403`                                   | Token missing or wrong, or no `write` access to that topic: `ntfy access` in the container lists the rules.                                                                                                                                                                                                                                                                                                                     |
+| An \*arr or Seerr test: connection refused or timeout | Use `http://ntfy:8080`, not `https://ntfy.<domain>`: containers can't reach Caddy's macvlan IP. The app must be on `proxy`.                                                                                                                                                                                                                                                                                                     |
+| DSM's test: nothing arrives                           | Send the same request with `curl` (the URL with the `auth` parameter, the JSON body): `200` and it arrives means ntfy is fine and DSM sends something else; `403` means the `auth` value or the topic's access. To see DSM's request, point the webhook at a request logger for a moment: `docker run --rm -d --name echo -p 127.0.0.1:2587:8080 mendhak/http-https-echo:31`, port `2587` in the URL, test, `docker logs echo`. |
+| DSM's test fails                                      | URL `http://127.0.0.1:2586/…` (not the hostname, for the same reason); `auth` parameter built from `Bearer <token>`, without trailing `=`.                                                                                                                                                                                                                                                                                      |
+| Nothing on the phone away from home                   | The VPN didn't connect: check the on-demand rule. Messages are kept 3 days and arrive once the phone reaches the server.                                                                                                                                                                                                                                                                                                        |
+| iPhone: nothing, or "new message" without text        | The ping came, but the app couldn't fetch the message: same VPN cause.                                                                                                                                                                                                                                                                                                                                                          |
+| `renovate-notify`: "No open Dependency Dashboard"     | Renovate hasn't run yet, or its dashboard issue is closed.                                                                                                                                                                                                                                                                                                                                                                      |
+| An update was not notified                            | It was already in the previous run's list (`$OPS_HOME/state/renovate-notified.txt`); delete the file to be told about everything waiting again.                                                                                                                                                                                                                                                                                 |
 
 ## Next
 

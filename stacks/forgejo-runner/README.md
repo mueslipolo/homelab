@@ -1,7 +1,7 @@
 # forgejo-runner
 
 Instance-wide Forgejo Actions runner for `.forgejo/workflows/` (checks on every
-push, Renovate weekly).
+push, Renovate daily).
 
 **Setting it up: [guide 04, Forgejo: the NAS deploys from git](../../docs/guides/04-forgejo-gitops.md#5-ci-runner-checks-renovate-optional).**
 This page is the reference.
