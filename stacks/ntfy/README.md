@@ -6,13 +6,13 @@ Push notifications: an ntfy server for the phones, fed by the scheduler, the
 **Setting it up: [guide 11, Notifications with ntfy](../../docs/guides/11-notifications.md).**
 This page is the reference.
 
-|            |                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Reached at | `https://ntfy.<internal-domain>` (Caddy → `ntfy:8080`, no Authelia gate: ntfy's own users and tokens); `http://ntfy:8080` on `proxy`; `http://127.0.0.1:2586` on the NAS |
-| Data       | `NTFY_DATA_ROOT` → `auth.db` (users, access rules, tokens), `cache.db` (messages, 72 h)                                                                                  |
-| Needs      | `proxy` network, [edge](../edge/README.md)                                                                                                                               |
-| Used by    | the `renovate-notify` job, Sonarr/Radarr/Prowlarr, Seerr ([mediarr](../mediarr/README.md)), DSM                                                                          |
-| Config     | `.env.example` (every variable); the rest is environment in `compose.yaml`                                                                                               |
+|            |                                                                                                                                                                                                     |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reached at | `https://ntfy.<internal-domain>` (Caddy → `ntfy:8080`, no Authelia gate: ntfy's own users and tokens); `http://ntfy:8080` on `proxy`; `http://127.0.0.1:2586` on the NAS                            |
+| Data       | `NTFY_DATA_ROOT` → `auth.db` (users, access rules, tokens), `cache.db` (messages, 72 h)                                                                                                             |
+| Needs      | `proxy` network, [edge](../edge/README.md)                                                                                                                                                          |
+| Used by    | the `renovate-notify` job and `alerts.sh` (scheduler), Sonarr/Radarr/Prowlarr, Seerr ([mediarr](../mediarr/README.md)), [paperless-tarmed](../paperless-tarmed/README.md), DSM, the MikroTik router |
+| Config     | `.env.example` (every variable); the rest is environment in `compose.yaml`                                                                                                                          |
 
 ## Gotchas
 

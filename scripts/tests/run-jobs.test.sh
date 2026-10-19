@@ -348,6 +348,70 @@ echo '[]' >"$N/issues.json"
 check "no dashboard yet: not a failure" notify
 rm -rf "$N"
 
+echo "alerts.sh"
+A=$(mktemp -d)
+mkdir -p "$A/bin" "$A/ops/state" "$A/local"
+cat >"$A/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >>"$A_DIR/curl.args"
+cat >>"$A_DIR/curl.stdin"
+[ -z "${CURL_FAIL:-}" ] || exit 22
+printf '%s\n---\n' "$*" >>"$A_DIR/posts"
+EOF
+chmod +x "$A/bin/curl"
+NOW=$(date -d '2026-10-19 12:00' +%s)
+status() { # <job exit> <device last seen, days ago> <volume %> <pull_ok>
+	cat >"$A/local/status.json" <<-EOF
+		{"generated": $NOW,
+		 "volume": {"path": "/volume1", "size_kb": 10000000000, "avail_kb": 1500000000, "used_pct": $3},
+		 "devices": {"configured": true, "devices": [
+		   {"owner": "anna", "kind": "phone", "name": "Pixel 8", "max_days": 7,
+		    "last_seen": null, "newest_photo": $((NOW - $2 * 86400))}]},
+		 "scheduler": {"sha": "abc1234", "pull_ok": $4, "pull_error": "fatal: Not possible to fast-forward"},
+		 "jobs": [{"name": "forgejo-dump", "exit": $1, "ended": $NOW, "message": "zip: disk full"}]}
+	EOF
+}
+storage() { # <growth of the last day, GB>
+	local g=$(($1 * 1073741824))
+	printf '{"daily": [["2026-10-18", 5000000000000], ["2026-10-19", %s]]}' "$((5000000000000 + g))" >"$A/local/storage.json"
+}
+alerts() {
+	A_DIR=$A PATH="$A/bin:$PATH" OPS_HOME=$A/ops DASHBOARD_LOCAL_DIR=$A/local NTFY_TOKEN=tk_secret \
+		DASHBOARD_URL=https://dashboard.example.com ALERTS_NOW=$NOW bash "$ROOT/scripts/alerts.sh" >/dev/null 2>&1
+}
+posts() { if [ -f "$A/posts" ]; then grep -c -- '^---$' "$A/posts"; else echo 0; fi; }
+status 1 5 85 true
+storage 150
+alerts
+check "a failed job, a late phone, a filling volume and a growth spike: 4 pushes" [ "$(posts)" = 4 ]
+check "the failed job, urgent, with its reason" grep -q 'Title: Job failed: forgejo-dump -H Priority: high' "$A/posts"
+check "the phone, by owner and name, with its age" grep -q 'Title: Anna · Pixel 8: nothing uploaded for 5 days' "$A/posts"
+check "the volume" grep -q 'Title: Volume 85 % full' "$A/posts"
+check "the day's growth" grep -q 'Title: Used space grew 150 GB on 2026-10-19' "$A/posts"
+check "tapping opens the matching dashboard tab" grep -q 'Click: https://dashboard.example.com/#system' "$A/posts"
+check "on the homelab topic, through the loopback port" grep -q 'http://127.0.0.1:2586/homelab' "$A/posts"
+check "the token goes in on stdin" grep -q 'Bearer tk_secret' "$A/curl.stdin"
+check "never on the command line" not_in_file tk_secret "$A/curl.args"
+alerts
+check "unchanged: nothing pushed again" [ "$(posts)" = 4 ]
+: >"$A/posts"
+status 0 8 70 false
+alerts
+check "worse: the phone is now red" grep -q 'Title: Anna · Pixel 8: nothing uploaded for 8 days -H Priority: high' "$A/posts"
+check "recovered: the job, quietly" grep -q 'Title: Job ok again: forgejo-dump -H Priority: low' "$A/posts"
+check "recovered: the volume" grep -q 'Title: Volume below 80 % again' "$A/posts"
+check "a stuck scheduler is reported" grep -q 'Title: Scheduler cannot update its git clone' "$A/posts"
+check "a growth spike is not 'recovered' the same day" [ "$(posts)" = 4 ]
+: >"$A/posts"
+status 1 8 70 false
+CURL_FAIL=1 alerts
+check "ntfy down: nothing recorded" [ "$(posts)" = 0 ]
+alerts
+check "so the next run sends it" grep -q 'Title: Job failed: forgejo-dump' "$A/posts"
+rm -f "$A/local/status.json"
+check "no status.json yet: not a failure" alerts
+rm -rf "$A"
+
 echo "docker-prune"
 D=$(mktemp -d)
 mkdir -p "$D/bin"

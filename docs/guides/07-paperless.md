@@ -132,6 +132,10 @@ remboursement") and fills custom fields (patient, date, total, provider).
 It calls Paperless as `http://webserver:8000` over `proxy` and needs the
 scheduler's `build-images` job ([10 Backups and jobs](10-backups-and-jobs.md)).
 
+Optionally it pushes "Bill processed" (provider, amount, date) or "Bill
+needs review" to your phone for each justificatif, with a link to the
+document: [11 Notifications](11-notifications.md).
+
 Install: [`stacks/paperless-tarmed/INSTALL.md`](../../stacks/paperless-tarmed/INSTALL.md).
 Reference: [`stacks/paperless-tarmed/README.md`](../../stacks/paperless-tarmed/README.md).
 

@@ -11,11 +11,12 @@ a server of your own: [ntfy](https://ntfy.sh), at `https://ntfy.home.example.com
 A message is one HTTP request to a _topic_; the ntfy app shows it as a normal
 phone notification. This setup uses three topics, so you can mute one:
 
-| Topic     | From                            | Example                              |
-| --------- | ------------------------------- | ------------------------------------ |
-| `homelab` | the `renovate-notify` job       | "1 update waiting for your approval" |
-| `media`   | Sonarr, Radarr, Prowlarr, Seerr | "Dune: Part Two is now available"    |
-| `nas`     | DSM                             | "Hyper Backup task Off-site failed"  |
+| Topic       | From                                                                      | Example                                                                             |
+| ----------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `homelab`   | the `renovate-notify` job, the NAS alerts (step 10), the router (step 12) | "1 update waiting for your approval", "Anna · Pixel 8: nothing uploaded for 4 days" |
+| `paperless` | paperless-tarmed (step 11)                                                | "Bill processed": Dr Exemple · CHF 182.40 · 14.10.2026                              |
+| `media`     | Sonarr, Radarr, Prowlarr, Seerr                                           | "Dune: Part Two is now available"                                                   |
+| `nas`       | DSM                                                                       | "Hyper Backup task Off-site failed"                                                 |
 
 - **LAN-only, like everything else:** the phone reaches ntfy on the home Wi-Fi,
   and away from home through a VPN that connects on demand (step 5). Without
@@ -81,7 +82,7 @@ ntfy has its own login.
 C=$(sudo docker ps -q --filter label=com.docker.compose.service=ntfy)
 sudo docker exec -it $C ntfy user add --role=admin <you>     # you: phone and web; asks for a password
 sudo docker exec -it $C ntfy user add homelab                # the senders; any password, never used
-for t in homelab media nas; do sudo docker exec $C ntfy access homelab $t write-only; done
+for t in homelab media nas paperless; do sudo docker exec $C ntfy access homelab $t write-only; done
 sudo docker exec $C ntfy token add homelab                   # prints tk_…: keep it, every sender uses it
 ```
 
@@ -97,7 +98,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer tk_…' -d te
 1. ntfy app → Settings → **Default server** `https://ntfy.home.example.com`,
    and **Manage users** → add your account for that server. Do this first:
    every topic you add then uses your server, with no per-topic server field.
-2. Subscribe to `homelab`, `media` and `nas` (+ → topic name). Subscriptions
+2. Subscribe to `homelab`, `media`, `nas` and `paperless` (+ → topic name). Subscriptions
    live in each app, not on the server: the web app and every phone need their
    own, and a fresh login shows none.
 3. Android: keep **instant delivery** on (the app keeps a connection open; that
@@ -194,6 +195,86 @@ set an `Authorization` header: the token goes in an `auth` URL parameter.
    a narrower copy if it is noisy.
 
 **Check:** DSM's **Send test message**.
+
+### 10. NAS alerts
+
+Every 15 minutes, right after refreshing the dashboard's `status.json`, the
+scheduler runs `scripts/alerts.sh`, which pushes to `homelab` what the
+dashboard would show amber or red, using the same thresholds:
+
+| Item                                    | Amber                       | Red                 |
+| --------------------------------------- | --------------------------- | ------------------- |
+| a scheduled job                         |                             | its last run failed |
+| a phone or computer in `uploaders.conf` | silent half its max days    | silent its max days |
+| the volume                              | 80 % used                   | 90 % used           |
+| the scheduler's git clone               | cannot update               |                     |
+| a day's growth (`storage.json`)         | more than `ALERT_GROWTH_GB` |                     |
+
+It pushes on changes only: once when an item turns amber, again if it turns
+red, and a quiet "ok again" when it recovers. Nothing to set up beyond the
+`NTFY_TOKEN` already in `jobs.env` (step 6); optionally:
+
+```bash
+DASHBOARD_URL=https://dashboard.home.example.com   # tapping opens the matching tab
+ALERT_GROWTH_GB=100                                # default 100
+```
+
+**Check:** `$OPS_HOME/logs/alerts.log` after the next tick says how many it
+sent; the first run reports whatever is already amber or red.
+
+### 11. Paperless bills
+
+paperless-tarmed pushes "Bill processed" (provider · amount · date), or "Bill
+needs review", for each justificatif, to its own topic `paperless` so you can
+mute it. The patient's name stays off the lock screen unless you ask for it.
+
+1. Allow the token on the topic:
+   `sudo docker exec $C ntfy access homelab paperless write-only`
+2. The paperless-tarmed stack's variables in Portainer:
+   `PAPERLESS_TARMED_NTFY_URL=http://ntfy:8080`,
+   `PAPERLESS_TARMED_NTFY_TOKEN=tk_…`, and
+   `PAPERLESS_TARMED_PUBLIC_URL=https://paperless.home.example.com` for the
+   link (`PAPERLESS_TARMED_NTFY_PATIENT=1` adds the patient's name).
+3. Subscribe to `paperless` on the phone.
+
+**Check:** reprocess a known justificatif (`scripts/fire-hook.sh <id>` in the
+stack, [`INSTALL.md`](../../stacks/paperless-tarmed/INSTALL.md)); the push
+arrives and opens the document.
+
+### 12. MikroTik
+
+[`tools/mikrotik/ntfy.rsc`](../../tools/mikrotik/ntfy.rsc) (RouterOS 7)
+pushes to `homelab`: a device on the LAN without a static lease (once per
+boot), internet down and back, a WireGuard peer connecting or going quiet. The
+router posts through Caddy, `https://ntfy.home.example.com`, so its DNS must
+resolve that name. Written without a router at hand: check each part as below.
+
+1. Replace `ntfy.home.example.com` and `tk_REPLACE_ME` in the file, upload it
+   (Files, or `scp ntfy.rsc admin@192.0.2.1:`), then `/import ntfy.rsc`.
+   Re-importing replaces it.
+2. Let the router check ntfy's certificate (Let's Encrypt's roots):
+   ```
+   /tool fetch url=https://letsencrypt.org/certs/isrgrootx1.pem
+   /tool fetch url=https://letsencrypt.org/certs/isrg-root-x2.pem
+   /certificate import file-name=isrgrootx1.pem passphrase=""
+   /certificate import file-name=isrg-root-x2.pem passphrase=""
+   ```
+3. Attach the lease script to your LAN DHCP server: the commented
+   `/ip dhcp-server set … lease-script=…` line at the end of the file, with
+   your server's name (`/ip dhcp-server print`). It replaces any existing
+   lease-script.
+4. Known devices don't alert once their lease is static:
+   `/ip dhcp-server lease make-static [find where mac-address="AA:BB:CC:DD:EE:FF"]`,
+   or every current one with `[find where dynamic]`.
+
+**Check:**
+`:local s [:parse [/system script get ntfy-send source]]; $s title="Router test" message="hello"`
+arrives on the phone, and `/log print where message~"ntfy"` shows no error.
+Then a new phone on the Wi-Fi gets "New device on the LAN", and a WireGuard
+peer that connects gets "VPN: … connected" within a minute. A phone without
+WireGuard keepalive that sits idle stops handshaking and shows as "gone
+quiet"; while the internet is down, iPhones receive nothing (their wake-up ping
+needs ntfy.sh).
 
 ## Troubleshooting
 

@@ -19,12 +19,13 @@ set -euo pipefail
 
 # shellcheck source=scripts/lib/json.sh
 . "$(dirname -- "$0")/lib/json.sh"
+# shellcheck source=scripts/lib/ntfy.sh
+. "$(dirname -- "$0")/lib/ntfy.sh"
 
 readonly FORGEJO_URL="${FORGEJO_URL:-http://127.0.0.1:3000}"
 readonly FORGEJO_TOKEN="${FORGEJO_TOKEN:?set FORGEJO_TOKEN to a Forgejo token that can read the repo}"
 readonly FORGEJO_REPO="${FORGEJO_REPO:?set FORGEJO_REPO to owner/repo}"
-readonly NTFY_URL="${NTFY_URL:-http://127.0.0.1:2586}"
-readonly NTFY_TOKEN="${NTFY_TOKEN:?set NTFY_TOKEN to an ntfy token that can publish}"
+: "${NTFY_TOKEN:?set NTFY_TOKEN to an ntfy token that can publish}"
 readonly NTFY_TOPIC="${NTFY_TOPIC:-homelab}"
 readonly SEEN="${OPS_HOME:?set OPS_HOME}/state/renovate-notified.txt"
 
@@ -57,10 +58,7 @@ if [ -n "$new" ]; then
 	if [ "$count" -eq 1 ]; then title="1 update waiting for your approval"; else title="$count updates waiting for your approval"; fi
 	body="$new"
 	if [ "$total" -gt "$count" ]; then body+=$'\n'"($total waiting in all)"; fi
-	printf 'header = "Authorization: Bearer %s"\n' "$NTFY_TOKEN" |
-		curl -sS -m 30 --fail -o /dev/null -K - \
-			-H "Title: $title" -H "Tags: package" -H "Click: $url" \
-			--data-binary "$body" "$NTFY_URL/$NTFY_TOPIC"
+	ntfy_send "$NTFY_TOPIC" "$title" default package "$url" <<<"$body"
 	echo "Notified: $title"
 else
 	echo "Nothing new waiting ($total in all)"

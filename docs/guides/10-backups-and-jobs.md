@@ -77,7 +77,8 @@ Each tick: `git pull --ff-only` its own clone (if Forgejo is down, the last
 checkout keeps running) → run due jobs (due = past its time and not yet
 successful today; a missed run catches up, a failure retries after an hour;
 each with a timeout, a log in `$OPS_HOME/logs/<job>/`, state in
-`$OPS_HOME/state/<job>.json`) → refresh the dashboard's `status.json` → ping
+`$OPS_HOME/state/<job>.json`) → refresh the dashboard's `status.json` → push
+what turned amber or red to ntfy ([11](11-notifications.md#10-nas-alerts)) → ping
 healthchecks.io (per job: start and exit code with the log's tail; plus a
 heartbeat that also fails when the clone is a day stale).
 
@@ -109,7 +110,8 @@ Every push to `main` therefore runs as root on the NAS within 15 minutes.
    STATUS_VOLUME=/volume1
    FORGEJO_TOKEN=<token>                                     # renovate-notify: Forgejo token that can read the repo's issues
    FORGEJO_REPO=admin/homelab
-   NTFY_TOKEN=<token>                                        # renovate-notify: ntfy token that can publish ([11](11-notifications.md))
+   NTFY_TOKEN=<token>                                        # renovate-notify and the NAS alerts: ntfy token that can publish ([11](11-notifications.md))
+   DASHBOARD_URL=https://dashboard.home.example.com          # optional: alerts open the matching dashboard tab
    ```
 4. **Check:** run it once by hand: `sudo bash <clone>/scripts/run-jobs.sh <path>/jobs.env`, then
    `cat $OPS_HOME/state/_scheduler.json` shows `"pull_ok": true`.

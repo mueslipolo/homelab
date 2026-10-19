@@ -9,7 +9,8 @@
 #      the last good checkout keeps running — backups must not depend on it),
 #   2. runs every due job under a timeout, logging to $OPS_HOME/logs/<job>/,
 #      recording $OPS_HOME/state/<job>.json, and pinging healthchecks.io,
-#   3. refreshes the dashboard's status.json.
+#   3. refreshes the dashboard's status.json,
+#   4. pushes what turned amber or red, or recovered, to ntfy (alerts.sh).
 #
 # jobs.env is local to the NAS (root-only, not in git): paths, and the
 # healthchecks.io ping key. See docs/guides/10-backups-and-jobs.md for its variables.
@@ -171,10 +172,19 @@ refresh_status() {
 		echo "run-jobs: dashboard-status.sh failed" >&2
 }
 
+# ------------------------------------------------------------ 4. alerts
+# Push what turned amber or red (or recovered) to ntfy; never fatal.
+send_alerts() {
+	[ -n "${DASHBOARD_LOCAL_DIR:-}" ] && [ -n "${NTFY_TOKEN:-}" ] || return 0
+	bash "$SCRIPTS/alerts.sh" >"$LOGS/alerts.log" 2>&1 ||
+		echo "run-jobs: alerts.sh failed, see $LOGS/alerts.log" >&2
+}
+
 main() {
 	sync_repo
 	run_due_jobs
 	refresh_status
+	send_alerts
 	find "$LOGS" -type f -name '*.log' -mtime "+$LOG_KEEP_DAYS" -delete 2>/dev/null
 
 	# Heartbeat: healthchecks.io alerts when this stops arriving (NAS down,

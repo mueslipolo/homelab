@@ -169,6 +169,16 @@ class Config:
     #: the title in the on-disk path -- so automated retitling renames files.
     #: Off by default; `apply --title` remains the deliberate way to do it.
     webhook_title: bool = False
+    #: Optional ntfy push after the webhook reads a justificatif. Off unless
+    #: both URL and token are set (paperless_tarmed/notify.py).
+    ntfy_url: str = ""
+    ntfy_token: str = ""
+    ntfy_topic: str = "paperless"
+    #: The patient's name shows on a lock screen: left out unless asked for.
+    ntfy_patient: bool = False
+    #: Paperless as a browser reaches it, for links in notifications.
+    #: PAPERLESS_URL is usually the internal service address, useless on a phone.
+    public_url: str = ""
     cache_dir: Path = field(default_factory=lambda: Path(".cache"))
     # Synology instances often sit behind a self-signed certificate.
     verify_ssl: bool = True
@@ -201,6 +211,12 @@ class Config:
             not in ("0", "false", "no", ""),
             webhook_title=env("PAPERLESS_TARMED_WEBHOOK_TITLE", "0").lower()
             not in ("0", "false", "no", ""),
+            ntfy_url=env("PAPERLESS_TARMED_NTFY_URL", "").strip(),
+            ntfy_token=env("PAPERLESS_TARMED_NTFY_TOKEN", "").strip(),
+            ntfy_topic=env("PAPERLESS_TARMED_NTFY_TOPIC", "paperless").strip() or "paperless",
+            ntfy_patient=env("PAPERLESS_TARMED_NTFY_PATIENT", "0").lower()
+            not in ("0", "false", "no", ""),
+            public_url=env("PAPERLESS_TARMED_PUBLIC_URL", "").rstrip("/"),
             cache_dir=Path(env("PAPERLESS_TARMED_CACHE_DIR", ".cache")),
             verify_ssl=env("PAPERLESS_TARMED_VERIFY_SSL", "1").lower()
             not in ("0", "false", "no"),

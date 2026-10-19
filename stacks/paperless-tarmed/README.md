@@ -132,17 +132,20 @@ writes, and "accepted" is not "extracted": read `docker logs`. Dry run: `apply -
 All variables, with defaults: [.env.example](.env.example). The required ones are
 set in [INSTALL step 3](INSTALL.md#3-deploy-the-stack-in-portainer). Others worth knowing:
 
-| Variable                                               | Purpose                                                   |
-| ------------------------------------------------------ | --------------------------------------------------------- |
-| `PAPERLESS_TARMED_PATIENTS`, `_ALIASES`                | allow-list (a name not on it is refused); nickname → name |
-| `PAPERLESS_TARMED_TITLE`                               | title template; empty disables titles                     |
-| `PAPERLESS_TARMED_WEBHOOK_OVERWRITE`, `_WEBHOOK_TITLE` | default `0`; see Gotchas                                  |
-| `PAPERLESS_TARMED_CATEGORIES`, `_GLN_OVERRIDES`        | relabel tariff types; pin a provider name                 |
-| `PAPERLESS_TARMED_REVIEW_TAG`                          | default `extraction-failed`; empty disables tagging       |
-| `PAPERLESS_TARMED_DONE_TAG`                            | default `tarmed`; empty disables it                       |
-| `PAPERLESS_TARMED_MAX_*`, `_FUTURE_TOLERANCE_DAYS`     | plausibility bounds                                       |
-| `PAPERLESS_TARMED_VERIFY_SSL`                          | `0` for a self-signed certificate                         |
-| `PAPERLESS_NETWORK`, `PAPERLESS_TARMED_IMAGE`, `TZ`    | compose only                                              |
+| Variable                                               | Purpose                                                                                                    |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `PAPERLESS_TARMED_PATIENTS`, `_ALIASES`                | allow-list (a name not on it is refused); nickname → name                                                  |
+| `PAPERLESS_TARMED_TITLE`                               | title template; empty disables titles                                                                      |
+| `PAPERLESS_TARMED_WEBHOOK_OVERWRITE`, `_WEBHOOK_TITLE` | default `0`; see Gotchas                                                                                   |
+| `PAPERLESS_TARMED_CATEGORIES`, `_GLN_OVERRIDES`        | relabel tariff types; pin a provider name                                                                  |
+| `PAPERLESS_TARMED_REVIEW_TAG`                          | default `extraction-failed`; empty disables tagging                                                        |
+| `PAPERLESS_TARMED_DONE_TAG`                            | default `tarmed`; empty disables it                                                                        |
+| `PAPERLESS_TARMED_MAX_*`, `_FUTURE_TOLERANCE_DAYS`     | plausibility bounds                                                                                        |
+| `PAPERLESS_TARMED_VERIFY_SSL`                          | `0` for a self-signed certificate                                                                          |
+| `PAPERLESS_TARMED_NTFY_URL`, `_TOKEN`, `_TOPIC`        | push "Bill processed" / "needs review" to ntfy; off while URL or token is empty; topic default `paperless` |
+| `PAPERLESS_TARMED_NTFY_PATIENT`                        | default `0`: the patient's name stays off the lock screen                                                  |
+| `PAPERLESS_TARMED_PUBLIC_URL`                          | Paperless's browser address, for the notification's link                                                   |
+| `PAPERLESS_NETWORK`, `PAPERLESS_TARMED_IMAGE`, `TZ`    | compose only                                                                                               |
 
 `compose.yaml` passes only the variables it lists. `PAPERLESS_TARMED_SINCE`,
 `_PATIENT_FUZZY`, `_CURRENCY` and `_TIMEOUT` are not among them, so in the

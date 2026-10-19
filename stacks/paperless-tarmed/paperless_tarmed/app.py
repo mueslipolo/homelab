@@ -154,6 +154,10 @@ def process(doc_id: int, cfg: Config) -> None:
                 log.info("doc %s: tagged %r", doc_id, cfg.review_tag if failed else cfg.done_tag)
             if note:
                 _add_note(api, doc_id, note)
+            if result.found:
+                from .notify import bill_processed
+
+                bill_processed(cfg, doc_id, result, currency, review=failed)
     except Exception as exc:
         # Swallowing is deliberate: a failure here must not become a retry storm
         # or an unhandled thread exception. The log is the audit trail; the note

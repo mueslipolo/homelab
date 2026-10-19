@@ -59,15 +59,16 @@ Stacks → Add stack → Repository:
 
 Environment variables (all of them, with comments, in [.env.example](.env.example)):
 
-| Variable                          | Value                                                                   |
-| --------------------------------- | ----------------------------------------------------------------------- |
-| `PAPERLESS_URL`                   | `http://webserver:8000` (Paperless's service name on `proxy`)           |
-| `PAPERLESS_TOKEN`                 | token from step 2.3                                                     |
-| `PAPERLESS_TARMED_WEBHOOK_SECRET` | secret from step 2.4                                                    |
-| `PAPERLESS_TARMED_FIELDS`         | e.g. `patient=Concerné,treatment_date=Date de traitement,total=Montant` |
-| `PAPERLESS_TARMED_DOCUMENT_TYPE`  | `Justificatif de remboursement`                                         |
-| `PAPERLESS_TARMED_DATA`           | `<nas-volume-path>/docker/paperless-tarmed/data`                        |
-| `PAPERLESS_TARMED_PATIENTS`       | optional allow-list, e.g. `Anna,Bruno`                                  |
+| Variable                                                             | Value                                                                                                                                                  |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PAPERLESS_URL`                                                      | `http://webserver:8000` (Paperless's service name on `proxy`)                                                                                          |
+| `PAPERLESS_TOKEN`                                                    | token from step 2.3                                                                                                                                    |
+| `PAPERLESS_TARMED_WEBHOOK_SECRET`                                    | secret from step 2.4                                                                                                                                   |
+| `PAPERLESS_TARMED_FIELDS`                                            | e.g. `patient=Concerné,treatment_date=Date de traitement,total=Montant`                                                                                |
+| `PAPERLESS_TARMED_DOCUMENT_TYPE`                                     | `Justificatif de remboursement`                                                                                                                        |
+| `PAPERLESS_TARMED_DATA`                                              | `<nas-volume-path>/docker/paperless-tarmed/data`                                                                                                       |
+| `PAPERLESS_TARMED_PATIENTS`                                          | optional allow-list, e.g. `Anna,Bruno`                                                                                                                 |
+| `PAPERLESS_TARMED_NTFY_URL`, `_TOKEN`, `PAPERLESS_TARMED_PUBLIC_URL` | optional push per bill: `http://ntfy:8080`, a publish token, `https://paperless.<internal-domain>` ([guide 11](../../docs/guides/11-notifications.md)) |
 
 Do not deploy yet if the image does not exist (step 4).
 
