@@ -40,11 +40,13 @@ _when() { # <schedule line>
 	esac
 }
 
-# "GMT+02-2026.10.12-02.00.03" (a share snapshot's name) -> epoch.
+# A share snapshot's name -> epoch. Two forms, depending on the snapshot task's
+# time setting: local time with its offset ("GMT+02-2026.10.12-02.00.03") or
+# UTC without one ("GMT-2026.10.14-01.05.04").
 _snap_epoch() {
-	local re='^GMT([+-][0-9]{2})-([0-9]{4})\.([0-9]{2})\.([0-9]{2})-([0-9]{2})\.([0-9]{2})\.([0-9]{2})$'
+	local re='^GMT([+-][0-9]{2})?-([0-9]{4})\.([0-9]{2})\.([0-9]{2})-([0-9]{2})\.([0-9]{2})\.([0-9]{2})$'
 	[[ $1 =~ $re ]] || return 1
-	date -d "${BASH_REMATCH[2]}-${BASH_REMATCH[3]}-${BASH_REMATCH[4]} ${BASH_REMATCH[5]}:${BASH_REMATCH[6]}:${BASH_REMATCH[7]} ${BASH_REMATCH[1]}00" +%s 2>/dev/null
+	date -d "${BASH_REMATCH[2]}-${BASH_REMATCH[3]}-${BASH_REMATCH[4]} ${BASH_REMATCH[5]}:${BASH_REMATCH[6]}:${BASH_REMATCH[7]} ${BASH_REMATCH[1]:-+00}00" +%s 2>/dev/null
 }
 
 # {"enabled", "schedule", "latest", "count"} for a share, or null when it has

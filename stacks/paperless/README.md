@@ -17,6 +17,15 @@ This page is the reference.
 
 ## Gotchas
 
+- **`PAPERLESS_OCR_MODE: redo` is deliberate.** The default `auto` treats a
+  merged PDF (a digital cover letter with scanned pages) as already having
+  text and never OCRs the scans, so paperless-tarmed finds no bill. It costs
+  OCR on every page, which is why OCR is capped at 2 of the NAS's 4 cores
+  (`PAPERLESS_TASK_WORKERS: 1`, `PAPERLESS_THREADS_PER_WORKER: 2`), and the
+  classifier trains every 6 hours, mail is checked every 30 minutes
+  (`PAPERLESS_TRAIN_TASK_CRON`, `PAPERLESS_EMAIL_TASK_CRON`; defaults hourly
+  and every 10 minutes).
+
 - **OIDC must match Authelia.** `provider_id` `authelia` fixes the callback
   `https://paperless.<internal-domain>/accounts/oidc/authelia/login/callback/`
   (= Authelia's `redirect_uris`); `client_id` `paperless`; the secret here is

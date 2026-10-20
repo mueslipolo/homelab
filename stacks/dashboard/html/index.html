@@ -702,6 +702,7 @@
     .top small { color: var(--muted); font-size: 0.74rem; }
     .meter { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
     .meter span { display: block; height: 100%; background: var(--c1); }
+    .top .share { color: var(--muted); font-weight: 400; margin-left: 8px; }
     .tag { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 10px;
         border: 1px solid currentColor; white-space: nowrap; }
     .tag.ok { color: var(--ok); } .tag.warn { color: var(--warn); } .tag.bad { color: var(--bad); }
@@ -1355,8 +1356,14 @@
             var healthy = cs.filter(function (c) { return c.health === 'healthy'; }).length;
             var since = Math.min.apply(null, cs.map(function (c) { return c.started || Infinity; }));
             var txt = up + '/' + cs.length + ' container' + (cs.length > 1 ? 's' : '') + ' running';
-            if (sick) { txt += ', ' + sick + ' unhealthy'; } else if (healthy) { txt += ', ' + healthy + ' healthy'; }
             if (up === cs.length && isFinite(since)) { txt += ', up ' + ago(since, now).replace(' ago', ''); }
+            // Only containers with a healthcheck report health; say how many have one.
+            var checked = sick + healthy;
+            if (sick) { txt += ' · ' + sick + ' unhealthy'; }
+            else if (checked) {
+                txt += ' · ' + (checked === cs.length ? 'all healthy'
+                    : 'healthcheck ok (' + checked + ' of ' + cs.length + ' have one)');
+            }
             return txt;
         }
         var rows = (st.stacks || []).map(function (k) {
@@ -1629,18 +1636,20 @@
         // ---- shared folders
         var s3 = section('Shared folders'), wrap = el('div', 'tbl-wrap'), t = el('table', 'ft');
         var head = el('tr');
-        [['Folder', ''], ['Size', 'num'], ['', ''], ['7 days', 'num'], ['30 days', 'num'], ['12 weeks', '']].forEach(function (c) { head.appendChild(el('th', c[1], c[0])); });
+        [['Folder', ''], ['Size', 'num'], ['Share of used space', ''], ['7 days', 'num'], ['30 days', 'num'], ['12 weeks', '']].forEach(function (c) { head.appendChild(el('th', c[1], c[0])); });
         var thead = el('thead');
         thead.appendChild(head);
         t.appendChild(thead);
         var tb = el('tbody'), shares = st.shares.slice().sort(function (a, b) { return b.bytes - a.bytes; });
-        var fmax = shares.length ? shares[0].bytes : 1;
+        // Bar = the folder's share of the used space, like the media lists.
+        var fmax = v.used || 1;
         shares.forEach(function (f) {
             var tr = el('tr');
             tr.appendChild(el('td', 'name', f.name));
             tr.appendChild(el('td', 'num', bytes(f.bytes)));
             var bc = el('td', 'barcell'), b = el('span', 'bar');
             b.style.width = (f.bytes / fmax * 100).toFixed(1) + '%';
+            b.title = Math.round(f.bytes / fmax * 100) + ' % of the used space';
             bc.appendChild(b);
             tr.appendChild(bc);
             [f.d7, f.d30].forEach(function (d) {
@@ -1666,12 +1675,17 @@
             [['Largest series', m.series.top, 'series'], ['Largest films', m.film.top, 'film']].forEach(function (c) {
                 var col = el('div');
                 col.appendChild(el('h4', null, c[0]));
-                var ol = el('ol', 'top'), max = c[1].length ? c[1][0].bytes : 1;
+                // Bar = this title's share of all TV (or all films), written out too.
+                var ol = el('ol', 'top'), all = c[2] === 'series' ? m.series.bytes : m.film.bytes;
+                var of = c[2] === 'series' ? 'TV' : 'films';
                 c[1].forEach(function (it) {
                     var li = el('li'), r1 = el('div', 'row1'), r2 = el('div', 'row2'), meter = el('div', 'meter'), fill = el('span');
                     r1.appendChild(el('span', 'title', it.name));
-                    r1.appendChild(el('b', null, bytes(it.bytes)));
-                    fill.style.width = (it.bytes / max * 100).toFixed(1) + '%';
+                    var pct = all ? it.bytes / all * 100 : 0;
+                    var size = el('b', null, bytes(it.bytes));
+                    size.appendChild(el('span', 'share', (pct < 1 ? '< 1' : Math.round(pct)) + ' % of ' + of));
+                    r1.appendChild(size);
+                    fill.style.width = pct.toFixed(1) + '%';
                     meter.appendChild(fill);
                     var meta = [];
                     if (c[2] === 'series') { meta.push(it.episodes + ' episode' + (it.episodes > 1 ? 's' : '')); }

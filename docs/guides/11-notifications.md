@@ -248,7 +248,7 @@ arrives and opens the document.
 pushes to `homelab`: a device on the LAN without a static lease (once per
 boot), internet down and back, a WireGuard peer connecting or going quiet. The
 router posts through Caddy, `https://ntfy.home.example.com`, so its DNS must
-resolve that name. Written without a router at hand: check each part as below.
+resolve that name. Tested on a hEX with a wAP ax behind it.
 
 1. Replace `ntfy.home.example.com` and `tk_REPLACE_ME` in the file, upload it
    (Files, or `scp ntfy.rsc admin@192.0.2.1:`), then `/import ntfy.rsc`.
@@ -264,13 +264,25 @@ resolve that name. Written without a router at hand: check each part as below.
    `/ip dhcp-server set … lease-script=…` line at the end of the file, with
    your server's name (`/ip dhcp-server print`). It replaces any existing
    lease-script.
-4. Known devices don't alert once their lease is static:
+4. A Wi-Fi access point that is itself a router (a MikroTik wAP's default:
+   its own DHCP and NAT, e.g. `192.168.88.x`) hands out the Wi-Fi devices'
+   addresses, so the main router never sees them join. Do steps 1–3 on the
+   AP too, attaching the lease script to its DHCP server, and remove the AP's
+   copies of the other two checks, which the main router already runs:
+   `/tool netwatch remove [find where comment~"^ntfy-inet"]` and
+   `/system scheduler remove [find where name="ntfy-wg"]`. Leave a guest
+   network's DHCP server out: every visitor would be "new".
+5. Known devices don't alert once their lease is static:
    `/ip dhcp-server lease make-static [find where mac-address="AA:BB:CC:DD:EE:FF"]`,
    or every current one with `[find where dynamic]`.
 
 **Check:**
 `:local s [:parse [/system script get ntfy-send source]]; $s title="Router test" message="hello"`
 arrives on the phone, and `/log print where message~"ntfy"` shows no error.
+A made-up device tests the lease script without a new one:
+`:local f [:parse [/system script get ntfy-dhcp source]]; $f bound=1 mac="02:00:00:00:00:99" ip="192.0.2.250" host="test-device"`.
+A device that was connected during `make-static` is known and stays quiet; to
+see a real alert, remove its lease, reconnect it, and make it static again.
 Then a new phone on the Wi-Fi gets "New device on the LAN", and a WireGuard
 peer that connects gets "VPN: … connected" within a minute. A phone without
 WireGuard keepalive that sits idle stops handshaking and shows as "gone

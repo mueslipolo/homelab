@@ -50,6 +50,15 @@ server:
 
 ## Gotchas
 
+- **The `checks` workflow runs in `homelab-ci:1`**, an image with its tools
+  baked in (`.forgejo/ci/Dockerfile`: git, shellcheck, jq, gitleaks, uv, Node
+  and prettier), built on the NAS by the `build-images` job and only when that
+  folder changes. A push no longer apt-gets and downloads its tools. The runner
+  uses the local image and never pulls it: right after a fresh install, or if
+  the image was pruned, jobs fail with `pull access denied for homelab-ci`
+  until the next scheduler tick has built it (or run `scripts/build-images.sh
+.forgejo/ci=homelab-ci:1` by hand).
+
 - **Register with `forgejo-cli`, not a web UI token:** `forgejo-runner register --token …`
   fails with `invalid_argument: runner registration token not found` and is deprecated.
 - **Data wiped?** Re-register with the **same secret** (same UUID) and rewrite

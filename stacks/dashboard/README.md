@@ -104,7 +104,7 @@ Which devices: `uploaders.conf` next to `jobs.env` (`UPLOADERS_CONF` overrides),
 ## Stacks
 
 The System tab lists every Portainer stack, with a detail line: the commit and
-date it was deployed, and its containers (running / total, health, uptime). Its
+date it was deployed, and its containers (running / total, uptime, and the result of those that have a healthcheck). Its
 state:
 
 - **up to date**: the commit Portainer deployed includes the last commit that touched the stack's folder

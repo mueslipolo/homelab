@@ -12,19 +12,11 @@ on:
 jobs:
   checks:
     runs-on: docker
+    # Tools baked in (.forgejo/ci/Dockerfile), built on the NAS by the
+    # build-images job: nothing to install or download per push.
     container:
-      image: python:3.15-slim-bookworm
-    env:
-      GITLEAKS_VERSION: 8.24.2 # keep in step with .pre-commit-config.yaml
+      image: homelab-ci:1
     steps:
-      - name: Install tools
-        run: |
-          apt-get update -qq
-          apt-get install -y -qq --no-install-recommends git shellcheck curl ca-certificates jq >/dev/null
-          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            | tar -xz -C /usr/local/bin gitleaks
-          pip install -q uv
-
       # Not actions/checkout: it clones from the server URL, which Forgejo
       # derives from ROOT_URL — Caddy's macvlan IP, which a job container cannot
       # hairpin back to (same reason as RENOVATE_ENDPOINT in renovate.yaml).
@@ -69,19 +61,16 @@ jobs:
   markdown:
     runs-on: docker
     container:
-      image: node:22-bookworm-slim
-    env:
-      PRETTIER_VERSION: 3.6.2 # keep in step with .pre-commit-config.yaml
+      image: homelab-ci:1
     steps:
       - name: Clone
         env:
           TOKEN: ${{ github.token }}
         run: |
-          apt-get update -qq && apt-get install -y -qq --no-install-recommends git ca-certificates >/dev/null
           git init -q .
           git remote add origin "http://forgejo:3000/${{ github.repository }}.git"
           git -c http.extraHeader="Authorization: token ${TOKEN}" fetch -q --depth=1 origin "${{ github.ref }}"
           git checkout -q FETCH_HEAD
 
       - name: prettier --check
-        run: git ls-files -z '*.md' | xargs -0 npx --yes "prettier@${PRETTIER_VERSION}" --check
+        run: git ls-files -z '*.md' | xargs -0 prettier --check

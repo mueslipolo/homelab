@@ -144,6 +144,8 @@ images_json() {
 	for spec in "${specs[@]}"; do
 		stack=${spec%%=*}
 		image=${spec#*=}
+		# A path (.forgejo/ci) is a tool image, not a stack: nothing runs it.
+		case $stack in */*) continue ;; esac
 		[ "$first" -eq 1 ] || printf ', '
 		first=0
 		printf '{"stack": %s, "image": %s, "code": %s, "built": %s, "running": %s}' \

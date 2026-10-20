@@ -78,7 +78,19 @@ services:
       PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
       PAPERLESS_TIME_ZONE: Europe/Zurich
       PAPERLESS_OCR_LANGUAGE: fra+eng
+      # redo, not the default auto: auto judges a merged PDF (a digital cover
+      # letter + scanned pages) as already having text and never OCRs the
+      # scans, so paperless-tarmed finds no bill. Costly per page, hence the
+      # caps below.
       PAPERLESS_OCR_MODE: redo
+      # One task at a time, OCR on 2 of the DS920+'s 4 cores: an import no
+      # longer takes the whole NAS, it just takes a bit longer.
+      PAPERLESS_TASK_WORKERS: 1
+      PAPERLESS_THREADS_PER_WORKER: 2
+      # Defaults are hourly training and mail every 10 min; each run reads the
+      # documents or the mailbox for nothing most of the time.
+      PAPERLESS_TRAIN_TASK_CRON: "5 */6 * * *"
+      PAPERLESS_EMAIL_TASK_CRON: "*/30 * * * *"
       PAPERLESS_FILENAME_FORMAT: "{{document_type}}/{{correspondent}}_{{title}}_{{created}}"
       PAPERLESS_URL: https://paperless.${INTERNAL_DOMAIN}
       # `webserver` is NOT redundant with the hostname above. paperless-tarmed

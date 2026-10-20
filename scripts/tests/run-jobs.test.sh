@@ -464,13 +464,38 @@ rm -rf "$D"
 
 echo "docker-prune"
 D=$(mktemp -d)
-mkdir -p "$D/bin"
-printf '#!/usr/bin/env bash\necho "$*" >>"%s/calls"\necho "Deleted Images:"; echo "Total reclaimed space: 1.2GB"\n' "$D" >"$D/bin/docker"
+mkdir -p "$D/bin" "$D/repo/scripts" "$D/repo/.forgejo/workflows"
+cp "$ROOT/scripts/docker-prune.sh" "$D/repo/scripts/"
+printf 'jobs:\n  a:\n    container:\n      image: homelab-ci:1\n  b:\n    container:\n      image: "renovate/renovate:44.167.5"\n' >"$D/repo/.forgejo/workflows/x.yaml"
+old=$(date -d '-30 days' '+%Y-%m-%d %H:%M:%S %z %Z')
+new=$(date -d '-1 day' '+%Y-%m-%d %H:%M:%S %z %Z')
+cat >"$D/bin/docker" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$D/calls"
+case "\$1 \$2" in
+"image prune") echo "Total reclaimed space: 1.2GB" ;;
+"builder prune") echo "Total: 0B" ;;
+"ps -aq") echo c1 ;;
+"inspect --format") echo sha256:used ;;
+"images --no-trunc") printf '%s\n' \
+	"sha256:old postgres:16 $old" \
+	"sha256:used linuxserver/sonarr:4.0 $old" \
+	"sha256:ci homelab-ci:1 $old" \
+	"sha256:ren renovate/renovate:44.167.5 $old" \
+	"sha256:fresh redis:8 $new" \
+	"sha256:none <none>:<none> $old" ;;
+esac
+EOF
 chmod +x "$D/bin/docker"
-PATH="$D/bin:$PATH" bash "$ROOT/scripts/docker-prune.sh" >"$D/out"
-check "removes only unused images older than a week" grep -qx 'image prune -af --filter until=168h' "$D/calls"
-check "and old build cache" grep -qx 'builder prune -af --filter until=168h' "$D/calls"
-check "reports what was freed" grep -q 'Total reclaimed space' "$D/out"
+PATH="$D/bin:$PATH" bash "$D/repo/scripts/docker-prune.sh" >"$D/out"
+check "untagged and replaced images go, by age" grep -qx 'image prune -f --filter until=168h' "$D/calls"
+check "an old unused image is removed" grep -qx 'rmi -- postgres:16' "$D/calls"
+check "an image a container uses stays" not_in_file 'rmi -- linuxserver/sonarr' "$D/calls"
+check "the CI image stays" not_in_file 'rmi -- homelab-ci' "$D/calls"
+check "Renovate's image stays" not_in_file 'rmi -- renovate/' "$D/calls"
+check "a recent image stays" not_in_file 'rmi -- redis' "$D/calls"
+check "old build cache goes" grep -qx 'builder prune -af --filter until=168h' "$D/calls"
+check "it says what it kept" grep -q 'kept the workflows.* images: homelab-ci:1 renovate/renovate:44.167.5' "$D/out"
 rm -rf "$D"
 
 echo "storage-scan"
@@ -722,6 +747,10 @@ check "USB disks are not listed as data" pj "[s['name'] for s in d['shares']] ==
 check "a share's path comes from synoshare" pj "d['shares'][1]['path'] == '$V/paperless'"
 check "daily snapshot schedule" pj "d['shares'][1]['snapshot']['schedule'] == 'daily 02:00' and d['shares'][1]['snapshot']['enabled']"
 check "newest snapshot and count from @sharesnap" pj "d['shares'][1]['snapshot']['latest'] == $(date -d '2026-10-12 02:00:03 +0200' +%s) and d['shares'][1]['snapshot']['count'] == 2"
+se() { bash -c ". '$ROOT/scripts/lib/json.sh'; . '$ROOT/scripts/lib/protection.sh'; _snap_epoch '$1'"; }
+check "a snapshot named in local time with its offset" [ "$(se GMT+02-2026.10.12-02.00.03)" = "$(date -d '2026-10-12 02:00:03 +0200' +%s)" ]
+check "a snapshot named in UTC, without an offset (homes)" [ "$(se GMT-2026.10.14-01.05.04)" = "$(date -d '2026-10-14 01:05:04 +0000' +%s)" ]
+check "anything else is not a snapshot" bash -c "! (. '$ROOT/scripts/lib/json.sh'; . '$ROOT/scripts/lib/protection.sh'; _snap_epoch desktop.ini)"
 check "a disabled weekly snapshot keeps its days" pj "d['shares'][0]['snapshot'] == {'enabled': False, 'schedule': 'Mon,Tue,Wed,Thr,Fri,Sat 02:00', 'latest': None, 'count': None}"
 check "a USB task" pj "d['tasks'][0]['dest'] == 'usb' and d['tasks'][0]['target'] == 'usbshare1' and not d['tasks'][0]['encrypted']"
 check "its schedule comes from its sched_id" pj "d['tasks'][0]['schedule'] == 'daily 03:00' and d['tasks'][0]['enabled']"
