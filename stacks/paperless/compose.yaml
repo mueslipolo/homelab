@@ -53,7 +53,7 @@ services:
           memory: 128M
 
   webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.3.2
     restart: unless-stopped
     depends_on:
       db:
@@ -119,7 +119,7 @@ services:
           memory: 2G
 
   gotenberg:
-    image: gotenberg/gotenberg:8.37.0
+    image: gotenberg/gotenberg:8.38.1
     restart: unless-stopped
     networks:
       - paperless_net
@@ -139,7 +139,7 @@ services:
           memory: 512M
 
   tika:
-    image: apache/tika@sha256:a8b442501f601fb15015de974f9afe13dd242b0f14e49a2b144fadcb214a555b
+    image: apache/tika@sha256:06bcdbd09aca073293e5a171ad161418cc93c91d58d9e4e205064eade84889d4
     restart: unless-stopped
     networks:
       - paperless_net

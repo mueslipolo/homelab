@@ -110,6 +110,14 @@ def status():
              "built": {"commit": commit, "at": at(days=1, hours=2, minutes=50), "from_current_code": True},
              "running": {"state": "running", "commit": commit, "started": at(days=1, hours=2, minutes=40), "same_image": True}},
         ],
+        "containers": [
+            {"name": n, "project": p, "state": "running", "health": h, "exit_code": 0, "oom": False,
+             "restarts": 0, "started": at(days=1, hours=2)}
+            for n, p, h in [("edge-caddy-1", "edge", None), ("authelia-authelia-1", "authelia", "healthy"),
+                            ("mediarr-sonarr-1", "mediarr", None), ("mediarr-jellyfin-1", "mediarr", "healthy"),
+                            ("paperless-webserver-1", "paperless", "healthy"), ("ntfy-ntfy-1", "ntfy", "healthy"),
+                            ("dashboard-dashboard-1", "dashboard", "healthy"), ("portainer", "", None)]
+        ],
         "scheduler": {"sha": commit, "pull_ok": True, "pull_error": ""},
     }
 

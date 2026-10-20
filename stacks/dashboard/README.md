@@ -111,6 +111,12 @@ The System tab lists every Portainer stack:
 - **stopped**
 - **Web editor**: not deployed from git, so there is nothing to compare
 
+Below, under Jobs and scheduler, **Containers** (`scripts/lib/containers.sh`):
+every container with a restart policy. One "N running, no crash" row while all
+are fine; otherwise a row per container that is restart-looping, crashed (an
+exit code other than 0, 137, 143, or out of memory), unhealthy, or restarted
+by docker in the last 20 minutes. `scripts/alerts.sh` pushes the same to ntfy.
+
 `scripts/lib/stacks.sh` asks Portainer's API (`PORTAINER_URL`, default `https://127.0.0.1:9443`) with `PORTAINER_TOKEN` from `jobs.env`. Create the token under Portainer → My account → Access tokens. It has its user's rights, so `jobs.env` must stay root-only. Only name, status, compose path and deployed commit are kept: the API also returns each stack's environment, passwords included. JSON is read with `jq` from the `ghcr.io/jqlang/jq` image (DSM has none). An image tag that moves without a git change (`latest`) is not seen.
 
 ## Gotchas

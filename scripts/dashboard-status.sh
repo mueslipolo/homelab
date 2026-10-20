@@ -43,6 +43,8 @@ readonly BACKUP_LOG
 . "$(dirname -- "$0")/lib/stacks.sh"
 # shellcheck source=scripts/lib/devices.sh
 . "$(dirname -- "$0")/lib/devices.sh"
+# shellcheck source=scripts/lib/containers.sh
+. "$(dirname -- "$0")/lib/containers.sh"
 
 volume_json() {
 	local size used avail pct
@@ -208,6 +210,7 @@ main() {
 		printf '  "devices": %s,\n' "$(devices_json "$VOLUME")"
 		printf '  "scheduler": %s,\n' "$(scheduler_json)"
 		printf '  "images": %s,\n' "$(images_json)"
+		printf '  "containers": %s,\n' "$(containers_json)"
 		printf '  "stacks": %s,\n' "$(stacks_json "$(cd "$(dirname -- "$0")/.." && pwd)")"
 		printf '  "jobs": %s\n}\n' "$(jobs_json)"
 	} | write_atomic "$OUT_DIR/status.json"

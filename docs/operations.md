@@ -12,8 +12,12 @@ conventions a new stack follows. Setting things up is in the
   Actions **Secrets**.
 - **No real values in tracked files.** Use the placeholders below; real values
   live in the gitignored `CLAUDE.local.md` and
-  `PRIVATE-real-values-do-not-publish/`. The tree is publishable as is; the
-  history was squashed before publishing, and stays clean.
+  `PRIVATE-real-values-do-not-publish/`. The tree is publishable as is.
+- **GitHub gets snapshots, not the history.** Forgejo holds the working
+  history, Renovate's commits included; `tools/publish-github.sh` adds one
+  commit per publish to the public copy, authored by the public identity,
+  after the real-values check and gitleaks pass. Never `git push` to GitHub
+  directly: it would publish Renovate's and the merges' commits.
 - **Images are pinned** to exact tags. Renovate runs daily: minor and patch
   updates merge themselves once CI passes; majors (and Forgejo, Portainer)
   wait for approval on its Dependency Dashboard, and ntfy tells you

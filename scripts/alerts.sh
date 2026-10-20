@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Pushes the dashboard's warnings to ntfy as they happen, so nobody has to look
-# at the dashboard: a scheduled job failed, a phone or computer stopped backing
-# up, the volume is filling up or grew unusually in a day, the scheduler cannot
-# update its clone. Run by scripts/run-jobs.sh after every status.json refresh
+# at the dashboard: a scheduled job failed; a container crashed, restart-loops
+# or is unhealthy; a phone or computer stopped backing up; the volume is filling
+# up or grew unusually in a day; the scheduler cannot update its clone. Run by scripts/run-jobs.sh after every status.json refresh
 # (every 15 minutes) when NTFY_TOKEN is set.
 #
 # Pushes on changes only: an item turning amber or red, or getting worse, and
@@ -61,6 +61,20 @@ current=$(
 	       else $who + ": nothing uploaded for \(days($age)) days" end),
 	      (if $lvl == "ok" then "" else "limit \(.max_days) days" end) ]),
 
+	  (($st.containers // [])[] |
+	    (if .state == "restarting" then ["bad", "restart-looping (exit \(.exit_code))"]
+	     elif (.state == "exited" or .state == "dead") and
+	          (.oom or (.exit_code as $e | [0, 137, 143] | index($e)) == null)
+	       then ["bad", (if .oom then "killed: out of memory" else "crashed (exit \(.exit_code))" end)]
+	     elif .health == "unhealthy" then ["warn", "unhealthy"]
+	     elif .state == "running" and .restarts > 0 and ($now - (.started // 0)) < 1200
+	       then ["warn", "restarted by docker after a crash (\(.restarts) so far)"]
+	     else ["ok", ""] end) as $c |
+	    [ "container:" + .name, $c[0], "system",
+	      (if $c[0] == "ok" then "Container " + .name + " is running again"
+	       else "Container " + .name + ": " + $c[1] end),
+	      (if .project != "" then "stack " + .project else "" end) ]),
+
 	  (($st.volume // empty) |
 	    (if .used_pct >= 90 then "bad" elif .used_pct >= 80 then "warn" else "ok" end) as $lvl |
 	    [ "volume", $lvl, "storage",
@@ -105,7 +119,7 @@ while IFS=$'\t' read -r key level tab title detail; do
 	fi
 	click=""
 	[ -n "${DASHBOARD_URL:-}" ] && click="${DASHBOARD_URL%/}/#$tab"
-	if ntfy_send "$TOPIC" "$title" "$priority" "$tags" "$click" <<<"${detail:- }"; then
+	if ntfy_send "$TOPIC" "$title" "$priority" "$tags" "$click" <<<"${detail:-see the dashboard}"; then
 		echo "Sent: $title"
 		sent=$((sent + 1))
 	else

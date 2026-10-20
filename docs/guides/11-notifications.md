@@ -202,13 +202,14 @@ Every 15 minutes, right after refreshing the dashboard's `status.json`, the
 scheduler runs `scripts/alerts.sh`, which pushes to `homelab` what the
 dashboard would show amber or red, using the same thresholds:
 
-| Item                                    | Amber                       | Red                 |
-| --------------------------------------- | --------------------------- | ------------------- |
-| a scheduled job                         |                             | its last run failed |
-| a phone or computer in `uploaders.conf` | silent half its max days    | silent its max days |
-| the volume                              | 80 % used                   | 90 % used           |
-| the scheduler's git clone               | cannot update               |                     |
-| a day's growth (`storage.json`)         | more than `ALERT_GROWTH_GB` |                     |
+| Item                                                                | Amber                                                              | Red                                                                                                |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| a scheduled job                                                     |                                                                    | its last run failed                                                                                |
+| a container (anything with a restart policy: the stacks, Portainer) | unhealthy, or restarted by docker after a crash in the last 20 min | restart-looping, or exited with an error or out of memory (a stop, exit 0/137/143, is not a crash) |
+| a phone or computer in `uploaders.conf`                             | silent half its max days                                           | silent its max days                                                                                |
+| the volume                                                          | 80 % used                                                          | 90 % used                                                                                          |
+| the scheduler's git clone                                           | cannot update                                                      |                                                                                                    |
+| a day's growth (`storage.json`)                                     | more than `ALERT_GROWTH_GB`                                        |                                                                                                    |
 
 It pushes on changes only: once when an item turns amber, again if it turns
 red, and a quiet "ok again" when it recovers. Nothing to set up beyond the

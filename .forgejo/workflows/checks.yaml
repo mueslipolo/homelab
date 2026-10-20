@@ -13,7 +13,7 @@ jobs:
   checks:
     runs-on: docker
     container:
-      image: python:3.12-slim-bookworm
+      image: python:3.15-slim-bookworm
     env:
       GITLEAKS_VERSION: 8.24.2 # keep in step with .pre-commit-config.yaml
     steps:

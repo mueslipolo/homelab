@@ -79,7 +79,7 @@ for file in "$@"; do
 
 	# Email addresses, excluding the ones the repo deliberately uses.
 	while IFS= read -r hit; do
-		printf '%s' "$hit" | grep -qE '(example\.(com|lan)|noreply@anthropic\.com)' && continue
+		printf '%s' "$hit" | grep -qE '(example\.(com|lan)|noreply@anthropic\.com|bot@renovateapp\.com)' && continue
 		[ -n "$hit" ] && report "$file" "$hit" \
 			'email address — the placeholder table says admin@example.com'
 	done < <(grep -nE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' -- "$file" 2>/dev/null | cut -c1-160)

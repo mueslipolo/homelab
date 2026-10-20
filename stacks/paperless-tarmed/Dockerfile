@@ -1,7 +1,7 @@
 # Runtime image: no OCR engine, no ML model, no compiler.
 # Paperless has already OCR'd the document by the time we see it, so all we need
 # is a PDF text layer reader and an HTTP client.
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

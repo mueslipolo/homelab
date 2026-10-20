@@ -1421,6 +1421,30 @@
             note(d.level, im.stack + ': ' + d.state);
         });
         if (deploys.children.length) { document.querySelector('[data-deploys]').hidden = false; }
+        // Containers: only the ones in trouble get a row (scripts/lib/containers.sh;
+        // same rules as scripts/alerts.sh, which pushes them to ntfy).
+        if (st.containers) {
+            var troubled = 0;
+            st.containers.forEach(function (c) {
+                var lvl = 'ok', what = '';
+                if (c.state === 'restarting') { lvl = 'bad'; what = 'restart-looping (exit ' + c.exit_code + ')'; }
+                else if ((c.state === 'exited' || c.state === 'dead') && (c.oom || [0, 137, 143].indexOf(c.exit_code) < 0)) {
+                    lvl = 'bad'; what = c.oom ? 'killed: out of memory' : 'crashed (exit ' + c.exit_code + ')';
+                } else if (c.health === 'unhealthy') { lvl = 'warn'; what = 'unhealthy'; }
+                else if (c.state === 'running' && c.restarts > 0 && now - (c.started || 0) < 1200) {
+                    lvl = 'warn'; what = 'restarted by docker after a crash';
+                }
+                if (lvl === 'ok') { return; }
+                troubled++;
+                led(sList, lvl, 'Container · ' + c.name, what, c.project ? 'stack ' + c.project : '');
+                sLevels.push(lvl);
+                note(lvl, c.name + ': ' + what);
+            });
+            if (!troubled) {
+                var up = st.containers.filter(function (c) { return c.state === 'running'; }).length;
+                led(sList, 'ok', 'Containers', up + ' running, no crash', '');
+            }
+        }
         (st.jobs || []).forEach(function (j) {
             var s = sources[j.name];
             led(sList, s.level, 'Job · ' + j.name, s.value, s.detail);

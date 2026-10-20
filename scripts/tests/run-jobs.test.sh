@@ -198,7 +198,7 @@ check "the job still ran" [ "$(runs)" = 1 ]
 sed -i 's|HC_PING_KEY=testkey|HC_PING_KEY=https://hc-ping.com/abc|' "$T/jobs.env"
 tick "2026-10-11 02:00" 2>"$T/err"
 check "a URL pasted as the key is flagged" grep -q "must be the project's ping key" "$T/err"
-sed -i 's|HC_PING_KEY=.*|HC_PING_KEY=0f8fad5b-d9cb-469f-a165-70867728950e|' "$T/jobs.env"
+sed -i 's|HC_PING_KEY=.*|HC_PING_KEY=0f8fad5b-d9cb-469f-a165-70867728950e|' "$T/jobs.env" # gitleaks:allow (a made-up UUID: the test checks that one is rejected)
 tick "2026-10-11 03:00" 2>"$T/err"
 check "a check UUID pasted as the key is recognised" grep -q "is a check's UUID" "$T/err"
 rm -rf "$T"
@@ -368,6 +368,7 @@ status() { # <job exit> <device last seen, days ago> <volume %> <pull_ok>
 		   {"owner": "anna", "kind": "phone", "name": "Pixel 8", "max_days": 7,
 		    "last_seen": null, "newest_photo": $((NOW - $2 * 86400))}]},
 		 "scheduler": {"sha": "abc1234", "pull_ok": $4, "pull_error": "fatal: Not possible to fast-forward"},
+		 "containers": ${CONTAINERS:-[]},
 		 "jobs": [{"name": "forgejo-dump", "exit": $1, "ended": $NOW, "message": "zip: disk full"}]}
 	EOF
 }
@@ -408,9 +409,58 @@ CURL_FAIL=1 alerts
 check "ntfy down: nothing recorded" [ "$(posts)" = 0 ]
 alerts
 check "so the next run sends it" grep -q 'Title: Job failed: forgejo-dump' "$A/posts"
+ctr() { # <name> <state> <health|null> <exit> <oom> <restarts> <started, seconds ago>
+	printf '{"name": "%s", "project": "mediarr", "state": "%s", "health": %s, "exit_code": %s, "oom": %s, "restarts": %s, "started": %s}' \
+		"$1" "$2" "$3" "$4" "$5" "$6" "$((NOW - $7))"
+}
+: >"$A/posts"
+CONTAINERS="[$(ctr sonarr restarting null 3 false 9 30), $(ctr radarr running '"unhealthy"' 0 false 0 9000),
+ $(ctr prowlarr running null 0 false 2 300), $(ctr seerr exited null 137 false 0 9000),
+ $(ctr jellyfin exited null 1 true 0 9000), $(ctr qbittorrent running null 0 false 4 90000)]"
+status 1 8 70 false
+alerts
+check "a restart loop is urgent" grep -q 'Title: Container sonarr: restart-looping (exit 3) -H Priority: high' "$A/posts"
+check "an unhealthy container" grep -q 'Title: Container radarr: unhealthy' "$A/posts"
+check "a crash docker just recovered from" grep -q 'Title: Container prowlarr: restarted by docker after a crash (2 so far)' "$A/posts"
+check "out of memory" grep -q 'Title: Container jellyfin: killed: out of memory' "$A/posts"
+check "a stopped container (exit 137) is not a crash" not_in_file 'Container seerr' "$A/posts"
+check "old restarts, long running: fine" not_in_file 'Container qbittorrent' "$A/posts"
+check "with its stack" grep -q -- '--data-binary stack mediarr' "$A/posts"
+: >"$A/posts"
+CONTAINERS="[$(ctr sonarr running null 0 false 9 2000), $(ctr radarr running '"healthy"' 0 false 0 9000)]"
+status 1 8 70 false
+alerts
+check "recovered containers, quietly" grep -q 'Title: Container sonarr is running again -H Priority: low' "$A/posts"
+check "a redeployed container (gone) is not reported" not_in_file 'Container prowlarr' "$A/posts"
+unset CONTAINERS
 rm -f "$A/local/status.json"
 check "no status.json yet: not a failure" alerts
 rm -rf "$A"
+
+echo "containers (lib/containers.sh)"
+D=$(mktemp -d)
+mkdir -p "$D/bin"
+S=$'\x1f'
+cat >"$D/bin/docker" <<EOF
+#!/usr/bin/env bash
+case \$1 in
+ps) printf 'a1\nb2\nc3\n' ;;
+inspect) printf '%s\n' \
+	"/mediarr-sonarr-1${S}unless-stopped${S}restarting${S}${S}3${S}false${S}9${S}2026-10-19T09:59:30.123456789Z${S}mediarr" \
+	"/portainer${S}always${S}running${S}healthy${S}0${S}false${S}0${S}2026-10-19T08:00:00Z${S}" \
+	"/jq-helper${S}no${S}running${S}${S}0${S}false${S}0${S}2026-10-19T09:00:00Z${S}" ;;
+esac
+EOF
+chmod +x "$D/bin/docker"
+PATH="$D/bin:$PATH" bash -c ". '$ROOT/scripts/lib/json.sh'; . '$ROOT/scripts/lib/containers.sh'; containers_json" >"$D/c.json"
+cj() { python3 -c "import json,sys; d={c['name']: c for c in json.load(open('$D/c.json'))}; sys.exit(0 if ($1) else 1)"; }
+check "containers are valid JSON" valid_json "$D/c.json"
+check "a compose container, with its stack and restart count" cj "d['mediarr-sonarr-1']['state'] == 'restarting' and d['mediarr-sonarr-1']['restarts'] == 9 and d['mediarr-sonarr-1']['project'] == 'mediarr'"
+check "an empty health field keeps the columns in place" cj "d['mediarr-sonarr-1']['health'] is None and d['mediarr-sonarr-1']['exit_code'] == 3"
+check "start time as epoch" cj "d['mediarr-sonarr-1']['started'] == $(date -d '2026-10-19T09:59:30Z' +%s)"
+check "Portainer (docker run, restart always) is watched" cj "d['portainer']['health'] == 'healthy'"
+check "one-off containers (no restart policy) are not" cj "'jq-helper' not in d"
+rm -rf "$D"
 
 echo "docker-prune"
 D=$(mktemp -d)

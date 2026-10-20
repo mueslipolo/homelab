@@ -14,7 +14,7 @@ jobs:
     # needed a docker CLI that the runner's default job image (node:22-bookworm)
     # doesn't ship — `docker: command not found`. Nothing here needs the daemon.
     container:
-      image: renovate/renovate:44.24.3
+      image: renovate/renovate:44.167.5
     steps:
       - name: Run Renovate
         run: renovate
@@ -46,6 +46,10 @@ jobs:
           GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_COM_TOKEN }}
           # Explicit list, because RENOVATE_AUTODISCOVER is false below: a repo
           # is invisible to Renovate until it is named here.
+          # Renovate's commits get their own neutral identity. Without this
+          # they carry the token owner's Forgejo name and email, which then
+          # go public with the GitHub copy.
+          RENOVATE_GIT_AUTHOR: "Renovate Bot <bot@renovateapp.com>"
           RENOVATE_REPOSITORIES: yves/homelab
           RENOVATE_AUTODISCOVER: "false"
           # The renovate image runs as uid 12021, but act_runner's job cwd
