@@ -114,9 +114,17 @@ def status():
             {"name": n, "project": p, "state": "running", "health": h, "exit_code": 0, "oom": False,
              "restarts": 0, "started": at(days=1, hours=2)}
             for n, p, h in [("edge-caddy-1", "edge", None), ("authelia-authelia-1", "authelia", "healthy"),
-                            ("mediarr-sonarr-1", "mediarr", None), ("mediarr-jellyfin-1", "mediarr", "healthy"),
-                            ("paperless-webserver-1", "paperless", "healthy"), ("ntfy-ntfy-1", "ntfy", "healthy"),
-                            ("dashboard-dashboard-1", "dashboard", "healthy"), ("portainer", "", None)]
+                            ("authelia-postgres-1", "authelia", "healthy"), ("dashboard-dashboard-1", "dashboard", "healthy"),
+                            ("forgejo", "forgejo", None), ("forgejo-runner", "forgejo-runner", None),
+                            ("mealie-mealie-1", "mealie", "healthy"), ("mealie-postgres-1", "mealie", "healthy"),
+                            ("mediarr-sonarr-1", "mediarr", None), ("mediarr-radarr-1", "mediarr", None),
+                            ("mediarr-prowlarr-1", "mediarr", None), ("mediarr-qbittorrent-1", "mediarr", None),
+                            ("mediarr-flaresolverr-1", "mediarr", None), ("mediarr-jellyfin-1", "mediarr", "healthy"),
+                            ("mediarr-seerr-1", "mediarr", "healthy"), ("mediarr-maintainerr-1", "mediarr", None),
+                            ("paperless-webserver-1", "paperless", "healthy"), ("paperless-db-1", "paperless", None),
+                            ("paperless-broker-1", "paperless", None), ("paperless-tika-1", "paperless", None),
+                            ("paperless-gotenberg-1", "paperless", None), ("paperless-tarmed", "paperless-tarmed", None),
+                            ("ntfy-ntfy-1", "ntfy", "healthy"), ("portainer", "", None)]
         ],
         "scheduler": {"sha": commit, "pull_ok": True, "pull_error": ""},
     }

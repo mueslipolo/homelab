@@ -1,7 +1,7 @@
 # dashboard
 
 Static homepage (nginx-unprivileged) linking every service. Tabs: **Services**
-(default), **Backups**, **System** (deployments, jobs), **Network**; the left
+(default), **Backups**, **System** (stacks, containers, jobs), **Network**; the left
 panel sums up each tab's state and opens it. Tabs have links (`#backups`, ...).
 No secrets, no database.
 
@@ -69,15 +69,16 @@ Hyper Backup log: `/var/packages/HyperBackup/var/log/synolog/synobackup.log`, el
 - `html/fonts/`: Archivo, Martian Mono (latin subset, SIL OFL), local so nothing loads from the internet.
 - `html/icons/`: homarr-labs/dashboard-icons (Apache-2.0; logos are trademarks). `maintainerr.png` downscaled to 128 px (upstream SVG wraps a 980 px PNG).
 
-## Deployments panel
+## Images built on the NAS
 
-For each image the NAS builds (`build-images` in `scripts/jobs.conf`): the
-last commit touching the stack in git (**code**), the image under its tag
-(**built**: commit, build time), and the container (**running**: its build's
-commit, start time). Status: **up to date**; **build pending** (new code, built
-within 15 min) or **build failed** (the job's error); **redeploy needed** (new
-image ready: Pull and redeploy); **not running**. The stack name must equal its
-container name.
+For each image the NAS builds (`build-images` in `scripts/jobs.conf`), the
+stack's own row in System → Stacks also checks the image: the last commit
+touching the stack (code), the image under its tag (built), and the container
+(running). The worse of the stack's and the image's state shows: **build
+pending** (new code, built within 15 min), **build failed** (the job's error),
+**redeploy needed** (new image ready: Pull and redeploy), **not running**. When
+all agree the detail line only says when the image was built; otherwise it
+shows the whole chain. The stack name must equal its container name.
 
 ## Devices (Backups tab)
 
@@ -102,7 +103,9 @@ Which devices: `uploaders.conf` next to `jobs.env` (`UPLOADERS_CONF` overrides),
 
 ## Stacks
 
-The System tab lists every Portainer stack:
+The System tab lists every Portainer stack, with a detail line: the commit and
+date it was deployed, and its containers (running / total, health, uptime). Its
+state:
 
 - **up to date**: the commit Portainer deployed includes the last commit that touched the stack's folder
 - **redeploy needed**: the folder changed since. Normal for up to 5 minutes after a push (GitOps polling); longer means polling is off or failing: Pull and redeploy
@@ -111,7 +114,7 @@ The System tab lists every Portainer stack:
 - **stopped**
 - **Web editor**: not deployed from git, so there is nothing to compare
 
-Below, under Jobs and scheduler, **Containers** (`scripts/lib/containers.sh`):
+Below, under Containers, jobs and scheduler, **Containers** (`scripts/lib/containers.sh`):
 every container with a restart policy. One "N running, no crash" row while all
 are fine; otherwise a row per container that is restart-looping, crashed (an
 exit code other than 0, 137, 143, or out of memory), unhealthy, or restarted

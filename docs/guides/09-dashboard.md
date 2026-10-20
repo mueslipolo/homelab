@@ -6,7 +6,7 @@
 ## What you get
 
 A static page at `https://dashboard.home.example.com` (unprivileged nginx,
-read-only container): a card per service, and tabs for backups, deployments,
+read-only container): a card per service, and tabs for backups, stacks and containers,
 jobs, storage and the network.
 
 | File (`html/local/`) | Written by                                    | When         |
@@ -34,7 +34,7 @@ them):
 | Services | a card per app, with its stack's README; the left panel sums up every tab                                |
 | Storage  | where the space goes, 90 days of used space, per-folder trends, the largest media, what could be freed   |
 | Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading |
-| System   | each Portainer stack against git, locally built images, scheduled jobs, the scheduler itself             |
+| System   | each Portainer stack against git, with its deploy date, containers and built image; jobs; the scheduler  |
 
 ![Services tab](../images/dashboard-services.png)
 

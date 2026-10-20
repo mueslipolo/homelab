@@ -242,55 +242,6 @@
 
     .empty code { font-family: var(--mono); font-size: 0.72rem; }
 
-    [data-deploy-list] { display: flex; flex-direction: column; gap: 8px; }
-
-    .deploy {
-        background: var(--plate-2);
-        border: 1px solid var(--plate-line);
-        border-radius: 6px;
-        padding: 10px 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .deploy-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .deploy-head b { font-size: 0.86rem; font-weight: 600; }
-
-    .pill {
-        font-family: var(--mono);
-        font-size: 0.62rem;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        padding: 2px 7px;
-        border-radius: 10px;
-        border: 1px solid currentColor;
-        white-space: nowrap;
-    }
-
-    .pill.ok { color: var(--ok); }
-    .pill.warn { color: var(--warn); }
-    .pill.bad { color: var(--bad); }
-
-    .stages {
-        display: grid;
-        grid-template-columns: auto auto 1fr;
-        gap: 2px 10px;
-        font-family: var(--mono);
-        font-size: 0.68rem;
-        color: var(--plate-muted);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .stages .now { color: var(--plate-ink); }
-
-    .deploy small { font-size: 0.74rem; color: var(--plate-muted); }
 
     .net a {
         display: grid;
@@ -618,16 +569,14 @@
     }
 
     /* The lists and cards the plate used to hold, on the light bay. */
-    .bay .leds, .bay .deploy {
+    .bay .leds {
         background: var(--surface);
         border-color: var(--line);
         color: var(--ink);
     }
 
     .bay .led { border-bottom-color: var(--line); }
-    .bay .led em, .bay .led small, .bay .deploy small, .bay .stages { color: var(--muted); }
-    .bay .stages .now { color: var(--ink); }
-    .bay [data-deploy-list] { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+    .bay .led em, .bay .led small { color: var(--muted); }
 
     /* Protection matrix: data sets x layers of protection. */
     .tbl-wrap { overflow-x: auto; }
@@ -856,16 +805,12 @@
 
         <div data-view="system" role="tabpanel" aria-labelledby="tab-system" hidden>
             <section>
-                <h3 class="view-title">Stacks <span>deployed in Portainer, against git</span></h3>
+                <h3 class="view-title">Stacks <span>what runs, against git</span></h3>
                 <div class="leds" data-leds-stacks></div>
                 <p class="empty-bay" data-no-stacks>No stack list: set <code>PORTAINER_TOKEN</code> in <code>jobs.env</code> (dashboard README), or Portainer did not answer.</p>
             </section>
-            <section data-deploys hidden>
-                <h3 class="view-title">Deployments <span>images built on the NAS</span></h3>
-                <div data-deploy-list></div>
-            </section>
             <section>
-                <h3 class="view-title">Jobs and scheduler</h3>
+                <h3 class="view-title">Containers, jobs and scheduler</h3>
                 <div class="leds" data-leds-system></div>
             </section>
         </div>
@@ -1162,8 +1107,10 @@
         var dep = k.deployed, code = k.code;
         function at(c) { return c ? c.commit + ' · ' + when(c.at) : '-'; }
         if (!k.active) { return { level: 'warn', value: 'stopped', detail: '' }; }
-        if (!k.git) { return { level: 'ok', value: 'Web editor', detail: '' }; }
-        if (k.current === true) { return { level: 'ok', value: 'up to date', detail: '' }; }
+        if (!k.git) { return { level: 'ok', value: 'Web editor', detail: 'deployed by hand, not from git' }; }
+        if (k.current === true) {
+            return { level: 'ok', value: 'up to date', detail: dep ? 'deployed ' + dep.commit + ' on ' + when(dep.at) : '' };
+        }
         if (cloneStuck) {
             return { level: 'warn', value: 'not checked',
                      detail: 'running ' + at(dep) + ' · the scheduler\'s clone is stuck (see Scheduler); nothing to redeploy' };
@@ -1209,40 +1156,33 @@
         return rows;
     }
 
-    function deployCard(im, buildJob) {
-        var level, state, hint, built = im.built, run = im.running;
+    // A stack whose image the NAS builds itself (build-images job): its code,
+    // the image built from it, and the container running it must agree.
+    // Shown in that stack's own row, as its state and detail line.
+    function imageState(im, buildJob) {
+        var built = im.built, run = im.running, level, state, hint;
         if (!run || run.state !== 'running') {
             level = 'bad'; state = 'not running';
-            hint = built ? 'Image ready: redeploy the stack in Portainer.' : 'No image yet: wait for the build, then deploy.';
+            hint = built ? 'image ready: redeploy the stack in Portainer' : 'no image yet: wait for the build, then deploy';
         } else if (!built || !built.from_current_code) {
             if (buildJob && buildJob.exit !== 0) {
                 level = 'bad'; state = 'build failed'; hint = buildJob.message;
             } else {
-                level = 'warn'; state = 'build pending'; hint = 'New code; the scheduler builds it within 15 min.';
+                level = 'warn'; state = 'build pending'; hint = 'new code: the scheduler builds it within 15 min';
             }
         } else if (!run.same_image) {
-            level = 'warn'; state = 'redeploy needed'; hint = 'New image ready: Pull and redeploy in Portainer.';
+            level = 'warn'; state = 'redeploy needed'; hint = 'new image ready: Pull and redeploy in Portainer';
         } else {
             level = 'ok'; state = 'up to date'; hint = '';
         }
-        var card = el('div', 'deploy');
-        var head = el('div', 'deploy-head');
-        head.appendChild(el('b', null, im.stack));
-        head.appendChild(el('span', 'pill ' + level, state));
-        card.appendChild(head);
-        var stages = el('div', 'stages');
-        [
-            ['code', im.code && im.code.commit, im.code && when(im.code.at)],
-            ['built', built && built.commit, built && when(built.at)],
-            ['running', run && run.commit, run && 'since ' + when(run.started)]
-        ].forEach(function (row) {
-            stages.appendChild(el('span', null, row[0]));
-            stages.appendChild(el('span', 'now', row[1] || '-'));
-            stages.appendChild(el('span', null, row[2] || ''));
-        });
-        card.appendChild(stages);
-        if (hint) { card.appendChild(el('small', null, hint)); }
-        return { card: card, level: level, state: state };
+        var steps = [
+            'code ' + (im.code ? im.code.commit : '-'),
+            'built ' + (built ? built.commit + ' ' + when(built.at) : '-'),
+            'running ' + (run && run.commit ? run.commit + ' since ' + when(run.started) : '-')
+        ].join(' → ');
+        // All in step: one short fact. Otherwise the whole chain, to see where it stopped.
+        if (level === 'ok') { return { level: level, value: state, detail: 'image built here ' + when(built.at) }; }
+        return { level: level, value: state, detail: 'image: ' + steps + (hint ? ' · ' + hint : '') };
     }
 
     // The protection matrix, discovered on the NAS (scripts/lib/protection.sh):
@@ -1395,32 +1335,51 @@
             document.querySelector('[data-no-plan]').hidden = true;
         }
 
-        // ---- System tab: stacks, deployments, jobs, scheduler
+        // ---- System tab: stacks (with their built images), containers, jobs, scheduler
         var sList = document.querySelector('[data-leds-system]');
         var sLevels = [], notes = [];
         function note(level, text) { if (level !== 'ok') { notes.push([level, text]); } }
         var sch = st.scheduler, cloneStuck = !!(sch && !sch.pull_ok);
-        if (st.stacks) {
-            var kList = document.querySelector('[data-leds-stacks]'), behind = [];
-            st.stacks.slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (k) {
-                var r = stackRow(k, cloneStuck);
-                led(kList, r.level, k.name, r.value, r.detail);
-                sLevels.push(r.level);
-                if (r.level !== 'ok') { behind.push(k.name + ': ' + r.value); }
-            });
-            // A stuck clone explains these rows: the scheduler's note covers them.
-            if (behind.length && !cloneStuck) { note('warn', behind.length > 1 ? behind.length + ' stacks to redeploy' : behind[0]); }
-            document.querySelector('[data-no-stacks]').hidden = true;
-        }
+        // One row per stack. A stack the NAS builds itself also carries its
+        // image's state; the worse of the two shows.
         var buildJob = (st.jobs || []).filter(function (j) { return j.name === 'build-images'; })[0];
-        var deploys = document.querySelector('[data-deploy-list]');
-        (st.images || []).forEach(function (im) {
-            var d = deployCard(im, buildJob);
-            deploys.appendChild(d.card);
-            sLevels.push(d.level);
-            note(d.level, im.stack + ': ' + d.state);
+        var images = {};
+        (st.images || []).forEach(function (im) { images[im.stack] = imageState(im, buildJob); });
+        var kList = document.querySelector('[data-leds-stacks]'), behind = [];
+        // Its containers, by compose project (= the Portainer stack's name).
+        function containersOf(name) {
+            var cs = (st.containers || []).filter(function (c) { return c.project === name; });
+            if (!cs.length) { return ''; }
+            var up = cs.filter(function (c) { return c.state === 'running'; }).length;
+            var sick = cs.filter(function (c) { return c.health === 'unhealthy'; }).length;
+            var healthy = cs.filter(function (c) { return c.health === 'healthy'; }).length;
+            var since = Math.min.apply(null, cs.map(function (c) { return c.started || Infinity; }));
+            var txt = up + '/' + cs.length + ' container' + (cs.length > 1 ? 's' : '') + ' running';
+            if (sick) { txt += ', ' + sick + ' unhealthy'; } else if (healthy) { txt += ', ' + healthy + ' healthy'; }
+            if (up === cs.length && isFinite(since)) { txt += ', up ' + ago(since, now).replace(' ago', ''); }
+            return txt;
+        }
+        var rows = (st.stacks || []).map(function (k) {
+            var r = stackRow(k, cloneStuck), im = images[k.name], cs = containersOf(k.name);
+            delete images[k.name];
+            if (cs) { r.detail = r.detail ? r.detail + ' · ' + cs : cs; }
+            if (im) {
+                if (RANK[im.level] > RANK[r.level]) { r = { level: im.level, value: im.value, detail: im.detail }; }
+                else { r.detail = r.detail ? r.detail + ' · ' + im.detail : im.detail; }
+            }
+            return [k.name, r];
         });
-        if (deploys.children.length) { document.querySelector('[data-deploys]').hidden = false; }
+        // Built images whose stack Portainer did not list (no token, or renamed).
+        Object.keys(images).forEach(function (name) { rows.push([name, images[name]]); });
+        rows.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; }).forEach(function (row) {
+            var r = row[1];
+            led(kList, r.level, row[0], r.value, r.detail);
+            sLevels.push(r.level);
+            if (r.level !== 'ok') { behind.push(row[0] + ': ' + r.value); }
+        });
+        // A stuck clone explains these rows: the scheduler's note covers them.
+        if (behind.length && !cloneStuck) { note(worst(rows.map(function (r) { return r[1].level; })), behind.length > 1 ? behind.length + ' stacks need attention' : behind[0]); }
+        if (rows.length) { document.querySelector('[data-no-stacks]').hidden = true; }
         // Containers: only the ones in trouble get a row (scripts/lib/containers.sh;
         // same rules as scripts/alerts.sh, which pushes them to ntfy).
         if (st.containers) {
