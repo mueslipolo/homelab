@@ -508,11 +508,25 @@ truncate -s 6G "$Q/vol/media/media/tv/Big Show/Season 01/Big.Show.S01E02E03.1080
 truncate -s 1G "$Q/vol/media/media/tv/Small Show/Small.Show.S01E01.x265.mkv"
 truncate -s 30G "$Q/vol/media/media/movies/Old Film (1999)/Old.Film.1999.1080p.REMUX.mkv"
 truncate -s 5M "$Q/vol/homes/#recycle/old.txt"
+# LDAP homes, two levels down, with real blocks (du counts blocks, not sizes).
+mkdir -p "$Q/vol/homes/@LH-EXAMPLE.LAN/61/anna-1000102" "$Q/vol/homes/@LH-EXAMPLE.LAN/61/bob-1000101"
+head -c 3M /dev/urandom >"$Q/vol/homes/@LH-EXAMPLE.LAN/61/anna-1000102/photos.bin"
+head -c 1M /dev/urandom >"$Q/vol/homes/@LH-EXAMPLE.LAN/61/bob-1000101/notes.bin"
+# A homes snapshot: hard links keep the inodes, as a btrfs snapshot does.
+# Since it was taken, bob's laptop backup was deleted and his notes renamed.
+mkdir -p "$Q/vol/@sharesnap/homes" "$Q/vol/@sharesnap/@homes.meta"
+SNAP="$Q/vol/@sharesnap/homes/GMT+02-2026.10.01-01.05.03"
+cp -al "$Q/vol/homes" "$SNAP"
+touch "$Q/vol/@sharesnap/homes/desktop.ini"
+mkdir -p "$SNAP/@LH-EXAMPLE.LAN/61/bob-1000101/Backup/laptop/2026"
+head -c 2M /dev/zero >"$SNAP/@LH-EXAMPLE.LAN/61/bob-1000101/Backup/laptop/2026/image.vhdx"
+mv "$Q/vol/homes/@LH-EXAMPLE.LAN/61/bob-1000101/notes.bin" "$Q/vol/homes/@LH-EXAMPLE.LAN/61/bob-1000101/notes-2026.bin"
 # Fake btrfs: shares, Drive history, the backup cache, one snapshot.
 # EXCL=1 makes btrfs report exclusive sizes.
 cat >"$Q/bin/btrfs" <<'EOF'
 #!/usr/bin/env bash
 case "$1 $2" in
+"filesystem df") printf 'Data, single: total=3639930667008, used=2155000000000\nSystem, DUP: total=33554432, used=65536\nMetadata, DUP: total=13958643712, used=4177526784\nGlobalReserve, single: total=2097152000, used=0\n' ;;
 "filesystem du") printf '     Total   Exclusive  Set shared  Filename\n%s %s %s %s\n' 207000000000 "${DRIVE_OWN:-4980000000}" 202000000000 "$4" ;;
 "subvolume list") printf 'ID 257 gen 9 top level 5 path media\nID 258 gen 9 top level 5 path homes\nID 259 gen 9 top level 5 path @synologydrive\nID 260 gen 9 top level 5 path @img_bkp_cache\nID 261 gen 9 top level 5 path @sharesnap/homes/GMT+02-2026.10.01-01.05.03\nID 262 gen 9 top level 5 path @syno\n' ;;
 "qgroup show")
@@ -556,12 +570,20 @@ check "Drive's own space is measured when the counters lack it" qj "[p['bytes'] 
 check "without exclusive sizes, overlap is reported, not hidden" qj "not d['exclusive_known'] and d['counted_twice'] >= 0 and d['reclaim']['snapshots'] is None"
 check "docker total and reclaimable from docker system df" qj "[p['bytes'] for p in d['parts'] if p['kind'] == 'docker'] == [35499008000] and d['reclaim']['docker'] == 20988000000"
 check "recycle bins are measured" qj "d['reclaim']['recycle'] > 0"
-check "a double episode counts twice" qj "[s['episodes'] for s in d['media']['series']['top'] if s['name'] == 'Big Show'] == [3]"
-check "series sorted by size" qj "[s['name'] for s in d['media']['series']['top']] == ['Big Show', 'Small Show']"
-check "an HEVC series has nothing to gain" qj "[(s['hevc'], s['saving']) for s in d['media']['series']['top'] if s['name'] == 'Small Show'] == [(True, 0)]"
-check "an H.264 series above 6 Mbit/s would shrink" qj "[s['saving'] > 4e9 for s in d['media']['series']['top'] if s['name'] == 'Big Show'] == [True]"
-check "GB per hour from size and length" qj "[s['gb_per_hour'] for s in d['media']['series']['top'] if s['name'] == 'Big Show'] == [round(9 * 2**30 / 1e9 / 1.5, 2)]"
-check "a REMUX film is flagged" qj "d['media']['film']['top'][0]['remux'] is True"
+check "a double episode counts twice" qj "[s['episodes'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [3]"
+check "series sorted by size" qj "[s['name'] for s in d['media']['series']['titles']] == ['Big Show', 'Small Show']"
+check "an HEVC series has nothing to gain" qj "[(s['hevc'], s['saving']) for s in d['media']['series']['titles'] if s['name'] == 'Small Show'] == [(True, 0)]"
+check "an H.264 series above 6 Mbit/s would shrink" qj "[s['saving'] > 4e9 for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [True]"
+check "GB per hour from size and length" qj "[s['gb_per_hour'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [round(9 * 2**30 / 1e9 / 1.5, 2)]"
+check "a REMUX film is flagged" qj "d['media']['film']['titles'][0]['remux'] is True"
+check "seasons by folder, with their episodes" qj "[s['seasons'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [[['Season 01', 9 * 2**30, 3]]]"
+check "episodes outside a season folder have an empty season" qj "[s['seasons'] for s in d['media']['series']['titles'] if s['name'] == 'Small Show'] == [[['', 2**30, 1]]]"
+check "films have no seasons" qj "'seasons' not in d['media']['film']['titles'][0]"
+check "a share's folders: down to where it splits (LDAP homes)" qj "[[f['path'] for f in s['folders']] for s in d['shares'] if s['name'] == 'homes'] == [['@LH-EXAMPLE.LAN/61/anna-1000102', '@LH-EXAMPLE.LAN/61/bob-1000101']]"
+check "the folders are sized by du, with its total for the share" qj "[(s['folders'][0]['bytes'] >= 3 * 2**20, s['measured'] >= 4 * 2**20) for s in d['shares'] if s['name'] == 'homes'] == [(True, True)]"
+check "snapshots: what only they hold, by folder" qj "d['other_detail']['snapshot_held'] == [{'share': 'homes', 'bytes': 2 * 2**20, 'folders': [{'path': '@LH-EXAMPLE.LAN/61/bob-1000101/Backup/laptop', 'bytes': 2 * 2**20}]}]"
+check "btrfs metadata counts both DUP copies" qj "d['other_detail']['metadata'] == 2 * (65536 + 4177526784)"
+check "DSM's own subvolumes are measured" qj "d['other_detail']['system'] == 8000000000"
 check "no growth on the first day" qj "d['growth'] is None and d['changes'] == []"
 
 truncate -s 3G "$Q/vol/media/media/tv/Big Show/Season 01/Big.Show.S01E04.1080p.x264.mkv"

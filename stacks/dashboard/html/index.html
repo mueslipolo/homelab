@@ -640,17 +640,40 @@
         :root { --c1: #f0a63a; --c2: #7f9dc0; --c3: #c08cb7; --c4: #6cbab5;
                 --c5: #a9b56e; --c6: #8aa3c0; --c7: #d3a27b; --c8: #5d646d; }
     }
+    /* Treemap tiles: full colour with white text on the light page; on the
+       dark one the bright part colours are toned down under light text. */
+    :root { --tile-op: 1; --on-tile: #ffffff; }
+    @media (prefers-color-scheme: dark) { :root { --tile-op: 0.62; --on-tile: #f4f6f8; } }
     [data-view="storage"] section { margin-bottom: 30px; }
     .storage-when { margin: 0 0 14px; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); }
     .storage-sum { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
     .storage-sum b { color: var(--ink); font-family: var(--mono); font-weight: 500; font-size: 0.84rem; }
     .storage-sum b.up, .ft .num.up { color: var(--warn); }
     .storage-sum b.down, .ft .num.down { color: var(--ok); }
-    .segbar { display: flex; height: 26px; border-radius: 3px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
-    .seg { min-width: 3px; border-right: 1px solid var(--surface); }
     .c1 { background: var(--c1); } .c2 { background: var(--c2); } .c3 { background: var(--c3); } .c4 { background: var(--c4); }
     .c5 { background: var(--c5); } .c6 { background: var(--c6); } .c7 { background: var(--c7); } .c8 { background: var(--c8); }
-    .segbar .free, .seglegend i.free { background: repeating-linear-gradient(135deg, var(--surface) 0 5px, var(--line) 5px 6px); }
+    .seglegend i.free { background: repeating-linear-gradient(135deg, var(--surface) 0 5px, var(--line) 5px 6px); }
+    .tm { width: 100%; min-height: 200px; }
+    .tm svg { display: block; width: 100%; }
+    .tm .tile { stroke: var(--surface); stroke-width: 1; fill-opacity: var(--tile-op); }
+    .tm .tile.alt { fill-opacity: calc(var(--tile-op) * 0.8); }
+    .tm .tile:hover { fill-opacity: calc(var(--tile-op) * 0.7); }
+    .tm .backing { fill: var(--surface); pointer-events: none; }
+    .tm .edge { fill: none; stroke: var(--surface); stroke-width: 3; pointer-events: none; }
+    .tm .freebox { fill: none; stroke: var(--faint); stroke-dasharray: 5 4; }
+    .tm text { pointer-events: none; }
+    .tm .lbl { font-family: var(--sans); font-size: 11px; font-weight: 600; fill: var(--on-tile); }
+    .tm .grp { font-family: var(--sans); font-size: 12px; font-weight: 700; fill: var(--on-tile); }
+    .tm .sz { font-family: var(--mono); font-size: 9.5px; fill: var(--on-tile); opacity: 0.85; }
+    .tm .free-lbl { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+    /* A series shows its seasons only while hovered: all of them at once is too busy. */
+    .tm .series .seasons { opacity: 0; }
+    .tm .series:hover .seasons { opacity: 1; }
+    .tmkey { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.8rem; color: var(--muted); }
+    .tmkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+    .tmtip { position: fixed; z-index: 20; pointer-events: none; max-width: 280px; padding: 6px 9px; border-radius: 4px;
+        background: var(--ink); color: var(--bg); font-size: 0.76rem; line-height: 1.45; }
+    .tmtip b { display: block; font-weight: 600; overflow-wrap: anywhere; }
     .seglegend { list-style: none; margin: 12px 0 0; padding: 0; display: grid;
         grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 22px; }
     .seglegend li { display: grid; grid-template-columns: 12px 1fr auto 3.2em; gap: 8px; align-items: center; font-size: 0.84rem; }
@@ -691,21 +714,6 @@
     .spark-line { fill: none; stroke: var(--accent); stroke-width: 1.4; }
     .spark-end { fill: var(--accent); }
     .faint { color: var(--faint); }
-    .media-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-    .media-cols h4 { margin: 0 0 8px; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
-    .top { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
-    .top li { padding: 9px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 5px; }
-    .top li:last-child { border-bottom: 0; }
-    .top .row1, .top .row2 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-    .top .title { font-size: 0.88rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .top .row1 b { font-family: var(--mono); font-weight: 500; font-size: 0.76rem; }
-    .top small { color: var(--muted); font-size: 0.74rem; }
-    .meter { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
-    .meter span { display: block; height: 100%; background: var(--c1); }
-    .top .share { color: var(--muted); font-weight: 400; margin-left: 8px; }
-    .tag { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 10px;
-        border: 1px solid currentColor; white-space: nowrap; }
-    .tag.ok { color: var(--ok); } .tag.warn { color: var(--warn); } .tag.bad { color: var(--bad); }
     .reclaim { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
     .reclaim li { display: grid; grid-template-columns: 14px minmax(140px, 15em) 6em 1fr; gap: 12px; align-items: baseline;
         padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
@@ -1494,7 +1502,7 @@
     // Used space per day, with the 80/90 % lines when they are in view and
     // the biggest drops (clean-ups) labelled.
     function trendChart(daily, total) {
-        var W = 720, H = 300, L = 62, R = 12, T = 14, B = 26;
+        var W = 720, H = 200, L = 62, R = 12, T = 14, B = 26;
         var vals = daily.map(function (d) { return d[1]; });
         // From 0, so the height of the line is how full the volume is, on
         // round steps of the unit the labels use.
@@ -1543,6 +1551,218 @@
         return s;
     }
 
+    // ---- treemaps: a block's area is its share of the space
+    // Squarified layout (Bruls, Huizing, van Wijk): rows of blocks kept as
+    // close to square as the space allows. items: [{bytes}], largest first
+    // after sorting; returns [{item, x, y, w, h}].
+    function squarify(items, x, y, w, h) {
+        var out = [], total = items.reduce(function (n, i) { return n + i.bytes; }, 0);
+        if (total <= 0 || w <= 0 || h <= 0) { return out; }
+        var scale = w * h / total;
+        var rest = items.filter(function (i) { return i.bytes > 0; }).sort(function (a, b) { return b.bytes - a.bytes; })
+            .map(function (i) { return { item: i, a: i.bytes * scale }; });
+        function worst(row, side) {
+            var sum = 0, max = 0, min = Infinity;
+            row.forEach(function (r) { sum += r.a; max = Math.max(max, r.a); min = Math.min(min, r.a); });
+            return Math.max(side * side * max / (sum * sum), sum * sum / (side * side * min));
+        }
+        while (rest.length) {
+            var side = Math.min(w, h), row = [rest.shift()];
+            while (rest.length && worst(row.concat(rest[0]), side) <= worst(row, side)) { row.push(rest.shift()); }
+            var thick = row.reduce(function (n, r) { return n + r.a; }, 0) / side, off = 0;
+            row.forEach(function (r) {
+                var len = r.a / thick;
+                out.push(w >= h ? { item: r.item, x: x, y: y + off, w: thick, h: len } : { item: r.item, x: x + off, y: y, w: len, h: thick });
+                off += len;
+            });
+            if (w >= h) { x += thick; w -= thick; } else { y += thick; h -= thick; }
+        }
+        return out;
+    }
+    // Drawn at the box's real width (labels stay readable on a phone), again
+    // whenever it changes: the Storage tab is hidden when the data arrives.
+    function treemapBox(label, height, draw) {
+        var box = el('div', 'tm'), last = 0;
+        function render() {
+            var W = Math.round(box.clientWidth);
+            if (!W || W === last) { return; }
+            last = W;
+            var H = height(W), s = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img', 'aria-label': label });
+            draw(s, W, H);
+            box.replaceChildren(s);
+        }
+        if (window.ResizeObserver) { new ResizeObserver(render).observe(box); }
+        else { window.addEventListener('resize', render); setTimeout(render); }
+        return box;
+    }
+    var tmTip = null;
+    function tip(node, title, detail) {
+        function show(e) {
+            if (!tmTip) { tmTip = el('div', 'tmtip'); tmTip.hidden = true; document.body.appendChild(tmTip); }
+            tmTip.replaceChildren(el('b', null, title), document.createTextNode(detail));
+            tmTip.hidden = false;
+            tmTip.style.left = Math.max(8, Math.min(e.clientX + 14, window.innerWidth - 290)) + 'px';
+            tmTip.style.top = (e.clientY + 16) + 'px';
+        }
+        node.addEventListener('mousemove', show);
+        node.addEventListener('click', show); // a tap, on a phone
+        node.addEventListener('mouseleave', function () { if (tmTip) { tmTip.hidden = true; } });
+    }
+    window.addEventListener('scroll', function () { if (tmTip) { tmTip.hidden = true; } }, { passive: true });
+    // A label cut to the room it has (about 6 px per character at 11 px).
+    function fit(text, room, per) {
+        per = per || 6.2;
+        if (text.length * per <= room) { return text; }
+        var n = Math.floor(room / per) - 1;
+        return n >= 3 ? text.slice(0, n) + '…' : '';
+    }
+    function tile(g, r, fill, cls) {
+        var t = svg('rect', { x: r.x, y: r.y, width: Math.max(0, r.w), height: Math.max(0, r.h), 'class': 'tile' + (cls ? ' ' + cls : '') });
+        t.style.fill = fill;
+        g.appendChild(t);
+        return t;
+    }
+    // Name and size in the top left corner, when the block has room for them.
+    function label(g, r, name, size, cls) {
+        if (r.w < 40 || r.h < 22) { return; }
+        g.appendChild(svg('text', { x: r.x + 5, y: r.y + 14, 'class': cls || 'lbl' }, fit(name, r.w - 10, cls === 'grp' ? 6.8 : 6.2)));
+        if (size && r.h >= 34) { g.appendChild(svg('text', { x: r.x + 5, y: r.y + 26, 'class': 'sz' }, size)); }
+    }
+    // Under the blocks inside a block: on the dark page the tiles are
+    // translucent, and the outer one would show through and brighten them.
+    function backing(g, x, y, w, h) {
+        if (w > 0 && h > 0) { g.appendChild(svg('rect', { x: x, y: y, width: w, height: h, 'class': 'backing' })); }
+    }
+    function pctOf(b, of) { var p = of ? b / of * 100 : 0; return (p < 1 ? '< 1' : Math.round(p)) + ' %'; }
+
+    // The whole volume: each part of the bar above as a block, a shared
+    // folder split into its largest folders (as du measured them, drawn to
+    // the btrfs size), free space as a dashed one.
+    // What "Other" is: used space that none of the measured parts accounts for.
+    var OTHER = 'used space outside the shared folders and the parts measured: files deleted but still in snapshots, btrfs metadata, DSM\'s own folders, and the smallest parts.';
+    // Blocks inside a part: {name, title, raw (its measured size), note}.
+    // Drawn scaled by `scale` (du's sizes to the btrfs size of a share), or,
+    // for estimates, shrunk to fit if they add up to more than the part;
+    // what they don't cover is one more block, `rest`.
+    function fillPart(kids, total, scale, rest) {
+        var sum = 0;
+        kids.forEach(function (d) { sum += d.raw * scale; });
+        var k = sum > total ? total / sum : 1;
+        kids.forEach(function (d) { d.bytes = d.raw * scale * k; });
+        var left = total - sum * k;
+        if (kids.length && left > total * 0.01) { kids.push({ name: rest[0], title: rest[1], raw: left, bytes: left, note: rest[2] }); }
+        return kids;
+    }
+    function heldKids(st) {
+        var kids = [];
+        ((st.other_detail || {}).snapshot_held || []).forEach(function (h) {
+            var sum = 0;
+            h.folders.forEach(function (f) {
+                sum += f.bytes;
+                kids.push({ name: f.path.split('/').pop(), title: '/' + h.share + '/' + f.path, raw: f.bytes,
+                    note: 'deleted from ' + h.share + ', still in its snapshots (estimate)' });
+            });
+            if (h.bytes - sum > 0) {
+                kids.push({ name: h.share + ' snapshots', title: h.share + ': other deleted files', raw: h.bytes - sum,
+                    note: 'still in its snapshots (estimate)' });
+            }
+        });
+        return kids;
+    }
+    function partKids(p, st, folders) {
+        if (p.kind === 'share') {
+            var f = folders[p.name];
+            if (!f || !(f.measured > 0) || !f.folders.length) { return []; }
+            return fillPart(f.folders.map(function (d) {
+                return { name: d.path.split('/').pop(), title: '/' + p.name + '/' + d.path, raw: d.bytes };
+            }), p.bytes, p.bytes / f.measured, ['everything else', p.name + ': everything else']);
+        }
+        if (p.kind === 'snapshots') {
+            return fillPart(heldKids(st), p.bytes, 1, ['changed files', 'Snapshots: changed files', 'older versions of files still in the shares']);
+        }
+        if (p.kind === 'other') {
+            var od = st.other_detail || {}, kids = st.exclusive_known ? [] : heldKids(st);
+            if (od.metadata) { kids.push({ name: 'btrfs metadata', title: 'btrfs metadata', raw: od.metadata, note: 'the file system\'s own records, kept twice' }); }
+            if (od.system) { kids.push({ name: 'DSM system', title: 'DSM\'s own folders', raw: od.system, note: '@syno and the like' }); }
+            (p.members || []).forEach(function (m) { kids.push({ name: m.name, title: m.name, raw: m.bytes }); });
+            return fillPart(kids, p.bytes, 1, ['not explained', 'Other: not explained',
+                'not traced to anything: blocks btrfs keeps for files partly rewritten, or files changed in place since a snapshot']);
+        }
+        return [];
+    }
+    function volumeTreemap(shown, st) {
+        var total = st.volume.total, folders = {};
+        st.shares.forEach(function (f) { folders[f.name] = f; });
+        var items = shown.map(function (p, i) { return { p: p, color: 'var(--c' + (i + 1) + ')', bytes: p.bytes }; });
+        items.push({ free: true, bytes: st.volume.free });
+        return treemapBox('Volume use by shared folder and folder', function (W) { return Math.round(Math.max(280, Math.min(460, W * 0.5))); }, function (s, W, H) {
+            squarify(items, 0, 0, W, H).forEach(function (r) {
+                var it = r.item, p = it.p, g = svg('g', {});
+                s.appendChild(g);
+                if (it.free) {
+                    g.appendChild(svg('rect', { x: r.x + 3, y: r.y + 3, width: Math.max(0, r.w - 6), height: Math.max(0, r.h - 6), rx: 3, 'class': 'freebox' }));
+                    if (r.w > 80 && r.h > 30) { g.appendChild(svg('text', { x: r.x + 12, y: r.y + 22, 'class': 'free-lbl' }, fit('free · ' + bytes(it.bytes), r.w - 20))); }
+                    return;
+                }
+                var kids = partKids(p, st, folders);
+                var whole = tile(g, r, it.color);
+                tip(whole, p.name, bytes(p.bytes) + ' · ' + pctOf(p.bytes, total) + ' of the volume' + (p.kind === 'other' ? '. ' + OTHER : ''));
+                if (!kids.length) { label(g, r, p.name, bytes(p.bytes)); return; }
+                var head = r.w > 50 && r.h > 60 ? 20 : 0;
+                backing(g, r.x + 2, r.y + head + (head ? 0 : 2), r.w - 4, r.h - head - (head ? 2 : 4));
+                squarify(kids, r.x + 2, r.y + head + (head ? 0 : 2), r.w - 4, r.h - head - (head ? 2 : 4)).forEach(function (q, i) {
+                    var d = q.item, t = tile(g, q, it.color, i % 2 ? 'alt' : '');
+                    tip(t, d.title, bytes(d.raw) + ' · ' + pctOf(d.bytes, p.bytes) + ' of ' + p.name + ' · ' + pctOf(d.bytes, total) +
+                        ' of the volume' + (d.note ? '. ' + d.note : ''));
+                    label(g, q, d.name, bytes(d.raw));
+                });
+                g.appendChild(svg('rect', { x: r.x, y: r.y, width: r.w, height: r.h, 'class': 'edge' }));
+                if (head) { g.appendChild(svg('text', { x: r.x + 6, y: r.y + 14, 'class': 'grp' }, fit(p.name + '  ' + bytes(p.bytes), r.w - 12, 6.8))); }
+            });
+        });
+    }
+
+    // The media library: every series and film in one layout, so their
+    // sizes compare; a series shows its season folders while hovered.
+    function mediaTreemap(m) {
+        var all = m.series.bytes + m.film.bytes;
+        var items = m.series.titles.map(function (t) { return { t: t, series: true, bytes: t.bytes }; })
+            .concat(m.film.titles.map(function (t) { return { t: t, bytes: t.bytes }; }));
+        function per(t) { return t.gb_per_hour != null ? ' · ' + t.gb_per_hour.toFixed(1) + ' GB/h' : ''; }
+        function season(n) { var x = /^season\s*0*(\d+)$/i.exec(n); return x ? 'S' + x[1] : n || '–'; }
+        return treemapBox('Media library by title', function (W) { return Math.round(Math.max(320, Math.min(560, W * 0.56))); }, function (s, W, H) {
+            squarify(items, 0, 0, W, H).forEach(function (r) {
+                var it = r.item, t = it.t;
+                if (!it.series) {
+                    var f = tile(s, r, 'var(--c2)');
+                    tip(f, t.name, 'film · ' + bytes(t.bytes) + ' · ' + pctOf(t.bytes, all) + ' of the library' + per(t));
+                    label(s, r, t.name, bytes(t.bytes));
+                    return;
+                }
+                var g = svg('g', { 'class': 'series' }), inner = svg('g', { 'class': 'seasons' });
+                s.appendChild(g);
+                var seasons = t.seasons || [];
+                var whole = tile(g, r, 'var(--c1)');
+                tip(whole, t.name, 'series · ' + bytes(t.bytes) + ' · ' + pctOf(t.bytes, all) + ' of the library · ' +
+                    t.episodes + ' episode' + (t.episodes === 1 ? '' : 's') + (seasons.length > 1 ? ', ' + seasons.length + ' seasons' : '') + per(t));
+                var head = r.w > 46 && r.h > 24 ? Math.min(30, r.h * 0.4) : 0;
+                if (seasons.length > 1 && r.h - head > 8) {
+                    var parts = seasons.map(function (x) { return { name: x[0], bytes: x[1], episodes: x[2] }; });
+                    backing(inner, r.x + 2, r.y + head + (head ? 0 : 2), r.w - 4, r.h - head - (head ? 2 : 4));
+                    squarify(parts, r.x + 2, r.y + head + (head ? 0 : 2), r.w - 4, r.h - head - (head ? 2 : 4)).forEach(function (q) {
+                        var x = /(\d+)\s*$/.exec(q.item.name), odd = x && x[1] % 2;
+                        var c = tile(inner, q, 'var(--c1)', odd ? 'alt' : '');
+                        tip(c, t.name + ' · ' + (q.item.name || 'no season folder'), bytes(q.item.bytes) + ' · ' + q.item.episodes + ' episode' +
+                            (q.item.episodes === 1 ? '' : 's') + ' · ' + pctOf(q.item.bytes, t.bytes) + ' of the series');
+                        if (q.w > 24 && q.h > 15) { inner.appendChild(svg('text', { x: q.x + 4, y: q.y + 11, 'class': 'sz' }, fit(season(q.item.name), q.w - 6, 6))); }
+                    });
+                    g.appendChild(inner);
+                }
+                if (head) { label(g, r, t.name, bytes(t.bytes)); }
+            });
+        });
+    }
+
     function storageLevel(st, now) {
         var pct = st.volume.used / st.volume.total * 100;
         if (now - st.generated > 36 * HOUR) { return ['warn', 'scan stopped ' + ago(st.generated, now)]; }
@@ -1562,7 +1782,7 @@
         // ---- where the space goes
         var parts = st.parts.slice().sort(function (a, b) { return b.bytes - a.bytes; });
         var shown = parts.slice(0, 7), rest = parts.slice(7).reduce(function (n, p) { return n + p.bytes; }, 0) + st.other;
-        if (rest > 0) { shown.push({ name: 'Other', kind: 'other', bytes: rest }); }
+        if (rest > 0) { shown.push({ name: 'Other', kind: 'other', bytes: rest, members: parts.slice(7) }); }
         var s1 = section('Where the space goes');
         var sum = el('p', 'storage-sum');
         sum.appendChild(el('b', null, bytes(v.used)));
@@ -1580,16 +1800,10 @@
                 sum.appendChild(document.createTextNode(' at this pace'));
             }
         }
-        s1.appendChild(sum);
-        var bar = el('div', 'segbar'), legend = el('ul', 'seglegend');
-        bar.setAttribute('role', 'img');
-        bar.setAttribute('aria-label', 'Volume use by part');
+        box.appendChild(sum);
+        var legend = el('ul', 'seglegend');
         shown.concat([{ name: 'Free', kind: 'free', bytes: v.free }]).forEach(function (p, i) {
             var cls = p.kind === 'free' ? 'free' : 'c' + (i + 1);
-            var seg = el('span', 'seg ' + cls);
-            seg.style.flex = String(p.bytes);
-            seg.title = p.name + ': ' + bytes(p.bytes);
-            bar.appendChild(seg);
             var li = el('li');
             li.appendChild(el('i', cls));
             li.appendChild(el('span', null, p.name));
@@ -1597,12 +1811,14 @@
             li.appendChild(el('em', null, Math.round(p.bytes / v.total * 100) + ' %'));
             legend.appendChild(li);
         });
-        s1.appendChild(bar);
+        s1.appendChild(volumeTreemap(shown, st));
         s1.appendChild(legend);
         if (st.counted_twice > 0) {
             s1.appendChild(el('p', 'legend', bytes(st.counted_twice) + ' is shared between parts (snapshots, Drive history) and counted in each: btrfs does not report what each holds on its own here.'));
         }
-        box.appendChild(s1);
+        if (shown.some(function (p) { return p.kind === 'other'; })) {
+            s1.appendChild(el('p', 'legend', 'Other: ' + OTHER + (st.exclusive_known ? '' : ' btrfs does not report the snapshots\' own space here: what they hold is estimated from the deleted files.') + ' Hover its blocks.'));
+        }
 
         // ---- trend and changes
         var row = el('section', 'trend-row');
@@ -1631,7 +1847,6 @@
         p2.appendChild(ul);
         row.appendChild(p1);
         row.appendChild(p2);
-        box.appendChild(row);
 
         // ---- shared folders
         var s3 = section('Shared folders'), wrap = el('div', 'tbl-wrap'), t = el('table', 'ft');
@@ -1664,57 +1879,39 @@
         t.appendChild(tb);
         wrap.appendChild(t);
         s3.appendChild(wrap);
-        box.appendChild(s3);
 
         // ---- media library
         var m = st.media;
         if (m.series.count || m.film.count) {
             var s4 = section('Media library', bytes(m.series.bytes + m.film.bytes) + ' · TV ' + bytes(m.series.bytes) + ' in ' +
                 m.series.count + ' series · films ' + bytes(m.film.bytes) + ' in ' + m.film.count + ' films');
-            var cols = el('div', 'media-cols');
-            [['Largest series', m.series.top, 'series'], ['Largest films', m.film.top, 'film']].forEach(function (c) {
-                var col = el('div');
-                col.appendChild(el('h4', null, c[0]));
-                // Bar = this title's share of all TV (or all films), written out too.
-                var ol = el('ol', 'top'), all = c[2] === 'series' ? m.series.bytes : m.film.bytes;
-                var of = c[2] === 'series' ? 'TV' : 'films';
-                c[1].forEach(function (it) {
-                    var li = el('li'), r1 = el('div', 'row1'), r2 = el('div', 'row2'), meter = el('div', 'meter'), fill = el('span');
-                    r1.appendChild(el('span', 'title', it.name));
-                    var pct = all ? it.bytes / all * 100 : 0;
-                    var size = el('b', null, bytes(it.bytes));
-                    size.appendChild(el('span', 'share', (pct < 1 ? '< 1' : Math.round(pct)) + ' % of ' + of));
-                    r1.appendChild(size);
-                    fill.style.width = pct.toFixed(1) + '%';
-                    meter.appendChild(fill);
-                    var meta = [];
-                    if (c[2] === 'series') { meta.push(it.episodes + ' episode' + (it.episodes > 1 ? 's' : '')); }
-                    if (it.gb_per_hour != null) { meta.push(it.gb_per_hour.toFixed(1) + ' GB/h'); }
-                    r2.appendChild(el('small', null, meta.join(' · ') || ' '));
-                    var tag = null;
-                    if (it.hevc) { tag = el('span', 'tag ok', 'HEVC'); }
-                    else if (it.saving >= GIB) {
-                        tag = el('span', 'tag warn', (it.remux ? 'remux · ' : '') + 're-encode · ' + c[2] + ' ≈ −' + bytes(it.saving));
-                    } else if (it.remux) { tag = el('span', 'tag warn', 'remux'); }
-                    if (tag) { r2.appendChild(tag); }
-                    li.appendChild(r1);
-                    li.appendChild(meter);
-                    li.appendChild(r2);
-                    ol.appendChild(li);
-                });
-                col.appendChild(ol);
-                cols.appendChild(col);
+            s4.appendChild(mediaTreemap(m));
+            var key = el('ul', 'tmkey');
+            [['c1', 'TV series (hover one for its seasons)'], ['c2', 'films']].forEach(function (k) {
+                var li = el('li');
+                li.appendChild(el('i', k[0]));
+                li.appendChild(document.createTextNode(k[1]));
+                key.appendChild(li);
             });
-            s4.appendChild(cols);
-            box.appendChild(s4);
+            s4.appendChild(key);
         }
 
         // ---- what could be freed
         var r = st.reclaim, s5 = section('What could be freed'), rl = el('ul', 'reclaim');
+        // Without btrfs's own figure for the snapshots, the deleted files they
+        // still hold are the estimate.
+        var held = ((st.other_detail || {}).snapshot_held || []), snap = r.snapshots, snapNote = 'frees itself as old snapshots expire', estimate = {};
+        if (snap == null && held.length) {
+            snap = held.reduce(function (n, h) { return n + h.bytes; }, 0);
+            estimate.Snapshots = true;
+            var big = heldKids(st).sort(function (a, b) { return b.raw - a.raw; })[0];
+            snapNote = 'files deleted but still in the ' + held.map(function (h) { return h.share; }).join(', ') + ' snapshots' +
+                (big ? ', the largest ' + big.title + ' (' + bytes(big.raw) + ')' : '') + '; frees itself as those snapshots expire';
+        } else if (snap == null) { snapNote = 'unknown: btrfs does not report each snapshot\'s own space here'; }
         [
             [r.reencode, 50 * GIB, 'Re-encode candidates', 'reencode.sh -n series /mnt/media/media/tv (and film for movies) lists them'],
             [r.drive, 100 * GIB, 'Drive version history', 'fewer versions in the Synology Drive Admin Console; snapshots and Hyper Backup cover the rest'],
-            [r.snapshots, Infinity, 'Snapshots', r.snapshots == null ? 'unknown: btrfs does not report each snapshot\'s own space here' : 'frees itself as old snapshots expire'],
+            [snap, Infinity, 'Snapshots', snapNote],
             [r.docker, 20 * GIB, 'Unused Docker images', 'removed every night by the docker-prune job'],
             [r.recycle, 10 * GIB, 'Recycle bins', 'empty them in Control Panel → Shared Folder']
         ].forEach(function (x) {
@@ -1722,12 +1919,13 @@
             var li = el('li', lvl);
             li.appendChild(el('i', 'dot ' + lvl));
             li.appendChild(el('span', 'what', x[2]));
-            li.appendChild(el('b', null, x[0] == null ? '?' : (x[2] === 'Re-encode candidates' ? '≈ ' : '') + bytes(x[0])));
+            li.appendChild(el('b', null, x[0] == null ? '?' : (x[2] === 'Re-encode candidates' || estimate[x[2]] ? '≈ ' : '') + bytes(x[0])));
             li.appendChild(el('small', null, x[3]));
             rl.appendChild(li);
         });
         s5.appendChild(rl);
-        box.appendChild(s5);
+        // Used space first, then the two treemaps, then the details.
+        [row, s1, s4, s3, s5].forEach(function (x) { if (x) { box.appendChild(x); } });
     }
     getJson('local/storage.json').then(function (st) {
         if (st && st.volume) { renderStorage(st); }

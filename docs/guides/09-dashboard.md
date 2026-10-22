@@ -29,12 +29,12 @@ from git.
 The tabs, with made-up data (`tools/dashboard-demo/screenshots.sh` regenerates
 them):
 
-| Tab      | Shows                                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------------------- |
-| Services | a card per app, with its stack's README; the left panel sums up every tab                                |
-| Storage  | where the space goes, 90 days of used space, per-folder trends, the largest media, what could be freed   |
-| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading |
-| System   | each Portainer stack against git, with its deploy date, containers and built image; jobs; the scheduler  |
+| Tab      | Shows                                                                                                                                                              |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Services | a card per app, with its stack's README; the left panel sums up every tab                                                                                          |
+| Storage  | where the space goes (treemap by share and folder), 90 days of used space, per-folder trends, the media library (treemap by title and season), what could be freed |
+| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading                                                           |
+| System   | each Portainer stack against git, with its deploy date, containers and built image; jobs; the scheduler                                                            |
 
 ![Services tab](../images/dashboard-services.png)
 

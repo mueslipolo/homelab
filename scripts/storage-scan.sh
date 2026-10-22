@@ -12,7 +12,13 @@
 #   find + ffprobe          the media library: size, length and codec per
 #                           file (ffprobe runs in the Jellyfin container; a
 #                           file is probed once, then remembered by its
-#                           path, size and date)
+#                           path, size and date), then summed per title
+#                           and per season folder
+#   du                      each shared folder's largest folders
+#   find in the snapshots   files deleted from a share that its snapshots
+#                           still hold, per folder (what "Other" is made of
+#                           when btrfs doesn't report snapshots' own space)
+#   btrfs filesystem df     metadata
 # Trends come from history.tsv, one block of lines per day: the past can't
 # be rebuilt, so they fill in as the days go by.
 set -euo pipefail
@@ -45,9 +51,14 @@ if [ -n "$MEDIA" ] && [ -d "$MEDIA" ]; then
 	media_files "$MEDIA" >"$TMP/files.tsv"                            # rel \t size \t mtime
 	probe_new "$TMP/files.tsv" "$STATE/probe.tsv" "$IN_CONTAINER"     # updates the cache
 	media_items "$TMP/files.tsv" "$STATE/probe.tsv" >"$TMP/items.tsv" # kind \t name \t bytes \t files \t episodes \t secs \t hevc \t saving
+	media_seasons "$TMP/files.tsv" >"$TMP/seasons.tsv"                # series \t season \t bytes \t episodes
 else
 	: >"$TMP/items.tsv"
+	: >"$TMP/seasons.tsv"
 fi
+share_folders "$VOLUME" "$TMP/subvols.tsv" >"$TMP/folders.tsv"       # share \t total|folder \t path \t bytes
+snapshot_held "$VOLUME" >"$TMP/held.tsv"                             # share \t total|folder \t path \t bytes
+fs_metadata >"$TMP/metadata.tsv"                                     # bytes
 
 # ---------------------------------------------------------------- history
 # Today's block replaces any earlier run of the same day; 400 days are kept.

@@ -2,7 +2,7 @@
 # Run by storage_json() in storage.sh; plain POSIX awk (DSM: no gawk-isms).
 #
 # Inputs (by file name): subvols.tsv, docker.tsv, recycle.tsv, items.tsv,
-# history.tsv. Variables: today, total, used, free, generated, media_share,
+# seasons.tsv, folders.tsv, held.tsv, metadata.tsv, history.tsv. Variables: today, total, used, free, generated, media_share,
 # targets ("<today-7> <today-30> <today-90>"), weeks (12 dates, oldest first).
 #
 # Trend rules:
@@ -44,6 +44,7 @@ FILENAME ~ /subvols\.tsv$/ {
 	else if ($2 == "drive") { drive_r = $3; drive_x = $4 }
 	else if ($2 == "hbcache") { hb_r = $3; hb_x = $4 }
 	else if ($2 == "snapshot") snap_x += $4
+	else if ($2 == "system") system_b += ($4 > 0 ? $4 : $3)
 	if ($4 > 0 && $2 != "drive") excl_known = 1   # drive_own() measures Drive alone
 	next
 }
@@ -56,6 +57,18 @@ FILENAME ~ /items\.tsv$/ {
 	tot[$1] += $3; cnt[$1]++; reencode += $8
 	next
 }
+FILENAME ~ /seasons\.tsv$/ { seasons[$1] = seasons[$1] sprintf("%s[%s, %s, %s]", (seasons[$1] == "" ? "" : ", "), js($2), n0($3), n0($4)); next }
+FILENAME ~ /folders\.tsv$/ {
+	if ($2 == "total") measured[$1] = $4
+	else folders[$1] = folders[$1] sprintf("%s{\"path\": %s, \"bytes\": %s}", (folders[$1] == "" ? "" : ", "), js($3), n0($4))
+	next
+}
+FILENAME ~ /held\.tsv$/ {
+	if ($2 == "total") { held[$1] = $4 }
+	else heldf[$1] = heldf[$1] sprintf("%s{\"path\": %s, \"bytes\": %s}", (heldf[$1] == "" ? "" : ", "), js($3), n0($4))
+	next
+}
+FILENAME ~ /metadata\.tsv$/ { metadata = $1; next }
 FILENAME ~ /history\.tsv$/ {
 	if (!($1 in seen)) { seen[$1]; DT[++ND] = $1 }
 	H[$1 FS $2 FS $3] = $4; C[$1 FS $2 FS $3] = $5
@@ -114,7 +127,9 @@ END {
 		printf "%s\n    {\"name\": %s, \"bytes\": %s, \"d7\": %s, \"d30\": %s, \"weekly\": [", sep, js(s), n0(share[s]),
 			(a7 == "" || d7 < DT[1] ? "null" : n0(share[s] - a7)), (a30 == "" || d30 < DT[1] ? "null" : n0(share[s] - a30))
 		for (w = 1; w <= nw; w++) printf "%s%s", (w > 1 ? ", " : ""), (w == nw ? n0(share[s]) : nn(hist("share", s, W[w])))
-		printf "]}"; sep = ","
+		# Its largest folders, as du measured them: "measured" is du's total
+		# for the share, the scale they are drawn to.
+		printf "], \"measured\": %s, \"folders\": [%s]}", ((s in measured) ? n0(measured[s]) : "null"), folders[s]; sep = ","
 	}
 	printf "\n  ],\n"
 
@@ -153,21 +168,30 @@ END {
 	}
 	printf "\n  ],\n"
 
-	# ---- media library
+	# ---- what "other" (and the snapshots) are made of: btrfs metadata,
+	# DSM's own subvolumes, and files deleted from a share that its
+	# snapshots still hold (an estimate, from the file sizes)
+	printf "  \"other_detail\": {\"metadata\": %s, \"system\": %s, \"snapshot_held\": [", (metadata != "" ? n0(metadata) : "null"), n0(system_b); sep = ""
+	for (s in held) { printf "%s\n    {\"share\": %s, \"bytes\": %s, \"folders\": [%s]}", sep, js(s), n0(held[s]), heldf[s]; sep = "," }
+	printf "%s]},\n", (sep == "" ? "" : "\n  ")
+
+	# ---- media library: every title, largest first; series with their
+	# seasons as [folder, bytes, episodes]
 	printf "  \"media\": {\n"
 	for (pass = 1; pass <= 2; pass++) {
 		kind = (pass == 1 ? "series" : "film")
-		printf "    %s: {\"bytes\": %s, \"count\": %s, \"top\": [", js(kind), n0(tot[kind]), n0(cnt[kind]); sep = ""
+		printf "    %s: {\"bytes\": %s, \"count\": %s, \"titles\": [", js(kind), n0(tot[kind]), n0(cnt[kind]); sep = ""
 		delete taken
-		for (r = 1; r <= 8; r++) {
+		for (r = 1; r <= cnt[kind]; r++) {
 			best = ""
 			for (k in ikind) if (ikind[k] == kind && !(k in taken) && (best == "" || ibytes[k] > ibytes[best])) best = k
 			if (best == "") break
 			taken[best]
-			printf "%s\n      {\"name\": %s, \"bytes\": %s, \"files\": %s, \"episodes\": %s, \"gb_per_hour\": %s, \"hevc\": %s, \"saving\": %s, \"remux\": %s}", \
+			printf "%s\n      {\"name\": %s, \"bytes\": %s, \"files\": %s, \"episodes\": %s, \"gb_per_hour\": %s, \"hevc\": %s, \"saving\": %s, \"remux\": %s%s}", \
 				sep, js(iname[best]), n0(ibytes[best]), n0(ifiles[best]), n0(iep[best]), \
 				(isecs[best] > 0 ? sprintf("%.2f", ibytes[best] / 1e9 / (isecs[best] / 3600)) : "null"), \
-				(ihevc[best] >= ibytes[best] ? "true" : "false"), n0(isave[best]), (iremux[best] ? "true" : "false")
+				(ihevc[best] >= ibytes[best] ? "true" : "false"), n0(isave[best]), (iremux[best] ? "true" : "false"), \
+				(kind == "series" ? ", \"seasons\": [" seasons[iname[best]] "]" : "")
 			sep = ","
 		}
 		printf "\n    ]}%s\n", (pass == 1 ? "," : "")

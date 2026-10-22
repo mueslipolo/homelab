@@ -5,8 +5,9 @@
 
 # One line per subvolume of interest: name \t kind \t referenced \t exclusive
 # (bytes). kind: share, drive (Synology Drive's history), hbcache (Hyper
-# Backup's cache), snapshot (name = the share it belongs to). "exclusive" is
-# 0 when btrfs does not track it; storage.awk then says so.
+# Backup's cache), snapshot (name = the share it belongs to), system (DSM's
+# own subvolumes: @syno, @SynoDrive...). "exclusive" is 0 when btrfs does
+# not track it; storage.awk then says so.
 subvolumes() {
 	command -v btrfs >/dev/null || return 0
 	awk -F'\t' '
@@ -18,6 +19,7 @@ subvolumes() {
 			else if (p == "@img_bkp_cache") kind = "hbcache"
 			else if (p ~ /^@sharesnap\/[^\/]+\/./) { kind = "snapshot"; split(p, s, "/"); p = s[2] }
 			else if (p !~ /^[@#]/ && p !~ /\//) kind = "share"
+			else if (p ~ /^@/ && p !~ /\// && p != "@docker") kind = "system"   # Docker: from docker system df
 			else next
 			printf "%s\t%s\t%s\t%s\n", p, kind, $2, $3
 		}' \
@@ -35,6 +37,17 @@ drive_own() { # <subvols.tsv>  rewrites the drive line's exclusive column
 	own=$(btrfs filesystem du -s --raw "$VOLUME/@synologydrive" 2>/dev/null | awk 'NR == 2 { print $2 }')
 	[ -n "$own" ] || return 0
 	awk -F'\t' -v OFS='\t' -v own="$own" '$2 == "drive" { $4 = own } { print }' "$1" >"$1.new" && mv -f "$1.new" "$1"
+}
+
+# btrfs metadata on disk, in bytes (one line): what `btrfs filesystem df`
+# reports as used for Metadata and System, twice when DUP (two copies).
+fs_metadata() {
+	command -v btrfs >/dev/null || return 0
+	btrfs filesystem df --raw "$VOLUME" 2>/dev/null | awk '
+		/^(Metadata|System),/ && match($0, /used=[0-9]+/) {
+			n = substr($0, RSTART + 5, RLENGTH - 5); t += ($2 ~ /^DUP/ ? 2 : 1) * n; found = 1
+		}
+		END { if (found) printf "%.0f\n", t }'
 }
 
 # Docker's total and what a prune would free: total \t reclaimable (bytes).
@@ -153,6 +166,105 @@ media_items() { # <files.tsv> <cache>
 		}' "$2" "$1" | sort
 }
 
+# One line per season folder (tv/<series>/<season>/...): series \t season \t
+# bytes \t episodes. Episodes directly in the series folder go under an
+# empty season name. Episodes are counted as in media_items.
+media_seasons() { # <files.tsv>
+	awk -F'\t' '
+		{
+			n = split($1, part, "/")
+			if (n < 3 || tolower(part[1]) !~ /^(tv|series|shows)$/) next
+			key = part[2] FS (n >= 4 ? part[3] : "")
+			bytes[key] += $2; ep = 1
+			if (match(part[n], /[Ss][0-9]+[Ee][0-9]+([- ]?[Ee][0-9]+)*/)) { m = substr(part[n], RSTART, RLENGTH); ep = gsub(/[Ee][0-9]+/, "", m) }
+			episodes[key] += ep
+		}
+		END { for (key in bytes) { split(key, k, FS); printf "%s\t%s\t%.0f\t%d\n", k[1], k[2], bytes[key], episodes[key] } }' "$1" | sort
+}
+
+# The largest folders of each shared folder, for the volume treemap:
+# share \t total \t <path> \t bytes   what du measured for the whole share
+# share \t folder \t <path> \t bytes  one of its 12 largest folders
+# The folders are the share's top-level ones, unless one folder holds 90 %
+# of it: then that folder's own (homes/@LH-<domain>/61/<user> for LDAP
+# homes, media/<tv, movies> for a library one level down), up to 3 levels.
+# du counts the blocks on disk (sparse and compressed files count less) and
+# skips the snapshots. One pass per share over its metadata: minutes for
+# large photo folders.
+share_folders() { # <volume> <subvols.tsv>
+	local s
+	awk -F'\t' '$2 == "share" { print $1 }' "$2" | while IFS= read -r s; do
+		[ -d "$1/$s" ] || continue
+		du -xk -d4 --exclude='#snapshot' -- "$1/$s" 2>/dev/null | awk -F'\t' -v root="$1/$s" -v share="$s" '
+			NF != 2 { next }
+			{
+				rel = $2 == root ? "" : substr($2, length(root) + 2)
+				size[rel] = $1 * 1024
+				if (rel == "") next
+				parent = rel; if (!sub(/\/[^\/]*$/, "", parent)) parent = ""
+				kids[parent] = kids[parent] "\n" rel; haskids[parent] = 1
+			}
+			END {
+				if (!("" in size)) exit
+				cur = ""
+				for (lvl = 0; lvl < 3; lvl++) {
+					best = ""; n = split(substr(kids[cur], 2), k, "\n")
+					for (i = 1; i <= n; i++) if (best == "" || size[k[i]] > size[best]) best = k[i]
+					if (best == "" || !(best in haskids) || size[best] < 0.9 * size[cur]) break
+					cur = best
+				}
+				printf "%s\ttotal\t\t%.0f\n", share, size[""]
+				n = split(substr(kids[cur], 2), k, "\n")
+				for (r = 1; r <= 12; r++) {
+					best = 0
+					for (i = 1; i <= n; i++) if (!(i in taken) && size[k[i]] > 0 && (best == 0 || size[k[i]] > size[k[best]])) best = i
+					if (!best) break
+					taken[best]; printf "%s\tfolder\t%s\t%.0f\n", share, k[best], size[k[best]]
+				}
+			}'
+	done
+}
+
+# What the snapshots still hold that the shared folders no longer have:
+# files in any of a share's snapshots whose inode is gone from the live
+# folder (a snapshot keeps inode numbers, so a moved or renamed file still
+# matches). Per share:
+# share \t total \t \t bytes
+# share \t folder \t <path> \t bytes   its 12 largest folders, up to 5 levels deep
+# File sizes, not blocks: an estimate. A file changed in place keeps its
+# inode, so the old blocks a snapshot keeps of it are not counted.
+snapshot_held() { # <volume>
+	local dir share s
+	for dir in "$1"/@sharesnap/*/; do
+		share=$(basename "$dir")
+		case $share in @*) continue ;; esac # @<share>.meta: DSM's bookkeeping
+		[ -d "$1/$share" ] || continue
+		ls -d "$dir"GMT* >/dev/null 2>&1 || continue
+		{
+			find "$1/$share" -xdev -type f -printf '%i\n' 2>/dev/null
+			echo '--'
+			for s in "$dir"GMT*; do find "$s" -type f -printf '%i\t%s\t%P\n' 2>/dev/null; done
+		} | awk -F'\t' -v share="$share" '
+			!snap { if ($0 == "--") snap = 1; else live[$1]; next }
+			NF != 3 || ($1 in live) || ($1 in seen) { next }
+			{
+				seen[$1]; n = split($3, p, "/"); d = (n == 1 ? "." : p[1])
+				for (i = 2; i < n && i <= 5; i++) d = d "/" p[i]
+				sum[d] += $2; tot += $2
+			}
+			END {
+				if (!tot) exit
+				printf "%s\ttotal\t\t%.0f\n", share, tot
+				for (r = 1; r <= 12; r++) {
+					best = ""
+					for (d in sum) if (!(d in taken) && (best == "" || sum[d] > sum[best])) best = d
+					if (best == "") break
+					taken[best]; printf "%s\tfolder\t%s\t%.0f\n", share, best, sum[best]
+				}
+			}'
+	done
+}
+
 # The JSON for the dashboard, from the collected files and the history.
 storage_json() { # <today> <total> <used> <free> <tmp dir> <history.tsv>
 	local t=$1 targets="" k
@@ -162,7 +274,7 @@ storage_json() { # <today> <total> <used> <free> <tmp dir> <history.tsv>
 	awk -F'\t' -v today="$t" -v total="$2" -v used="$3" -v free="$4" -v targets="$targets" -v weeks="$weeks" \
 		-v generated="$(date +%s)" -v media_share="$(media_share)" \
 		-f "$(dirname -- "${BASH_SOURCE[0]}")/storage.awk" \
-		"$5/subvols.tsv" "$5/docker.tsv" "$5/recycle.tsv" "$5/items.tsv" "$6"
+		"$5/subvols.tsv" "$5/docker.tsv" "$5/recycle.tsv" "$5/items.tsv" "$5/seasons.tsv" "$5/folders.tsv" "$5/held.tsv" "$5/metadata.tsv" "$6"
 }
 
 # The shared folder holding the media library (its size is already shown

@@ -130,6 +130,43 @@ def status():
     }
 
 
+# A share's largest folders, as storage-scan.sh's du finds them (GB).
+FOLDERS = {
+    "media": [("media/tv", 2900 * 1.024), ("media/movies", 1600 * 1.024), ("media/downloads", 96)],
+    "homes": [("@LH-EXAMPLE.LAN/61/anna-1000102", 610), ("@LH-EXAMPLE.LAN/61/bob-1000101", 380),
+              ("@LH-EXAMPLE.LAN/61/kids-1000103", 96)],
+    "paperless": [("media", 71), ("data", 17), ("export", 5), ("consume", 0.4)],
+    "docker": [("jellyfin", 31), ("forgejo", 12), ("sonarr", 7), ("radarr", 6), ("seerr", 3), ("mealie", 2.5),
+               ("portainer", 1.2), ("caddy", 0.3)],
+    "forgejo": [("dumps", 2.1), ("data", 1.0)],
+    "mealie": [("dumps", 0.9), ("data", 0.4)],
+}
+
+
+def library_tail(media):
+    """Every title, as storage-scan.sh lists them: the named ones plus a long
+    tail (a few large, many small) up to the totals; series get seasons."""
+    for kind, label in (("series", "Series"), ("film", "Film")):
+        m = media[kind]
+        left = m["bytes"] - sum(t["bytes"] for t in m["titles"])
+        n = m["count"] - len(m["titles"])
+        w = [1 / (i + 3) ** 0.9 * rnd.uniform(0.8, 1.2) for i in range(n)]
+        for x in w:
+            b = int(left * x / sum(w))
+            t = {"name": f"{label} {len(m['titles']) + 1}", "bytes": b, "gb_per_hour": round(rnd.uniform(1.5, 9), 2),
+                 "hevc": rnd.random() < 0.3, "saving": 0, "remux": False}
+            if kind == "series":
+                t["episodes"] = rnd.randint(6, 60)
+            m["titles"].append(t)
+    for t in media["series"]["titles"]:
+        n = max(1, min(12, round(t["episodes"] / (10 if t["episodes"] > 40 else 8))))
+        w = [rnd.uniform(0.7, 1.3) * (1 + i * 0.06) for i in range(n)]
+        if t["name"] == "Battlestar Galactica":
+            w[3] *= 2.4  # one remuxed season
+        t["seasons"] = [[f"Season {i + 1:02d}", int(t["bytes"] * x / sum(w)), max(1, round(t["episodes"] * x / sum(w)))]
+                        for i, x in enumerate(w)]
+
+
 def storage():
     total, used = 10.5 * TIB, 6.9 * TIB
     days = 90
@@ -151,14 +188,14 @@ def storage():
         ("docker", 71 * GIB, -2.5, 3.1, 0.2), ("forgejo", 3.2 * GIB, 0.1, 0.3, 0.02), ("mealie", 1.4 * GIB, 0.02, 0.1, 0.01),
     ]
     media = {
-        "series": {"bytes": int(2.9 * TIB), "count": 64, "top": [
+        "series": {"bytes": int(2.9 * TIB), "count": 64, "titles": [
             {"name": "The Expanse", "bytes": int(312 * GIB), "episodes": 62, "gb_per_hour": 5.6, "hevc": False, "saving": int(160 * GIB), "remux": False},
             {"name": "Battlestar Galactica", "bytes": int(241 * GIB), "episodes": 75, "gb_per_hour": 3.8, "hevc": False, "saving": int(110 * GIB), "remux": False},
             {"name": "Severance", "bytes": int(118 * GIB), "episodes": 19, "gb_per_hour": 7.1, "hevc": True, "saving": 0, "remux": False},
             {"name": "Parks and Recreation", "bytes": int(96 * GIB), "episodes": 125, "gb_per_hour": 1.6, "hevc": False, "saving": int(41 * GIB), "remux": False},
             {"name": "Planet Earth II", "bytes": int(88 * GIB), "episodes": 6, "gb_per_hour": 14.2, "hevc": False, "saving": int(52 * GIB), "remux": True},
         ]},
-        "film": {"bytes": int(1.6 * TIB), "count": 212, "top": [
+        "film": {"bytes": int(1.6 * TIB), "count": 212, "titles": [
             {"name": "Dune: Part Two (2024)", "bytes": int(64 * GIB), "gb_per_hour": 23.4, "hevc": True, "saving": 0, "remux": True},
             {"name": "Oppenheimer (2023)", "bytes": int(58 * GIB), "gb_per_hour": 19.3, "hevc": False, "saving": int(36 * GIB), "remux": True},
             {"name": "Blade Runner 2049 (2017)", "bytes": int(41 * GIB), "gb_per_hour": 15.0, "hevc": False, "saving": int(24 * GIB), "remux": False},
@@ -166,8 +203,9 @@ def storage():
             {"name": "Arrival (2016)", "bytes": int(18 * GIB), "gb_per_hour": 9.4, "hevc": False, "saving": int(9 * GIB), "remux": False},
         ]},
     }
+    library_tail(media)
     parts_bytes = [("media", 4.6 * TIB), ("homes", 1.1 * TIB), ("Drive version history", 310 * GIB),
-                   ("paperless", 96 * GIB), ("docker", 71 * GIB), ("Snapshots", 64 * GIB), ("Hyper Backup cache", 22 * GIB)]
+                   ("paperless", 96 * GIB), ("docker", 71 * GIB), ("Hyper Backup cache", 22 * GIB)]
     kinds = {"Drive version history": "drive", "Snapshots": "snapshots", "Hyper Backup cache": "hbcache"}
     parts = [{"name": n, "kind": kinds.get(n, "share"), "bytes": int(b)} for n, b in parts_bytes]
     other = int(used - sum(p["bytes"] for p in parts))
@@ -178,7 +216,15 @@ def storage():
         "volume": {"used": int(used), "total": int(total), "free": int(total - used)},
         "parts": parts,
         "other": max(other, 0),
-        "counted_twice": int(48 * GIB),
+        "counted_twice": 0,
+        "exclusive_known": False,
+        # What Other holds: a laptop backup deleted from homes that its
+        # snapshots still keep, metadata, DSM's folders.
+        "other_detail": {"metadata": int(8.4 * GIB), "system": int(7.6 * GIB), "snapshot_held": [
+            {"share": "homes", "bytes": int(560 * GIB), "folders": [
+                {"path": "@LH-EXAMPLE.LAN/61/anna-1000102/Backup/anna-laptop", "bytes": int(520 * GIB)},
+                {"path": "@LH-EXAMPLE.LAN/61/bob-1000101/Photos/Old phone", "bytes": int(24 * GIB)}]},
+            {"share": "paperless", "bytes": int(1.2 * GIB), "folders": [{"path": "export", "bytes": int(1.1 * GIB)}]}]},
         "growth": {"delta": int(delta), "since": since, "per_day": int(5.4 * GIB)},
         "history_since": daily[0][0],
         "daily": daily,
@@ -189,7 +235,8 @@ def storage():
             {"delta": int(-95 * GIB), "kind": "series", "name": "Lost", "new": 0},
             {"delta": int(-6 * GIB), "kind": "share", "name": "docker", "new": 0},
         ],
-        "shares": [{"name": n, "bytes": int(b), "d7": int(d7 * GIB), "d30": int(d30 * GIB), "weekly": weekly(b, g)}
+        "shares": [{"name": n, "bytes": int(b), "d7": int(d7 * GIB), "d30": int(d30 * GIB), "weekly": weekly(b, g),
+                    "measured": int(b * 0.98), "folders": [{"path": f, "bytes": int(fb * GIB)} for f, fb in FOLDERS.get(n, [])]}
                    for n, b, d7, d30, g in shares],
         "media": media,
         "reclaim": {"reencode": int(420 * GIB), "drive": int(310 * GIB), "snapshots": None,
