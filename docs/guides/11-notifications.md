@@ -250,6 +250,11 @@ boot), internet down and back, a WireGuard peer connecting or going quiet. The
 router posts through Caddy, `https://ntfy.home.example.com`, so its DNS must
 resolve that name. Tested on a hEX with a wAP ax behind it.
 
+Steps 1, 3, 4 and 5 below are what `tools/mikrotik/deploy.sh` does for you once the
+certificates (step 2) are in place and `ssh router` / `ssh ap` work with a key:
+put `NTFY_HOST` and `NTFY_TOKEN` in `tools/mikrotik/mikrotik.env` (gitignored),
+then `tools/mikrotik/deploy.sh -t` deploys both and sends a test from each.
+
 1. Replace `ntfy.home.example.com` and `tk_REPLACE_ME` in the file, upload it
    (Files, or `scp ntfy.rsc admin@192.0.2.1:`), then `/import ntfy.rsc`.
    Re-importing replaces it.
@@ -267,12 +272,18 @@ resolve that name. Tested on a hEX with a wAP ax behind it.
 4. A Wi-Fi access point that is itself a router (a MikroTik wAP's default:
    its own DHCP and NAT, e.g. `192.168.88.x`) hands out the Wi-Fi devices'
    addresses, so the main router never sees them join. Do steps 1–3 on the
-   AP too, attaching the lease script to its DHCP server, and remove the AP's
+   AP too, attaching the lease script to its DHCP server with `where="Wi-Fi"`
+   added at its end (alerts then say "New device on the Wi-Fi"), and remove the AP's
    copies of the other two checks, which the main router already runs:
    `/tool netwatch remove [find where comment~"^ntfy-inet"]` and
-   `/system scheduler remove [find where name="ntfy-wg"]`. Leave a guest
-   network's DHCP server out: every visitor would be "new".
-5. Known devices don't alert once their lease is static:
+   `/system scheduler remove [find where name="ntfy-wg"]`. A guest network's DHCP
+   server can alert too, as "New device on the guest Wi-Fi" (`where="guest Wi-Fi"`;
+   `GUEST_DHCP_SERVER` for `deploy.sh`): every visitor's device, once per boot.
+5. The lease script also names each lease after the device's host name (as
+   its comment) when it connects, without touching a comment you wrote. To
+   name the existing leases at once:
+   `/ip dhcp-server lease { :foreach l in=[find where host-name!=""] do={ :if ([:len [get $l comment]] = 0) do={ set $l comment=[get $l host-name] } } }`
+6. Known devices don't alert once their lease is static:
    `/ip dhcp-server lease make-static [find where mac-address="AA:BB:CC:DD:EE:FF"]`,
    or every current one with `[find where dynamic]`.
 

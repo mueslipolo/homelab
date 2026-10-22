@@ -39,9 +39,13 @@
 
 # ---- ntfy-dhcp: called by the DHCP server's lease-script
 /system script add name=ntfy-dhcp policy=read,write,policy,test dont-require-permissions=no source="# A device got a lease that is not a static lease: push it once per MAC\r\
-    \n# until the next reboot. Called by the DHCP server's lease-script with\r\
-    \n# bound= mac= ip= host= (see the end of ntfy.rsc).\r\
+    \n# until the next reboot, and name leases after their host name. Called by the\r\
+    \n# DHCP server's lease-script with\r\
+    \n# bound= mac= ip= host= and optionally where= (see the end of ntfy.rsc):\r\
+    \n# \"LAN\" by default, \"Wi-Fi\" on an access point with its own DHCP.\r\
     \n:global ntfySeenMacs\r\
+    \n:local w \"LAN\"\r\
+    \n:if ([:len \$where] > 0) do={ :set w \$where }\r\
     \n:if ([:typeof \$ntfySeenMacs] != \"array\") do={ :set ntfySeenMacs [:toarray \"\"] }\r\
     \n:if ([:tostr \$bound] = \"1\") do={\r\
     \n  # Static leases are the known devices.\r\
@@ -53,9 +57,43 @@
     \n    :if ([:typeof (\$ntfySeenMacs->\$mac)] = \"nothing\") do={\r\
     \n      :set (\$ntfySeenMacs->\$mac) true\r\
     \n      :local name \$host\r\
+    \n      # Android sends its host name only in a later DHCP message: the lease\r\
+    \n      # record has it a moment after this script starts. Then its vendor class\r\
+    \n      # (e.g. android-dhcp-14) says at least what it is.\r\
+    \n      :if ([:len \$name] = 0) do={\r\
+    \n        :delay 5s\r\
+    \n        :foreach l in=[/ip dhcp-server lease find where mac-address=\$mac] do={\r\
+    \n          :local h [/ip dhcp-server lease get \$l host-name]\r\
+    \n          :if ([:len \$h] > 0) do={ :set name \$h }\r\
+    \n          :if ([:len \$name] = 0) do={\r\
+    \n            :do { :set name [/ip dhcp-server lease get \$l class-id] } on-error={}\r\
+    \n          }\r\
+    \n        }\r\
+    \n      }\r\
     \n      :if ([:len \$name] = 0) do={ :set name \"(no host name)\" }\r\
     \n      :local send [:parse [/system script get ntfy-send source]]\r\
-    \n      \$send title=(\"New device on the LAN: \" . \$name) message=(\$name . \"\\nMAC \" . \$mac . \"\\nIP \" . \$ip . \"\\nMake its lease static if you know it.\") tags=\"eyes\" priority=\"high\"\r\
+    \n      # Visitors come and go: no \"make it static\" advice for a guest network.\r\
+    \n      :local tip \"\\nKnown device\? Make its lease static and it won't alert again.\"\r\
+    \n      :if (\$w ~ \"guest\") do={ :set tip \"\" }\r\
+    \n      \$send title=(\"New device on the \" . \$w . \": \" . \$name) message=(\$name . \"\\nMAC \" . \$mac . \"\\nIP \" . \$ip . \$tip) tags=\"eyes\" priority=\"high\"\r\
+    \n    }\r\
+    \n  }\r\
+    \n  # Every device, known or new: a lease without a comment gets its host name\r\
+    \n  # as one, so the lease list says what each device is. A comment you wrote\r\
+    \n  # yourself is never touched.\r\
+    \n  # A lease that never had a comment has none, not an empty one, and\r\
+    \n  # `find where comment=\"\"` does not match it: check each lease instead.\r\
+    \n  :local unnamed false\r\
+    \n  :foreach l in=[/ip dhcp-server lease find where mac-address=\$mac] do={\r\
+    \n    :if ([:len [/ip dhcp-server lease get \$l comment]] = 0) do={ :set unnamed true }\r\
+    \n  }\r\
+    \n  :if (\$unnamed) do={\r\
+    \n    :delay 6s\r\
+    \n    :foreach l in=[/ip dhcp-server lease find where mac-address=\$mac] do={\r\
+    \n      :local h [/ip dhcp-server lease get \$l host-name]\r\
+    \n      :if ([:len [/ip dhcp-server lease get \$l comment]] = 0 && [:len \$h] > 0) do={\r\
+    \n        :do { /ip dhcp-server lease set \$l comment=\$h } on-error={}\r\
+    \n      }\r\
     \n    }\r\
     \n  }\r\
     \n}"
@@ -131,3 +169,11 @@
 # server's name (/ip dhcp-server print):
 #
 # /ip dhcp-server set [find name=defconf] lease-script=":local f [:parse [/system script get ntfy-dhcp source]]; \$f bound=\$leaseBound mac=\$leaseActMAC ip=\$leaseActIP host=\$\"lease-hostname\""
+#
+# On a Wi-Fi access point with its own DHCP, add where="Wi-Fi" at the end of
+# that lease-script, so its alerts say "New device on the Wi-Fi".
+#
+# The lease-script also names each lease after its host name (as a comment)
+# from the next time the device connects. To name the existing ones at once:
+#
+# /ip dhcp-server lease { :foreach l in=[find where host-name!=""] do={ :if ([:len [get $l comment]] = 0) do={ set $l comment=[get $l host-name] } } }

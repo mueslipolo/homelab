@@ -14,12 +14,12 @@
 # Before pushing, the snapshot must pass the same checks as a commit:
 # scripts/check-no-real-values.sh (with your .private-patterns) and gitleaks.
 #
-# Settings (environment): SOURCE_REMOTE (forgejo), PUBLIC_REMOTE (origin),
+# Settings (environment): SOURCE_REMOTE (origin: Forgejo), PUBLIC_REMOTE (github),
 # BRANCH (main), PUBLIC_NAME, PUBLIC_EMAIL (default: this repo's git user).
 set -euo pipefail
 
-readonly SOURCE_REMOTE=${SOURCE_REMOTE:-forgejo}
-readonly PUBLIC_REMOTE=${PUBLIC_REMOTE:-origin}
+readonly SOURCE_REMOTE=${SOURCE_REMOTE:-origin}
+readonly PUBLIC_REMOTE=${PUBLIC_REMOTE:-github}
 readonly BRANCH=${BRANCH:-main}
 readonly GITLEAKS_IMAGE=zricethezav/gitleaks:v8.24.2 # in step with .pre-commit-config.yaml
 readonly TRAILER=Published-from
