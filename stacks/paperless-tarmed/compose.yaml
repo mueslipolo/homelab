@@ -1,5 +1,15 @@
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
 services:
   paperless-tarmed:
+    logging: *logging
     # Built on the NAS by the scheduler's build-images job (scripts/jobs.conf),
     # never by Portainer: its "Pull and redeploy" did not reliably rebuild, and
     # silently kept running old code. Portainer only starts the image that job

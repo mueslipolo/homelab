@@ -69,6 +69,7 @@ Hyper Backup log: `/var/packages/HyperBackup/var/log/synolog/synobackup.log`, el
 - Services: `GROUPS` / `OPS` arrays in `html/index.html`'s script; logo in `html/icons/` named after the subdomain, or mapped in `ICON`.
 - Links derive from the page's address: card **README** links, CI runs, Renovate Dependency Dashboard and docs on `forgejo.<internal-domain>` under the `repo` named in `devices.json` (without it, those links are hidden).
 - `html/fonts/`: Archivo, Martian Mono (latin subset, SIL OFL), local so nothing loads from the internet.
+- `html/gopher/`: one Go gopher per tab, `<tab>.png`, shown in the corner of the open tab; a new tab needs one. Free Gophers Pack by Maria Letta (CC0); the Go gopher by Renee French (CC BY 4.0), credited at the bottom of the sidebar ([`html/gopher/README.md`](html/gopher/README.md)).
 - `html/icons/`: homarr-labs/dashboard-icons (Apache-2.0; logos are trademarks). `maintainerr.png` downscaled to 128 px (upstream SVG wraps a 980 px PNG).
 
 ## Images built on the NAS

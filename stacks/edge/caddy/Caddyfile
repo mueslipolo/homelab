@@ -21,6 +21,27 @@
 	header_up -X-Forwarded-For
 }
 
+# Caddy's own error pages (502 app not answering, 504 too slow, 404 unknown
+# host, 500 Caddy's error): errors/error.html, rendered with the status, host,
+# upstream and error ID. Imported by every site. The log keeps only requests
+# that end in a 5xx, with the error ID and reason, so the ID on a page can be
+# found with: docker logs <caddy> 2>&1 | grep <id>
+(errors) {
+	log {
+		level ERROR
+	}
+	handle_errors {
+		log_append err_id {err.id}
+		log_append err_msg {err.message}
+		root * /etc/caddy/errors
+		rewrite * /error.html
+		templates
+		file_server {
+			status {err.status_code}
+		}
+	}
+}
+
 (authelia) {
 	forward_auth authelia:9091 {
 		uri /api/authz/forward-auth
@@ -30,12 +51,19 @@
 
 dashboard.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
+	# Shows each error page on demand (behind Authelia), to check them.
+	error /__error/404 404
+	error /__error/500 500
+	error /__error/502 502
+	error /__error/504 504
 	reverse_proxy dashboard:8080
 }
 
 mealie.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	# No forward_auth: native OIDC (mealie's own OIDC_AUTO_REDIRECT). Was
 	# full-gate; forward_auth plus Mealie's own login meant two logins.
 	reverse_proxy mealie:9000
@@ -43,11 +71,13 @@ mealie.{$INTERNAL_DOMAIN} {
 
 paperless.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	reverse_proxy webserver:8000
 }
 
 sonarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
 	reverse_proxy sonarr:8989 {
 		import arr_no_client_ip
@@ -56,6 +86,7 @@ sonarr.{$INTERNAL_DOMAIN} {
 
 radarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
 	reverse_proxy radarr:7878 {
 		import arr_no_client_ip
@@ -64,6 +95,7 @@ radarr.{$INTERNAL_DOMAIN} {
 
 prowlarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
 	reverse_proxy prowlarr:9696 {
 		import arr_no_client_ip
@@ -72,17 +104,20 @@ prowlarr.{$INTERNAL_DOMAIN} {
 
 qbittorrent.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
 	reverse_proxy qbittorrent:8090
 }
 
 jellyfin.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	reverse_proxy jellyfin:8096
 }
 
 seerr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
 	reverse_proxy seerr:5055
 }
@@ -90,6 +125,7 @@ seerr.{$INTERNAL_DOMAIN} {
 # Old name, kept for bookmarks: Jellyseerr became Seerr.
 jellyseerr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	redir https://seerr.{$INTERNAL_DOMAIN}{uri} permanent
 }
 
@@ -97,11 +133,13 @@ jellyseerr.{$INTERNAL_DOMAIN} {
 # has its own users and tokens, with anonymous access denied.
 ntfy.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	reverse_proxy ntfy:8080
 }
 
 maintainerr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	import authelia
 	reverse_proxy maintainerr:6246
 }
@@ -111,6 +149,7 @@ maintainerr.{$INTERNAL_DOMAIN} {
 # a login portal that requires being logged in to reach is unreachable.
 auth.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	reverse_proxy authelia:9091
 }
 
@@ -121,6 +160,7 @@ auth.{$INTERNAL_DOMAIN} {
 # not established).
 portainer.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	# Portainer's 9443 is HTTPS-only (self-signed) — its plain-HTTP port (9000)
 	# was never published to the host, so this is the only reachable port.
 	# tls_insecure_skip_verify is deliberate: this hop never leaves the NAS
@@ -142,12 +182,15 @@ portainer.{$INTERNAL_DOMAIN} {
 
 forgejo.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
+	import errors
 	reverse_proxy {env.PROXY_GATEWAY_IP}:3000
 }
 
 # Catch-all for any other subdomain — avoids silently exposing a default page
-# for hostnames that were never deliberately registered above.
+# for hostnames that were never deliberately registered above. Shows the 404
+# error page.
 *.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
-	respond "Not found — no app registered at this hostname." 404
+	import errors
+	error 404
 }

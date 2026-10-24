@@ -1,0 +1,124 @@
+{{- /*
+  Caddy's error page for every site (Caddyfile, snippet `errors`), rendered by
+  the `templates` handler. Self-contained on purpose: it shows up when
+  something is down, so it loads nothing else. The scene for the status is
+  inlined from art/<status>.b64 (README, "Error pages").
+*/ -}}
+{{- $code := placeholder "http.error.status_code" -}}
+{{- $scene := "500" -}}
+{{- if or (eq $code "502") (eq $code "503") }}{{ $scene = "502" }}{{ end -}}
+{{- if eq $code "504" }}{{ $scene = "504" }}{{ end -}}
+{{- if eq $code "404" }}{{ $scene = "404" }}{{ end -}}
+{{- $retry := or (eq $scene "502") (eq $scene "504") -}}
+{{- $up := placeholder "http.reverse_proxy.upstream.hostport" -}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{ $code }} · {{ .Host }}</title>
+<style>
+:root {
+  --bg: #fbf8f3; --ink: #1d1a17; --soft: #6b625a; --line: #e6ddd0;
+  --fire: #f2672a; --flame: #ffb02e; --bubble: #ffffff; --btn: #1d1a17; --btn-ink: #fbf8f3;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #16130f; --ink: #f4ede3; --soft: #b3a796; --line: #352d24; --fire: #ff7a3d; --flame: #ffbe4d; --bubble: #241f19; --btn: #f4ede3; --btn-ink: #16130f; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); display: grid; grid-template-rows: 1fr auto; overflow-x: hidden; }
+.glow { position: fixed; inset: auto -10% -40% -10%; height: 70%; background: radial-gradient(50% 60% at 60% 100%, var(--flame), var(--fire) 40%, transparent 72%); opacity: .22; pointer-events: none; animation: flicker 2.6s ease-in-out infinite; }
+@keyframes flicker { 0%, 100% { opacity: .2; } 30% { opacity: .3; } 55% { opacity: .17; } 80% { opacity: .27; } }
+main { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: center; gap: 3vw; padding: 5vh max(24px, 6vw) 3vh; max-width: 1400px; width: 100%; margin: 0 auto; }
+.meta { font: 500 13px/1.3 var(--mono); color: var(--soft); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; overflow-wrap: anywhere; }
+.meta b { background: var(--fire); color: #fff; padding: 4px 10px; border-radius: 99px; font-weight: 500; }
+.bubble { position: relative; display: inline-block; background: var(--bubble); border: 3px solid var(--ink); border-radius: 32px; padding: 18px 30px 20px; margin: 26px 0 30px; font: 900 clamp(40px, 6vw, 84px)/1 var(--sans); letter-spacing: -.02em; transform: rotate(-1.5deg); }
+.bubble::after { content: ""; position: absolute; right: 12%; bottom: -17px; width: 28px; height: 28px; background: var(--bubble); border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: skewX(-30deg) rotate(45deg); }
+p { margin: 0 0 26px; font-size: clamp(17px, 1.6vw, 22px); line-height: 1.45; max-width: 34ch; opacity: .86; }
+.act { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.btn { font: 700 17px/1 var(--sans); background: var(--btn); color: var(--btn-ink); border: 0; border-radius: 10px; padding: 14px 22px; text-decoration: none; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+.btn:focus-visible { outline: 3px solid var(--fire); outline-offset: 3px; }
+.count { font: 13px/1.3 var(--mono); color: var(--soft); }
+.f5 { display: flex; align-items: center; gap: 6px; font: 12px/1.2 var(--mono); color: var(--soft); }
+.f5 img { width: 56px; height: auto; }
+.scene { width: 100%; max-width: 640px; height: auto; justify-self: center; filter: drop-shadow(0 14px 18px rgba(0,0,0,.12)); }
+footer { position: relative; display: flex; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; border-top: 1px solid var(--line); padding: 14px max(24px, 6vw) 18px; font: 12px/1.6 var(--mono); color: var(--soft); }
+footer dl { display: flex; gap: 4px 24px; flex-wrap: wrap; margin: 0; }
+footer dt { display: inline; opacity: .7; margin-right: 6px; }
+footer dd { display: inline; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  main { grid-template-columns: minmax(0, 1fr); padding-top: 4vh; gap: 12px; }
+  .scene { grid-row: 1; max-width: 340px; }
+  .f5 { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
+</style>
+</head>
+<body>
+{{- if eq $scene "502" }}<div class="glow"></div>{{ end }}
+<main>
+  <div>
+    <div class="meta"><b>{{ $code }}</b><span>{{ placeholder "http.error.status_text" }}</span><span>{{ .Host }}</span></div>
+    {{- if eq $scene "502" }}
+    <div class="bubble">This is fine.</div>
+    <p>This app isn't answering. It's most likely restarting after an update, so this page tries again by itself.</p>
+    {{- else if eq $scene "504" }}
+    <div class="bubble">Zzz… nearly done.</div>
+    <p>The app got the request but didn't answer in time. A large import or scan can do this; this page tries again by itself.</p>
+    {{- else if eq $scene "404" }}
+    <div class="bubble">Where is it?</div>
+    <p>Nothing lives at this address. Check the spelling; the dashboard lists every app.</p>
+    {{- else }}
+    <div class="bubble">Uh-oh.</div>
+    <p>Caddy hit an error on this request, so trying again probably won't help. The error ID below finds it in Caddy's log.</p>
+    {{- end }}
+    <div class="act">
+      {{- if $retry }}
+      <a class="btn" href="" id="retry">Try again</a>
+      <span class="count" id="count">Trying again in 30 s</span>
+      <span class="f5"><img alt="" src="data:image/png;base64,{{ include "art/f5.b64" }}">F5 works too</span>
+      {{- else }}
+      <a class="btn" href="" id="dash">Open the dashboard</a>
+      <a class="btn ghost" href="" id="retry">Try again</a>
+      {{- end }}
+    </div>
+  </div>
+  <img class="scene" alt="" src="data:image/png;base64,{{ include (printf "art/%s.b64" $scene) }}">
+</main>
+<footer>
+  <dl>
+    <div><dt>host</dt><dd>{{ .Host }}</dd></div>
+    {{- if $up }}<div><dt>upstream</dt><dd>{{ $up }}</dd></div>{{ end }}
+    <div><dt>time</dt><dd id="when" data-unix="{{ now.Unix }}">{{ now.UTC.Format "2006-01-02 15:04:05" }} UTC</dd></div>
+    <div><dt>error id</dt><dd>{{ placeholder "http.error.id" }}</dd></div>
+  </dl>
+  <span>Go gopher by Renee French (CC BY 4.0) · drawing by Maria Letta (CC0)</span>
+</footer>
+<script>
+(function () {
+  var when = document.getElementById('when');
+  var t = new Date(+when.getAttribute('data-unix') * 1000);
+  when.textContent = t.toLocaleString();
+  var dash = document.getElementById('dash');
+  if (dash) {
+    var parts = location.hostname.split('.');
+    dash.href = parts.length > 2 ? location.protocol + '//dashboard.' + parts.slice(1).join('.') + '/' : '/';
+  }
+  document.getElementById('retry').addEventListener('click', function (e) { e.preventDefault(); location.reload(); });
+  var count = document.getElementById('count');
+  if (!count) { return; }
+  var left = 30;
+  setInterval(function () {
+    left -= 1;
+    if (left <= 0) { count.textContent = 'Trying again now…'; location.reload(); return; }
+    count.textContent = 'Trying again in ' + left + ' s';
+  }, 1000);
+})();
+</script>
+</body>
+</html>

@@ -1,43 +1,17 @@
-services:
-  postgres:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: mealie
-      POSTGRES_USER: mealie
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGUSER: mealie
-      TZ: Europe/Zurich
-    volumes:
-      - ${MEALIE_PGDATA_PATH}:/var/lib/postgresql/data
-    networks:
-      - mealie
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - FOWNER
-      - SETUID
-      - SETGID
-      - DAC_OVERRIDE
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
 
+services:
   mealie:
+    logging: *logging
     image: ghcr.io/mealie-recipes/mealie:v3.29.0
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       TZ: Europe/Zurich
       ALLOW_SIGNUP: "false"
@@ -54,16 +28,13 @@ services:
       OIDC_CLIENT_ID: mealie
       OIDC_CLIENT_SECRET: ${MEALIE_OIDC_CLIENT_SECRET}
       ALLOW_PASSWORD_LOGIN: "false"
-      DB_ENGINE: postgres
-      POSTGRES_USER: mealie
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_SERVER: postgres
-      POSTGRES_PORT: "5432"
-      POSTGRES_DB: mealie
+      # Members of this Authelia group are Mealie admins (checked at every
+      # login); everyone else is a regular user.
+      OIDC_ADMIN_GROUP: infra-admins
+      # No DB_ENGINE: SQLite, /app/data/mealie.db (README, "Postgres instead").
     volumes:
       - ${MEALIE_DATA_PATH}:/app/data/
     networks:
-      - mealie
       - proxy
     security_opt:
       - no-new-privileges:true
@@ -81,7 +52,5 @@ services:
           memory: 1G
 
 networks:
-  mealie:
-    driver: bridge
   proxy:
     external: true

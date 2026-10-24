@@ -454,6 +454,34 @@ check "a missing dump" grep -q 'Title: No dump yet: Mealie backup' "$A/posts"
 check "an old snapshot" grep -q 'Title: Newest snapshot of homes is 3 days old' "$A/posts"
 check "a recent snapshot is fine" not_in_file 'snapshot of media' "$A/posts"
 unset EXTRA
+img() { # <name> <project> <state> <image> <id> <version or empty>
+	printf '{"name": "%s", "project": "%s", "state": "%s", "health": null, "exit_code": 0, "oom": false, "restarts": 0, "started": %s, "image": "%s", "image_id": "%s", "version": %s}' \
+		"$1" "$2" "$3" "$((NOW - 90000))" "$4" "$5" "$([ -n "$6" ] && printf '"%s"' "$6" || echo null)"
+}
+: >"$A/posts"
+CONTAINERS="[$(img mediarr-sonarr-1 mediarr running lscr.io/linuxserver/sonarr:4.0.15 sha256:s1 4.0.15-ls1),
+ $(img paperless-db-1 paperless running postgres:17 sha256:p1 ''), $(img forgejo forgejo running codeberg.org/forgejo/forgejo:17.0-rootless sha256:f1 ''),
+ $(img mealie-mealie-1 mealie running ghcr.io/mealie-recipes/mealie:v3.29.0 sha256:m1 '')]"
+status 1 8 70 false
+alerts
+check "containers seen for the first time: no upgrade pushed" not_in_file 'Upgraded' "$A/posts"
+CONTAINERS="[$(img mediarr-sonarr-1 mediarr running lscr.io/linuxserver/sonarr:4.0.16 sha256:s2 4.0.16-ls2),
+ $(img paperless-db-1 paperless running postgres:17 sha256:p2 ''), $(img forgejo forgejo running codeberg.org/forgejo/forgejo:17.0-rootless sha256:f1 ''),
+ $(img mealie-mealie-1 mealie exited ghcr.io/mealie-recipes/mealie:v3.30.0 sha256:m2 '')]"
+status 1 8 70 false
+alerts
+check "upgrades in one quiet message" grep -q 'Title: Upgraded: 2 container(s) -H Priority: low' "$A/posts"
+check "a new version, from its label" grep -q 'mediarr · sonarr: 4.0.15-ls1 → 4.0.16-ls2' "$A/posts"
+check "a moved tag is a new build" grep -q 'paperless · db: new build of postgres:17' "$A/posts"
+check "the same image: nothing" not_in_file 'forgejo:' "$A/posts"
+check "a stopped container waits until it runs" not_in_file 'mealie ·' "$A/posts"
+: >"$A/posts"
+CONTAINERS="[$(img mealie-mealie-1 mealie running ghcr.io/mealie-recipes/mealie:v3.30.0 sha256:m2 '')]"
+status 1 8 70 false
+CURL_FAIL=1 alerts
+alerts
+check "running again, upgraded, sent after ntfy was down" grep -q 'mealie · mealie: v3.29.0 → v3.30.0' "$A/posts"
+unset CONTAINERS
 rm -f "$A/local/status.json"
 check "no status.json yet: not a failure" alerts
 rm -rf "$A"
@@ -467,8 +495,8 @@ cat >"$D/bin/docker" <<EOF
 case \$1 in
 ps) printf 'a1\nb2\nc3\n' ;;
 inspect) printf '%s\n' \
-	"/mediarr-sonarr-1${S}unless-stopped${S}restarting${S}${S}3${S}false${S}9${S}2026-10-19T09:59:30.123456789Z${S}mediarr" \
-	"/portainer${S}always${S}running${S}healthy${S}0${S}false${S}0${S}2026-10-19T08:00:00Z${S}" \
+	"/mediarr-sonarr-1${S}unless-stopped${S}restarting${S}${S}3${S}false${S}9${S}2026-10-19T09:59:30.123456789Z${S}mediarr${S}lscr.io/linuxserver/sonarr:4.0.16${S}sha256:aaa${S}4.0.16.2944-ls300" \
+	"/portainer${S}always${S}running${S}healthy${S}0${S}false${S}0${S}2026-10-19T08:00:00Z${S}${S}portainer/portainer-ce:2.41.0${S}sha256:bbb${S}" \
 	"/jq-helper${S}no${S}running${S}${S}0${S}false${S}0${S}2026-10-19T09:00:00Z${S}" ;;
 esac
 EOF
@@ -481,6 +509,8 @@ check "an empty health field keeps the columns in place" cj "d['mediarr-sonarr-1
 check "start time as epoch" cj "d['mediarr-sonarr-1']['started'] == $(date -d '2026-10-19T09:59:30Z' +%s)"
 check "Portainer (docker run, restart always) is watched" cj "d['portainer']['health'] == 'healthy'"
 check "one-off containers (no restart policy) are not" cj "'jq-helper' not in d"
+check "image, its id and version label" cj "d['mediarr-sonarr-1']['image'] == 'lscr.io/linuxserver/sonarr:4.0.16' and d['mediarr-sonarr-1']['image_id'] == 'sha256:aaa' and d['mediarr-sonarr-1']['version'] == '4.0.16.2944-ls300'"
+check "no version label: null" cj "d['portainer']['version'] is None"
 rm -rf "$D"
 
 echo "docker-prune"

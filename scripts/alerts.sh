@@ -5,9 +5,13 @@
 # a container exited with an error, restart-loops, is unhealthy or was
 # restarted by docker in the last 20 minutes; a phone or computer stopped
 # backing up; the volume is filling up, or grew more than ALERT_GROWTH_GB
-# between the last two daily scans; the scheduler cannot update its clone. Not pushed: stacks or images behind git,
-# and a stale storage scan. Run by scripts/run-jobs.sh after every status.json
-# refresh (every 15 minutes) when NTFY_TOKEN is set.
+# between the last two daily scans; the scheduler cannot update its clone. Not
+# pushed: stacks or images behind git, and a stale storage scan. Run by
+# scripts/run-jobs.sh after every status.json refresh (every 15 minutes) when
+# NTFY_TOKEN is set.
+#
+# Also pushes, quietly, the containers now running a different image than at
+# the previous run (an upgrade, or a rebuilt or moved tag): one message per run.
 #
 # Pushes on changes only: an item turning amber or red, or getting worse, and
 # its return to normal. One late backup is one notification, not one per tick.
@@ -28,6 +32,7 @@ set -euo pipefail
 
 readonly DIR="${DASHBOARD_LOCAL_DIR:?set DASHBOARD_LOCAL_DIR to the dashboard local folder}"
 readonly STATE_FILE="${OPS_HOME:?set OPS_HOME}/state/alerts.tsv"
+readonly IMAGES_FILE="$OPS_HOME/state/images.state"
 readonly TOPIC="${NTFY_ALERT_TOPIC:-homelab}"
 readonly NOW="${ALERTS_NOW:-$(date +%s)}"
 : "${NTFY_TOKEN:?set NTFY_TOKEN to an ntfy token that can publish}"
@@ -163,4 +168,62 @@ while IFS=$'\t' read -r key level tab title detail; do
 done <<<"$current"
 
 printf '%s' "$new_state" | write_atomic "$STATE_FILE"
+
+# ---- upgrades: each running container's image id against the previous run's.
+# images.state: name, image id, image, version, separated by \x1f (not tabs:
+# bash collapses empty tab-separated fields, and the version is often empty). A container seen for the first
+# time is recorded silently; one not running keeps its previous entry until it
+# runs again.
+# shellcheck disable=SC2016 # the $names in the jq program are jq's
+running=$(_jq -r '(.containers // [])[] | select((.image_id // "") != "")
+	| [.name, .image_id, .image, (.version // ""), .project, .state] | map(tostring | gsub("[\u001f\n\r]"; " ")) | join("\u001f")' \
+	<"$DIR/status.json")
+touch -- "$IMAGES_FILE"
+declare -A old_id=() old_image=() old_version=()
+while IFS=$'\x1f' read -r name id image version; do
+	[ -n "$name" ] || continue
+	old_id[$name]=$id old_image[$name]=$image old_version[$name]=$version
+done <"$IMAGES_FILE"
+
+# What to call an image in a message: its version label, else its tag.
+label() { # <image> <version>
+	local tag=${1##*/}
+	if [ -n "$2" ]; then echo "$2"; elif [[ $tag == *:* ]]; then echo "${tag##*:}"; else echo latest; fi
+}
+upgrades="" count=0 images_state=""
+while IFS=$'\x1f' read -r name id image version project state; do
+	[ -n "$name" ] || continue
+	if [ "$state" != running ] && [ -n "${old_id[$name]:-}" ]; then
+		images_state+="$name"$'\x1f'"${old_id[$name]}"$'\x1f'"${old_image[$name]}"$'\x1f'"${old_version[$name]}"$'\n'
+		continue
+	fi
+	images_state+="$name"$'\x1f'"$id"$'\x1f'"$image"$'\x1f'"$version"$'\n'
+	[ -n "${old_id[$name]:-}" ] && [ "${old_id[$name]}" != "$id" ] || continue
+	short=${name#"$project"-}
+	short=${short%-[0-9]*}
+	from=$(label "${old_image[$name]}" "${old_version[$name]}")
+	to=$(label "$image" "$version")
+	if [ "$from" != "$to" ]; then
+		line="$short: $from → $to"
+	else
+		line="$short: new build of ${image##*/}"
+	fi
+	upgrades+="${project:+$project · }$line"$'\n'
+	count=$((count + 1))
+done <<<"$running"
+
+if [ "$count" -gt 0 ]; then
+	click=""
+	[ -n "${DASHBOARD_URL:-}" ] && click="${DASHBOARD_URL%/}/#system"
+	if ntfy_send "$TOPIC" "Upgraded: $count container(s)" low arrow_up "$click" <<<"${upgrades%$'\n'}"; then
+		echo "Sent: $count upgrade(s)"
+		sent=$((sent + 1))
+	else
+		# Keep the old ids, so the next run reports them again.
+		echo "alerts: could not send the upgrades" >&2
+		images_state=$(cat -- "$IMAGES_FILE")$'\n'
+	fi
+fi
+# Containers gone since the last run drop out of the file.
+printf '%s' "$images_state" | write_atomic "$IMAGES_FILE"
 echo "$sent notification(s) sent"

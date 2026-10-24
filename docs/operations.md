@@ -101,6 +101,19 @@ stack's data before deploying it; Forgejo's dump goes back with [guide 04](guide
 Forgejo cannot be restored, any clone of this repo works: deploy the stacks as
 Web editor stacks from it until Forgejo is back.
 
+## Container logs
+
+Every service logs with Docker's `local` driver, 3 files of 10 MB, set in
+each compose file. Container Manager's default, the `db` driver, writes each
+log line to a SQLite file (`<docker root>/containers/<id>/log.db`). Measured
+on 2026-10-24 with the NAS otherwise idle: about 210 writes/s on the RAID 6
+volume, 90 % busy, from a few KB of log text per container every 30 s; a
+4 KB forced write took 0.1–1.3 s, and Authelia's SQLite failed with
+`database is locked`. With every container on `local`, the same 4 KB write
+took 0.05–0.11 s. `docker logs` and Portainer show `local` logs; DSM's
+Container Manager log view does not. Portainer itself, started with
+`docker run`, needs `--log-driver local` when recreated.
+
 ## Conventions (for a new stack)
 
 - Files: `compose.yaml`, `.env.example` (every `${VAR}`, no real values),
@@ -120,6 +133,8 @@ Web editor stacks from it until Forgejo is back.
   `security_opt: [no-new-privileges:true]`, `cap_drop: [ALL]` plus only the commented
   `cap_add` it needs, a `deploy.resources.limits.memory` (exception:
   `forgejo-runner`, which has docker.sock, has no `cap_drop`).
+- Every service: `logging: *logging`, the `x-logging` block at the top of each
+  compose file (see Container logs).
 - Images pinned to a version tag, exact where upstream publishes one (Renovate
   updates them). A locally built image
   is built by the `build-images` job (`scripts/jobs.conf`), not by Portainer:

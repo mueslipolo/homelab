@@ -211,7 +211,12 @@ Stacks or images behind git and a stale storage scan are not pushed:
 | growth between the last two daily scans (`storage.json`)            | more than `ALERT_GROWTH_GB`                                        |                                                                                                    |
 
 It pushes on changes only: once when an item turns amber, again if it turns
-red, and a quiet "ok again" when it recovers. Nothing to set up beyond the
+red, and a quiet "ok again" when it recovers.
+
+It also sends a quiet **Upgraded** message when containers run a different
+image than 15 minutes earlier, one per run, e.g. `mediarr · sonarr: 4.0.15 →
+4.0.16`, or `new build of postgres:17` when a tag moved. A container seen for
+the first time, or recreated on the same image, is not reported. Nothing to set up beyond the
 `NTFY_TOKEN` already in `jobs.env` (step 6); optionally:
 
 ```bash

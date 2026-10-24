@@ -23,14 +23,14 @@ exposing anything to the internet.
 
 ## Before you start
 
-| What                       | Example                                          | How                                                                                                                               |
-| -------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| HTTPS working              | `https://whoami.home.example.com`                | [03 HTTPS](03-https-letsencrypt.md). Authelia's cookie domain and OIDC issuer are `INTERNAL_DOMAIN`.                              |
-| `PROXY_GATEWAY_IP`         | `192.0.2.1`                                      | `sudo docker network inspect proxy --format '{{json .IPAM.Config}}'`: how containers reach host services such as LDAP.            |
-| Synology LDAP Server       | base DN `dc=home,dc=example,dc=com`              | Package Center → LDAP Server → Settings → enable, FQDN `home.example.com` (it gives the base DN), set the root password.          |
-| A group for admins         | `infra-admins`                                   | LDAP Server → Manage groups. Members may log in to Portainer and Forgejo. Not `admins` or `administrators` (see Troubleshooting). |
-| DSM joined to its own LDAP | —                                                | Control Panel → Domain/LDAP → LDAP, the NAS itself. Same accounts for DSM, SMB and Drive.                                         |
-| Folders                    | `/volume1/docker/authelia/{secrets,data,pgdata}` | Below.                                                                                                                            |
+| What                       | Example                                   | How                                                                                                                               |
+| -------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| HTTPS working              | `https://whoami.home.example.com`         | [03 HTTPS](03-https-letsencrypt.md). Authelia's cookie domain and OIDC issuer are `INTERNAL_DOMAIN`.                              |
+| `PROXY_GATEWAY_IP`         | `192.0.2.1`                               | `sudo docker network inspect proxy --format '{{json .IPAM.Config}}'`: how containers reach host services such as LDAP.            |
+| Synology LDAP Server       | base DN `dc=home,dc=example,dc=com`       | Package Center → LDAP Server → Settings → enable, FQDN `home.example.com` (it gives the base DN), set the root password.          |
+| A group for admins         | `infra-admins`                            | LDAP Server → Manage groups. Members may log in to Portainer and Forgejo. Not `admins` or `administrators` (see Troubleshooting). |
+| DSM joined to its own LDAP | —                                         | Control Panel → Domain/LDAP → LDAP, the NAS itself. Same accounts for DSM, SMB and Drive.                                         |
+| Folders                    | `/volume1/docker/authelia/{secrets,data}` | Below.                                                                                                                            |
 
 Keep the DSM/SSH admin a **local** account: Synology's SSH only accepts the
 local `administrators` group. To move an existing person to LDAP, rename their
@@ -44,11 +44,10 @@ Every `/secrets/*` file referenced in `stacks/authelia/compose.yaml` and
 `config/configuration.yml` must exist, or Authelia does not start.
 
 ```bash
-sudo mkdir -p /volume1/docker/authelia/{secrets,data,pgdata}
+sudo mkdir -p /volume1/docker/authelia/{secrets,data}
 cd /volume1/docker/authelia/secrets && sudo chmod 700 .
 for s in session_secret storage_encryption_key jwt_secret oidc_hmac_secret; do openssl rand -hex 32 | sudo tee $s >/dev/null; done
 echo -n '<LDAP root password>' | sudo tee ldap_bind_password >/dev/null
-openssl rand -hex 24 | tr -d '\n' | sudo tee postgres_password >/dev/null   # also POSTGRES_PASSWORD in step 3
 AUTHELIA_VERSION=4.39.28   # the tag in stacks/authelia/compose.yaml
 sudo docker run --name authelia-keygen "authelia/authelia:$AUTHELIA_VERSION" authelia crypto pair rsa generate --directory /tmp
 sudo docker cp authelia-keygen:/tmp/private.pem oidc_jwks_private_key.pem && sudo docker rm authelia-keygen
@@ -69,7 +68,7 @@ sudo docker run --rm "authelia/authelia:$AUTHELIA_VERSION" authelia crypto hash 
 sudo chmod 600 *
 ```
 
-**Check:** `ls` lists the eleven files (fewer if you skipped clients), none empty.
+**Check:** `ls` lists the ten files (fewer if you skipped clients), none empty.
 
 ### 2. Adjust the access rules
 
@@ -88,8 +87,6 @@ PROXY_GATEWAY_IP=192.0.2.1
 LDAP_BASE_DN=dc=home,dc=example,dc=com
 AUTHELIA_SECRETS_ROOT=/volume1/docker/authelia/secrets
 AUTHELIA_DATA_ROOT=/volume1/docker/authelia/data
-AUTHELIA_PGDATA_PATH=/volume1/docker/authelia/pgdata
-POSTGRES_PASSWORD=<same as the postgres_password file>
 ```
 
 **With Portainer:** Stacks → Add stack → Repository, compose path
@@ -184,6 +181,6 @@ Don't name the admin group `admins` (it collides with the policy name) or
 
 - [06 mediarr](06-mediarr.md): gated apps.
 - [07 Paperless](07-paperless.md), [08 Mealie](08-mealie.md): OIDC apps.
-- [10 backups](10-backups-and-jobs.md): back up the secrets folder; Postgres
-  holds only disposable state (OIDC consent and tokens, login attempts);
+- [10 backups](10-backups-and-jobs.md): back up the secrets folder; the
+  database holds only disposable state (OIDC consent and tokens, login attempts);
   login sessions live in memory.

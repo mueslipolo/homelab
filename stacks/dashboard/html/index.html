@@ -120,6 +120,13 @@
         gap: 2px;
     }
 
+    .plate .credit {
+        margin: auto 0 0;
+        font-size: 0.68rem;
+        line-height: 1.4;
+        color: var(--plate-muted);
+    }
+
     .plate section {
         display: flex;
         flex-direction: column;
@@ -272,12 +279,28 @@
     /* ------------------------------------------------------------ bay */
 
     .bay {
+        position: relative;
         padding: 24px clamp(16px, 3vw, 36px) 48px;
         display: flex;
         flex-direction: column;
         gap: 28px;
         min-width: 0;
     }
+
+    /* A Go gopher per tab, standing on the tab line (gopher/README.md). */
+    .tab-gopher {
+        position: absolute;
+        top: 6px;
+        right: clamp(16px, 3vw, 36px);
+        width: 92px;
+        height: 92px;
+        object-fit: contain;
+        pointer-events: none;
+        transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), opacity 0.2s;
+    }
+    .tab-gopher.swap { transform: translateY(14px) scale(0.85); opacity: 0; }
+    @media (max-width: 700px) { .tab-gopher { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .tab-gopher { transition: none; } }
 
     .bay-head {
         display: flex;
@@ -753,6 +776,7 @@
             <button type="button" id="status-system" data-tab-link="system"><i class="dot"></i><b>System</b><span data-summary="system">no status report</span></button>
             <button type="button" id="status-network" data-tab-link="network"><i class="dot"></i><b>Network</b><span data-summary="network">-</span></button>
         </nav>
+        <p class="credit">Go gopher by Renee French (CC BY 4.0) · drawings by Maria Letta</p>
     </aside>
 
     <main class="bay">
@@ -763,6 +787,7 @@
             <button type="button" role="tab" id="tab-system" data-tab="system" aria-selected="false">System <i class="dot"></i></button>
             <button type="button" role="tab" id="tab-network" data-tab="network" aria-selected="false">Network</button>
         </nav>
+        <img class="tab-gopher" src="gopher/services.png" alt="" aria-hidden="true" data-tab-gopher>
 
         <div data-view="services" role="tabpanel" aria-labelledby="tab-services">
         <div class="bay-head">
@@ -1027,6 +1052,12 @@
         document.querySelectorAll('[data-view]').forEach(function (v) {
             v.hidden = v.getAttribute('data-view') !== name;
         });
+        // The tab's gopher: on a tab change it hops out, changes, hops back in.
+        var g = document.querySelector('[data-tab-gopher]'), src = 'gopher/' + name + '.png';
+        if (g.getAttribute('src') === src) { return; }
+        if (!g.hasAttribute('data-shown')) { g.setAttribute('src', src); return; }
+        g.classList.add('swap');
+        setTimeout(function () { g.setAttribute('src', src); g.classList.remove('swap'); }, 180);
     }
     document.querySelectorAll('[data-tab], [data-tab-link]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -1037,6 +1068,7 @@
     });
     window.addEventListener('hashchange', function () { selectTab(location.hash.slice(1)); });
     selectTab(location.hash.slice(1));
+    document.querySelector('[data-tab-gopher]').setAttribute('data-shown', '');
 
     // ------------------------------------------------------------ health
     // Facts the NAS writes every 15 minutes (scripts/dashboard-status.sh).

@@ -29,10 +29,11 @@ button.
 
 ```bash
 sudo docker run -d --name portainer --restart=always \
+  --log-driver local --log-opt max-size=10m --log-opt max-file=3 \
   -p 9443:9443 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /volume1/docker/portainer-data:/volume1/docker/portainer-data \
-  portainer/portainer-ce:2.45.2 \
+  portainer/portainer-ce:2.45.3 \
   --data /volume1/docker/portainer-data \
   --trusted-origins https://portainer.home.example.com
 sudo docker network connect proxy portainer

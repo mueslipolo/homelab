@@ -1,5 +1,15 @@
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
 services:
   sonarr:
+    logging: *logging
     image: linuxserver/sonarr:4.0.20.3014-ls326
     restart: unless-stopped
     environment:
@@ -28,6 +38,7 @@ services:
           memory: 512M
 
   radarr:
+    logging: *logging
     image: linuxserver/radarr:6.4.4.10685-ls322
     restart: unless-stopped
     environment:
@@ -56,6 +67,7 @@ services:
           memory: 512M
 
   prowlarr:
+    logging: *logging
     image: linuxserver/prowlarr:2.6.5.5623-ls164
     restart: unless-stopped
     environment:
@@ -83,7 +95,8 @@ services:
           memory: 512M
 
   qbittorrent:
-    image: linuxserver/qbittorrent:5.2.3_v2.0.15-ls478
+    logging: *logging
+    image: linuxserver/qbittorrent:5.2.4_v2.0.15-ls481
     restart: unless-stopped
     environment:
       - PUID=${PUID}
@@ -111,6 +124,7 @@ services:
           memory: 1G
 
   flaresolverr:
+    logging: *logging
     image: flaresolverr/flaresolverr:v3.5.2
     restart: unless-stopped
     environment:
@@ -127,6 +141,7 @@ services:
           memory: 1G
 
   jellyfin:
+    logging: *logging
     image: linuxserver/jellyfin:12.2ubu2604-ls54
     restart: unless-stopped
     environment:
@@ -163,6 +178,7 @@ services:
   # start, so it keeps the old config folder. The `jellyseerr` alias keeps
   # integrations configured with http://jellyseerr:5055 (Maintainerr) working.
   seerr:
+    logging: *logging
     image: ghcr.io/seerr-team/seerr:v3.5.0
     restart: unless-stopped
     # The image no longer ships an init process.
@@ -198,6 +214,7 @@ services:
           memory: 512M
 
   maintainerr:
+    logging: *logging
     image: ghcr.io/maintainerr/maintainerr:3.30.1
     restart: unless-stopped
     user: "${PUID}:${PGID}"

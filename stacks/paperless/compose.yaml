@@ -1,5 +1,15 @@
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
 services:
   db:
+    logging: *logging
     image: postgres:17
     restart: unless-stopped
     environment:
@@ -31,6 +41,7 @@ services:
           memory: 512M
 
   broker:
+    logging: *logging
     image: redis:8
     restart: unless-stopped
     user: "${PAPERLESS_UID}:${PAPERLESS_GID}"
@@ -53,6 +64,7 @@ services:
           memory: 128M
 
   webserver:
+    logging: *logging
     image: ghcr.io/paperless-ngx/paperless-ngx:3.3.2
     restart: unless-stopped
     depends_on:
@@ -129,6 +141,7 @@ services:
           memory: 2G
 
   gotenberg:
+    logging: *logging
     image: gotenberg/gotenberg:8.38.1
     restart: unless-stopped
     networks:
@@ -147,6 +160,7 @@ services:
           memory: 512M
 
   tika:
+    logging: *logging
     image: apache/tika@sha256:06bcdbd09aca073293e5a171ad161418cc93c91d58d9e4e205064eade84889d4
     restart: unless-stopped
     networks:

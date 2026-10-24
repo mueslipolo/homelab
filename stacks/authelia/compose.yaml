@@ -1,45 +1,17 @@
-services:
-  postgres:
-    # Replaces the SQLite storage backend, which logged "database is locked"
-    # errors here.
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: authelia
-      POSTGRES_USER: authelia
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGUSER: authelia
-      TZ: Europe/Zurich
-    volumes:
-      - ${AUTHELIA_PGDATA_PATH}:/var/lib/postgresql/data
-    networks:
-      - authelia_db
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - FOWNER
-      - SETUID
-      - SETGID
-      - DAC_OVERRIDE
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 256M
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
 
+services:
   authelia:
+    logging: *logging
     image: authelia/authelia:4.39.28
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       TZ: Europe/Zurich
       INTERNAL_DOMAIN: ${INTERNAL_DOMAIN}
@@ -53,7 +25,6 @@ services:
       X_AUTHELIA_CONFIG_FILTERS: template
       AUTHELIA_SESSION_SECRET_FILE: /secrets/session_secret
       AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/storage_encryption_key
-      AUTHELIA_STORAGE_POSTGRES_PASSWORD_FILE: /secrets/postgres_password
       AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
       AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE: /secrets/oidc_hmac_secret
       AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE: /secrets/ldap_bind_password
@@ -66,7 +37,6 @@ services:
       - ${AUTHELIA_DATA_ROOT}:/data
     networks:
       - proxy
-      - authelia_db
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -83,7 +53,5 @@ services:
           memory: 256M
 
 networks:
-  authelia_db:
-    driver: bridge
   proxy:
     external: true

@@ -1,5 +1,15 @@
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
 services:
   forgejo:
+    logging: *logging
     image: codeberg.org/forgejo/forgejo:17.0-rootless
     container_name: forgejo
     restart: unless-stopped

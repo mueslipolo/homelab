@@ -5,13 +5,15 @@
 
 ## What you get
 
-Mealie at `https://mealie.home.example.com`, with its own postgres. Opening it
+Mealie at `https://mealie.home.example.com`, on SQLite. Opening it
 goes straight to Authelia and back: Mealie's login screen and passwords are
 off.
 
 - **OIDC, not the Caddy gate:** behind the gate, users logged in twice
   (Authelia, then Mealie's own form). `OIDC_AUTO_REDIRECT=true` and
   `ALLOW_PASSWORD_LOGIN=false` give one.
+- **Admins from Authelia:** members of `infra-admins` are Mealie admins
+  (`OIDC_ADMIN_GROUP`); everyone else signs in as a regular user.
 - **Its own shared folder** (`/volume1/mealie`), with `dumps/` next to the live
   data: Hyper Backup takes the dumps only.
 
@@ -22,14 +24,13 @@ off.
 | Caddy and Authelia      | `auth.home.example.com` | [03 HTTPS](03-https-letsencrypt.md), [05 Authelia](05-sso-authelia.md)                     |
 | A shared folder         | `/volume1/mealie`       | DSM → Shared Folder, not under `docker`                                                    |
 | An Authelia OIDC client | client `mealie`         | [05 Authelia](05-sso-authelia.md#add-an-app), "Add an app" (OIDC); redirect URIs in step 2 |
-| A postgres password     | —                       | `openssl rand -hex 32`                                                                     |
 
 ## Steps
 
 ### 1. Folders
 
 ```bash
-sudo mkdir -p /volume1/mealie/{pgdata,data,dumps}
+sudo mkdir -p /volume1/mealie/{data,dumps}
 sudo chmod 700 /volume1/mealie/dumps     # root-only, like the other dumps
 ```
 
@@ -50,9 +51,7 @@ Variables, from [`stacks/mealie/.env.example`](../../stacks/mealie/.env.example)
 
 ```bash
 INTERNAL_DOMAIN=home.example.com
-MEALIE_PGDATA_PATH=/volume1/mealie/pgdata
 MEALIE_DATA_PATH=/volume1/mealie/data
-POSTGRES_PASSWORD=<secret>
 MEALIE_OIDC_CLIENT_SECRET=<Random Password from step 2>
 ```
 
@@ -60,7 +59,7 @@ MEALIE_OIDC_CLIENT_SECRET=<Random Password from step 2>
 `stacks/mealie/compose.yaml` → Deploy ([02 Portainer](02-portainer.md)).
 **With docker compose:** `.env` from `.env.example` (`chmod 600`), `sudo docker compose up -d`.
 
-**Check:** `postgres` turns healthy, then `mealie` starts.
+**Check:** `mealie` turns healthy; its log shows no errors.
 
 ### 4. Route it through Caddy
 
@@ -86,11 +85,10 @@ writes Mealie's own backup into `dumps/` daily
 
 ## Troubleshooting
 
-| Symptom                                                    | Cause → fix                                                                                                                       |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `postgres` never healthy: `chmod: Operation not permitted` | Its `cap_add` (`CHOWN, FOWNER, SETUID, SETGID, DAC_OVERRIDE`) removed: the entrypoint chmods its data dir as root at every start. |
-| Authelia: redirect URI mismatch                            | Both `/login` and `/login?direct=1` must be in the client, exactly.                                                               |
-| `mealie-backup` job fails with `401`/`403`                 | The token is not from an admin user, or was revoked.                                                                              |
+| Symptom                                    | Cause → fix                                                         |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| Authelia: redirect URI mismatch            | Both `/login` and `/login?direct=1` must be in the client, exactly. |
+| `mealie-backup` job fails with `401`/`403` | The token is not from an admin user, or was revoked.                |
 
 ## Next
 

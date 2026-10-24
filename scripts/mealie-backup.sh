@@ -4,8 +4,8 @@
 # root from scripts/run-jobs.sh (see scripts/jobs.conf) -- needs docker exec/cp.
 #
 # Mealie's own backup, restored through its UI into the same Mealie version
-# (then upgrade; a mismatched one is refused), unlike a raw Postgres data
-# directory: Hyper Backup takes these dumps and not MEALIE_PGDATA_PATH
+# (then upgrade; a mismatched one is refused), unlike a copy of the live
+# database: Hyper Backup takes these dumps, not MEALIE_DATA_PATH
 # (docs/guides/10-backups-and-jobs.md).
 set -euo pipefail
 
