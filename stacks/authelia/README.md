@@ -65,6 +65,10 @@ This page is the reference.
 - **SQLite** (`/data/db.sqlite3`): a handful of users write little. Login
   sessions are in memory, not in the database. Switching backends starts
   empty: everyone consents again.
+- **`database is locked` means a slow disk, not too many users.** It came
+  from Container Manager's `db` log driver keeping the RAID busy; every
+  container now logs with `local`
+  ([slow disk writes](../../docs/slow-disk-writes.md)).
 - **Regulation:** 5 failures in 10 minutes → 1-hour ban.
 
 ## Postgres instead of SQLite

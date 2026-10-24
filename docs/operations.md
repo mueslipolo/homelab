@@ -103,6 +103,9 @@ Web editor stacks from it until Forgejo is back.
 
 ## Container logs
 
+How this was found, and how to measure it again:
+[slow disk writes](slow-disk-writes.md).
+
 Every service logs with Docker's `local` driver, 3 files of 10 MB, set in
 each compose file. Container Manager's default, the `db` driver, writes each
 log line to a SQLite file (`<docker root>/containers/<id>/log.db`). Measured

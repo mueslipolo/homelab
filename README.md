@@ -36,11 +36,12 @@ The whole thing on a new NAS, in order: [install everything](docs/install-everyt
 
 ## Other docs
 
-| Doc                                  | For                                                                  |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| [architecture](docs/architecture.md) | why it is built this way                                             |
-| [operations](docs/operations.md)     | the maintainer's page: rules, checks, updating, restore, conventions |
-| `stacks/<name>/README.md`            | one stack's reference: variables, what it needs, gotchas             |
+| Doc                                          | For                                                                  |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| [architecture](docs/architecture.md)         | why it is built this way                                             |
+| [operations](docs/operations.md)             | the maintainer's page: rules, checks, updating, restore, conventions |
+| [slow disk writes](docs/slow-disk-writes.md) | why SQLite said "database is locked", and how to measure the disk    |
+| `stacks/<name>/README.md`                    | one stack's reference: variables, what it needs, gotchas             |
 
 ## Layout
 
@@ -51,7 +52,7 @@ stacks/<name>/     one Portainer stack each: compose.yaml, .env.example (every v
 docs/guides/       the guides above
 scripts/           the scheduler (run-jobs.sh, jobs.conf) and its jobs, bootstrap.sh
 tools/             run from a workstation: duplicates.sh, dashboard-demo/ (screenshots),
-                   mikrotik/ (router alerts), publish-github.sh
+                   mikrotik/ (router alerts), publish-github.sh, disk-diag.sh
 .forgejo/          CI: checks and Renovate
 ```
 
