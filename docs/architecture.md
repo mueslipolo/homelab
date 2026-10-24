@@ -20,7 +20,7 @@ The drawing is an Excalidraw file: open it in [excalidraw.com](https://excalidra
 ## Network and certificates
 
 - **Caddy has its own LAN IP (macvlan).** DSM's nginx holds port 443 on the
-  NAS's IP for good, and DSM's reverse proxy would terminate TLS itself.
+  NAS's IP, and DSM's reverse proxy would terminate TLS itself.
 - **Certificate by DNS-01 at Infomaniak**, from a locally built Caddy
   (`xcaddy`): wildcard support, no inbound port, and the domain-controlling
   token stays in an auditable build rather than a third-party image.

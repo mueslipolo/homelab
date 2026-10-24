@@ -33,6 +33,10 @@ def test_catalogue_basic_positions_are_generic() -> None:
     assert classify(_line("590", "1200", "26.60")).tier == GENERIC
 
 
+def test_flat_rates_are_not_read_as_tardoc() -> None:
+    assert classify(_line("005", "CG.15.0010", "12.99")).label != "Pédiatrie"
+
+
 def test_medicines_materials_and_lab_are_supplies() -> None:
     for tariff in ("402", "403", "452", "317"):
         assert classify(_line(tariff, "7680000000028", "77.95")).tier == SUPPLY

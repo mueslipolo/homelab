@@ -3,8 +3,8 @@
 # out of the container, and prunes old dumps. Runs as root from
 # scripts/run-jobs.sh (see scripts/jobs.conf) — needs docker exec/cp access.
 #
-# A dump only gets its final name once it is complete and passes a zip
-# integrity check. Anything else — a hang, a full disk, a killed copy — leaves
+# A dump only gets its final name once it is complete: its end-of-zip record
+# is present (a truncation check). Anything else — a hang, a full disk, a killed copy — leaves
 # no file the dashboard or Hyper Backup could mistake for a good dump.
 set -euo pipefail
 

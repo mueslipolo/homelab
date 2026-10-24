@@ -50,7 +50,8 @@ stacks/<name>/     one Portainer stack each: compose.yaml, .env.example (every v
                    git deploy only resolves paths inside the stack's folder)
 docs/guides/       the guides above
 scripts/           the scheduler (run-jobs.sh, jobs.conf) and its jobs, bootstrap.sh
-tools/             run from a workstation: duplicates.sh, dashboard screenshots
+tools/             run from a workstation: duplicates.sh, dashboard-demo/ (screenshots),
+                   mikrotik/ (router alerts), publish-github.sh
 .forgejo/          CI: checks and Renovate
 ```
 

@@ -368,7 +368,8 @@ status() { # <job exit> <device last seen, days ago> <volume %> <pull_ok>
 		   {"owner": "anna", "kind": "phone", "name": "Pixel 8", "max_days": 7,
 		    "last_seen": null, "newest_photo": $((NOW - $2 * 86400))}]},
 		 "scheduler": {"sha": "abc1234", "pull_ok": $4, "pull_error": "fatal: Not possible to fast-forward"},
-		 "containers": ${CONTAINERS:-[]},
+		 "containers": ${CONTAINERS:-[]},${EXTRA:+
+		 $EXTRA,}
 		 "jobs": [{"name": "forgejo-dump", "exit": $1, "ended": $NOW, "message": "zip: disk full"}]}
 	EOF
 }
@@ -404,6 +405,10 @@ check "recovered: the volume" grep -q 'Title: Volume below 80 % again' "$A/posts
 check "a stuck scheduler is reported" grep -q 'Title: Scheduler cannot update its git clone' "$A/posts"
 check "a growth spike is not 'recovered' the same day" [ "$(posts)" = 4 ]
 : >"$A/posts"
+printf '{"daily": [["2026-10-17", 5000000000000], ["2026-10-20", %s]]}' "$((5000000000000 + 150 * 1073741824))" >"$A/local/storage.json"
+alerts
+check "growth across a missing scan says since when" grep -q 'Title: Used space grew 150 GB since 2026-10-17' "$A/posts"
+: >"$A/posts"
 status 1 8 70 false
 CURL_FAIL=1 alerts
 check "ntfy down: nothing recorded" [ "$(posts)" = 0 ]
@@ -421,7 +426,7 @@ status 1 8 70 false
 alerts
 check "a restart loop is urgent" grep -q 'Title: Container sonarr: restart-looping (exit 3) -H Priority: high' "$A/posts"
 check "an unhealthy container" grep -q 'Title: Container radarr: unhealthy' "$A/posts"
-check "a crash docker just recovered from" grep -q 'Title: Container prowlarr: restarted by docker after a crash (2 so far)' "$A/posts"
+check "a container docker just restarted" grep -q 'Title: Container prowlarr: restarted by docker (2 times)' "$A/posts"
 check "out of memory" grep -q 'Title: Container jellyfin: killed: out of memory' "$A/posts"
 check "a stopped container (exit 137) is not a crash" not_in_file 'Container seerr' "$A/posts"
 check "old restarts, long running: fine" not_in_file 'Container qbittorrent' "$A/posts"
@@ -433,6 +438,22 @@ alerts
 check "recovered containers, quietly" grep -q 'Title: Container sonarr is running again -H Priority: low' "$A/posts"
 check "a redeployed container (gone) is not reported" not_in_file 'Container prowlarr' "$A/posts"
 unset CONTAINERS
+: >"$A/posts"
+EXTRA='"backups": [{"task": "offsite", "result": "failed", "at": '$((NOW - 3600))', "message": "destination offline"},
+   {"task": "usb", "result": "success", "at": '$((NOW - 3 * 86400))', "message": ""}],
+ "dumps": [{"name": "Forgejo dump", "latest": '$((NOW - 3 * 86400))', "file": "forgejo-dump.zip"},
+   {"name": "Mealie backup", "latest": null, "file": null}],
+ "protection": {"shares": [{"name": "homes", "snapshot": {"enabled": true, "latest": '$((NOW - 3 * 86400))', "schedule": "daily"}},
+   {"name": "media", "snapshot": {"enabled": true, "latest": '$((NOW - 3600))', "schedule": "daily"}}]}'
+status 1 8 70 false
+alerts
+check "a failed Hyper Backup is urgent, with its message" grep -q 'Title: Hyper Backup failed: offsite -H Priority: high' "$A/posts"
+check "a Hyper Backup task that has not run for 2 days" grep -q 'Title: Hyper Backup: usb last ran 3 days ago' "$A/posts"
+check "an old dump" grep -q 'Title: Dump is 3 days old: Forgejo dump' "$A/posts"
+check "a missing dump" grep -q 'Title: No dump yet: Mealie backup' "$A/posts"
+check "an old snapshot" grep -q 'Title: Newest snapshot of homes is 3 days old' "$A/posts"
+check "a recent snapshot is fine" not_in_file 'snapshot of media' "$A/posts"
+unset EXTRA
 rm -f "$A/local/status.json"
 check "no status.json yet: not a failure" alerts
 rm -rf "$A"
@@ -566,16 +587,12 @@ check "first run writes valid JSON" valid_json "$Q/dash/storage.json"
 check "every file is probed once" [ "$(wc -l <"$Q/probed")" = 4 ]
 check "shared folders come from btrfs, without @syno" qj "sorted(p['name'] for p in d['parts'] if p['kind'] == 'share') == ['homes', 'media']"
 check "Drive history and the backup cache are parts" qj "{'drive', 'hbcache', 'docker'} <= {p['kind'] for p in d['parts']}"
-check "Drive's own space is measured when the counters lack it" qj "[p['bytes'] for p in d['parts'] if p['kind'] == 'drive'] == [4980000000] and d['reclaim']['drive'] == 4980000000"
-check "without exclusive sizes, overlap is reported, not hidden" qj "not d['exclusive_known'] and d['counted_twice'] >= 0 and d['reclaim']['snapshots'] is None"
-check "docker total and reclaimable from docker system df" qj "[p['bytes'] for p in d['parts'] if p['kind'] == 'docker'] == [35499008000] and d['reclaim']['docker'] == 20988000000"
-check "recycle bins are measured" qj "d['reclaim']['recycle'] > 0"
+check "Drive's own space is measured when the counters lack it" qj "[p['bytes'] for p in d['parts'] if p['kind'] == 'drive'] == [4980000000]"
+check "without exclusive sizes, overlap is reported, not hidden" qj "not d['exclusive_known'] and d['counted_twice'] >= 0 and 'snapshots' not in [p['kind'] for p in d['parts']]"
+check "docker total from docker system df" qj "[p['bytes'] for p in d['parts'] if p['kind'] == 'docker'] == [35499008000]"
 check "a double episode counts twice" qj "[s['episodes'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [3]"
 check "series sorted by size" qj "[s['name'] for s in d['media']['series']['titles']] == ['Big Show', 'Small Show']"
-check "an HEVC series has nothing to gain" qj "[(s['hevc'], s['saving']) for s in d['media']['series']['titles'] if s['name'] == 'Small Show'] == [(True, 0)]"
-check "an H.264 series above 6 Mbit/s would shrink" qj "[s['saving'] > 4e9 for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [True]"
-check "GB per hour from size and length" qj "[s['gb_per_hour'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [round(9 * 2**30 / 1e9 / 1.5, 2)]"
-check "a REMUX film is flagged" qj "d['media']['film']['titles'][0]['remux'] is True"
+check "GB per hour from size and length" qj "[s['gb_per_hour'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [round(9 / 1.5, 2)]"
 check "seasons by folder, with their episodes" qj "[s['seasons'] for s in d['media']['series']['titles'] if s['name'] == 'Big Show'] == [[['Season 01', 9 * 2**30, 3]]]"
 check "episodes outside a season folder have an empty season" qj "[s['seasons'] for s in d['media']['series']['titles'] if s['name'] == 'Small Show'] == [[['', 2**30, 1]]]"
 check "films have no seasons" qj "'seasons' not in d['media']['film']['titles'][0]"
@@ -595,6 +612,7 @@ scan 2026-10-01 MEDIA_B=2011000000000 HOMES_B=380000000000 DRIVE_B=230000000000 
 check "only new files are probed" [ "$(sort -u "$Q/probed" | wc -l)" = 2 ]
 check "a rerun the same day replaces that day" [ "$(grep -c $'^2026-10-01\tused' "$Q/ops/storage/history.tsv")" = 1 ]
 check "growth over the period" qj "d['growth']['since'] == '2026-09-01' and d['growth']['per_day'] is not None"
+check "the daily rate is the net change over the days" qj "abs(d['growth']['per_day'] - d['growth']['delta'] / (__import__('datetime').date.fromisoformat(d['today']) - __import__('datetime').date.fromisoformat(d['growth']['since'])).days) <= 1"
 check "new episodes are counted in the changes" qj "[c['new'] for c in d['changes'] if c['name'] == 'Big Show'] == [1]"
 check "new films are counted together" qj "[c['new'] for c in d['changes'] if c['kind'] == 'films'] == [1]"
 check "Drive history shrinking is a decrease" qj "[c['delta'] < 0 for c in d['changes'] if c['kind'] == 'drive'] == [True]"
@@ -603,7 +621,7 @@ check "shared folders get 7 and 30 day deltas" qj "[s['d30'] for s in d['shares'
 check "twelve weekly points, the last one today" qj "all(len(s['weekly']) == 12 and s['weekly'][-1] == s['bytes'] for s in d['shares'])"
 
 scan 2026-10-02 EXCL=1
-check "with exclusive sizes, Drive and snapshots count only their own space" qj "d['exclusive_known'] and [p['bytes'] for p in d['parts'] if p['kind'] == 'drive'] == [240000000000] and d['reclaim']['snapshots'] == 12000000000"
+check "with exclusive sizes, Drive and snapshots count only their own space" qj "d['exclusive_known'] and [p['bytes'] for p in d['parts'] if p['kind'] == 'drive'] == [240000000000] and [p['bytes'] for p in d['parts'] if p['kind'] == 'snapshots'] == [12000000000]"
 truncate -s 2G "$Q/vol/media/media/tv/Small Show/Small.Show.S01E02.x265.mkv"
 scan 2026-10-03 NO_JELLYFIN=1
 check "without Jellyfin the page still gets its data" valid_json "$Q/dash/storage.json"
@@ -774,10 +792,10 @@ check "a snapshot named in local time with its offset" [ "$(se GMT+02-2026.10.12
 check "a snapshot named in UTC, without an offset (homes)" [ "$(se GMT-2026.10.14-01.05.04)" = "$(date -d '2026-10-14 01:05:04 +0000' +%s)" ]
 check "anything else is not a snapshot" bash -c "! (. '$ROOT/scripts/lib/json.sh'; . '$ROOT/scripts/lib/protection.sh'; _snap_epoch desktop.ini)"
 check "a disabled weekly snapshot keeps its days" pj "d['shares'][0]['snapshot'] == {'enabled': False, 'schedule': 'Mon,Tue,Wed,Thr,Fri,Sat 02:00', 'latest': None, 'count': None}"
-check "a USB task" pj "d['tasks'][0]['dest'] == 'usb' and d['tasks'][0]['target'] == 'usbshare1' and not d['tasks'][0]['encrypted']"
+check "a USB task" pj "d['tasks'][0]['dest'] == 'usb' and not d['tasks'][0]['encrypted']"
 check "its schedule comes from its sched_id" pj "d['tasks'][0]['schedule'] == 'daily 03:00' and d['tasks'][0]['enabled']"
 check "its folders pass through" pj "d['tasks'][0]['folders'] == ['/paperless', '/homes/someone/Photos']"
-check "an encrypted S3 task" pj "d['tasks'][1]['dest'] == 's3' and d['tasks'][1]['target'] == 's3.example.com' and d['tasks'][1]['encrypted']"
+check "an encrypted S3 task" pj "d['tasks'][1]['dest'] == 's3' and d['tasks'][1]['encrypted']"
 check "a task without a schedule is not enabled" pj "d['tasks'][1]['schedule'] is None and not d['tasks'][1]['enabled']"
 check "no secret leaks" not_in_file s3cr3t "$T/prot.json"
 prot /usr/bin:/bin /nonexistent >"$T/none.json"

@@ -158,8 +158,8 @@ services:
         limits:
           memory: 2G
 
-  # Seerr replaced Jellyseerr (deprecated 2026-02-14; its Jellyfin login
-  # breaks on newer Jellyfin). Seerr migrates Jellyseerr's config on its first
+  # Seerr replaced Jellyseerr (https://docs.seerr.dev/migration-guide). Seerr
+  # migrates Jellyseerr's config on its first
   # start, so it keeps the old config folder. The `jellyseerr` alias keeps
   # integrations configured with http://jellyseerr:5055 (Maintainerr) working.
   seerr:

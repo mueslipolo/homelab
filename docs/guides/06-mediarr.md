@@ -88,7 +88,9 @@ it in, `sudo docker compose up -d`.
 ### 3. Hostnames in Caddy
 
 One block per app in your Caddyfile ([03](03-https-letsencrypt.md#add-an-app)),
-service name and port from the table above. Jellyfin and qBittorrent:
+service name and port from the table above. Sonarr, Radarr and Prowlarr
+also need `import arr_no_client_ip` inside `reverse_proxy` (step 4). Jellyfin,
+qBittorrent and Sonarr:
 
 ```
 jellyfin.{$INTERNAL_DOMAIN} {
@@ -100,6 +102,14 @@ qbittorrent.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia          # only with Authelia
 	reverse_proxy qbittorrent:8090
+}
+
+sonarr.{$INTERNAL_DOMAIN} {
+	import tls_wildcard
+	import authelia
+	reverse_proxy sonarr:8989 {
+		import arr_no_client_ip
+	}
 }
 ```
 
@@ -143,8 +153,7 @@ Options → Downloads:
 - Categories are created by Sonarr/Radarr in step 6 (`tv`, `movies`); each
   saves to `/data/torrents/<category>`.
 
-No port is published: peers connect outbound only. That is slower than an
-open listening port but needs no port forward.
+No port is published: peers connect outbound only.
 
 **Check:** Options → Downloads shows `/data/torrents`.
 
@@ -196,8 +205,8 @@ with "(Prowlarr)".
 3. Users: one per person, with their own password (Jellyfin's login is the
    only control here).
 
-**Check:** play a file at a lower quality; Dashboard → Activity shows
-`Transcoding` with a hardware codec, and the CPU stays low.
+**Check:** play a file at a lower quality, so it transcodes; the NAS's CPU
+stays low.
 
 ### 9. Seerr
 
@@ -211,8 +220,7 @@ At `https://seerr.home.example.com`:
 3. Users: import the Jellyfin users; they log in with their Jellyfin
    password.
 
-**Check:** request a film; it shows in Radarr → Activity → Queue within a
-minute.
+**Check:** request a film; it shows in Radarr → Activity → Queue.
 
 ### 10. Maintainerr
 
@@ -236,7 +244,7 @@ what it selects, then enable the action.
 | Locked out of Sonarr/Radarr/Prowlarr                         | `AuthenticationMethod` set to `None`. Stop the app, set it back to `Forms` in `config.xml`, start.                                                                         |
 | Sonarr/Radarr/Prowlarr show their own login after Authelia's | `AuthenticationRequired` is not `DisabledForLocalAddresses`, or the Caddy block lacks `import arr_no_client_ip`: with `X-Forwarded-For` they treat every client as remote. |
 | qBittorrent asks for a login behind Authelia                 | Its whitelist is not the `proxy` subnet, or `proxy` was recreated with another subnet (step 4).                                                                            |
-| Indexer fails with a Cloudflare challenge                    | Tag it `flaresolverr`. Some challenges FlareSolverr cannot solve; disable those indexers. FlareSolverr needs about 1 GB of memory.                                         |
+| Indexer fails with a Cloudflare challenge                    | Tag it `flaresolverr`. Some challenges FlareSolverr cannot solve; disable those indexers. Its 1G memory limit came after OOMs at 256M.                                     |
 | Jellyfin transcodes on the CPU                               | `/dev/dri` not mapped, or `PUID` cannot open it: `ls -l /dev/dri`, check the group (`video`/`render`) and that the user is in it.                                          |
 | A `.mkv` in AV1 stutters                                     | The NAS's GPU cannot decode AV1: CPU transcode. Prefer HEVC ([media re-encoding](media-reencoding.md)).                                                                    |
 | 3D files show two pictures side by side                      | `3D`/`SBS`/`HOU` releases. Block them with a custom format scored -10000 in Sonarr/Radarr.                                                                                 |

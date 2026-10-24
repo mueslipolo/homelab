@@ -6,7 +6,7 @@
     paperless-tarmed report                extract over the cache, print the quality table
     paperless-tarmed apply                 write back; DRY RUN unless --apply is given
     paperless-tarmed serve                 run the webhook
-    paperless-tarmed refresh-tariffs       update the tariff table from the official source
+    paperless-tarmed refresh-tariffs       show what changed in the official tariff list, then save it
 """
 
 from __future__ import annotations
@@ -612,7 +612,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--log-level", default="info")
     p.set_defaults(func=cmd_serve)
 
-    p = sub.add_parser("refresh-tariffs", help="Update the tariff table from forum-datenaustausch.ch.")
+    p = sub.add_parser("refresh-tariffs", help="Show what changed in the official tariff list (forum-datenaustausch.ch), then save it.")
     p.add_argument("--dry-run", action="store_true", help="Report changes without writing.")
     p.set_defaults(func=cmd_refresh_tariffs)
 

@@ -24,11 +24,15 @@ This page is the reference.
   the runner uses `127.0.0.1:3000`, Caddy uses `PROXY_GATEWAY_IP:3000`.
 - **`user: "1000:1000"`** (the image's `git` user), not `PUID`/`PGID`: the
   data folder must be owned by UID 1000.
-- **Backup = the dump only.** A raw SQLite/repo copy restores only into the
-  same Forgejo version. No dump job, no backup
+- **Backup = the dump only.** A raw copy of a running instance can be
+  inconsistent; the dump is consistent. No dump job, no backup
   ([guide 10](../../docs/guides/10-backups-and-jobs.md), restore steps in
   [operations](../../docs/operations.md)).
 - **`FORGEJO__service__DISABLE_REGISTRATION=true`:** no signup.
+- **`FORGEJO__service__REQUIRE_SIGNIN_VIEW=true`:** nothing is visible signed
+  out, `/explore` and user pages included. A link opened without a session (from
+  ntfy, on a phone) goes to the login page and back, not to a 404 on a private repo.
+  Git and the API still work with a token or deploy key.
 - **OIDC source name `authelia`:** it is part of the callback URL
   (`/user/oauth2/authelia/callback`) registered in Authelia.
 - **Data on its own shared folder** (`<nas-volume-path>/forgejo/data`), so

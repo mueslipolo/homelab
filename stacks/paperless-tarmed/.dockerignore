@@ -1,0 +1,14 @@
+# Keep local state and patient data out of the build context. Patterns are
+# relative to this directory; under paperless_tarmed/ only .venv and
+# __pycache__ are excluded, never its data/.
+.venv
+.cache
+data/
+samples/
+*.csv
+.env
+.pytest_cache
+.ruff_cache
+uv.lock
+**/.venv
+**/__pycache__

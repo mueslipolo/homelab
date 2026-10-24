@@ -1,7 +1,7 @@
 # paperless-tarmed
 
 Reads Swiss **"Justificatif de remboursement"** / **"Rückforderungsbeleg"** forms
-(the TARMED / TARDOC standard every provider issues) in
+(TARMED / TARDOC) in
 [Paperless-ngx](https://docs.paperless-ngx.com) and fills custom fields and,
 optionally, the title. Runs as a webhook for new documents and as a CLI for
 audits and backfills. First-time setup: **[INSTALL.md](INSTALL.md)**; Paperless
@@ -21,15 +21,14 @@ itself: [guide 07](../../docs/guides/07-paperless.md).
 | `patient`         | `Patient Nom … / Prénom …` (given name)                      |
 | `treatment_date`  | **oldest** of the `Traitement` range and all line-item dates |
 | `total`           | `Montant de la facture:` (4.5G) or `A payer CHF` (4.0 H)     |
-| `total_unrounded` | `Montant total`, before 5-cent rounding                      |
+| `total_unrounded` | `Montant total`, as printed                                  |
 | `category`        | from identifiers, see below                                  |
 | `provider`        | short provider name                                          |
 | `provider_gln`    | the provider's 13-digit GLN                                  |
 
 `PAPERLESS_TARMED_FIELDS` maps any subset to your field names (`a=b,c=d`, or JSON
 if a name has a comma). Extraction is label-anchored regex over the text layer Paperless
-already made: no OCR, no ML, no LLM (the forms' Data Matrix code holds no useful
-data). A value failing a plausibility check (`PAPERLESS_TARMED_MAX_*`) is never
+already made: no OCR, no ML, no LLM. A value failing a plausibility check (`PAPERLESS_TARMED_MAX_*`) is never
 written; the document is tagged instead.
 
 ### Category
@@ -37,7 +36,7 @@ written; the document is tagged instead.
 From the **official code catalogues** — no configuration, no reading of text
 (`catalogue.py`). Each service line is a _service_ (a Tarif 590 method, a
 TARDOC or TARMED chapter, physio, psy, hospital…), a _basic position_ (TARDOC
-`AA`/`AR`, TARMED `00`, Tarif 590 `1200`) or a _supply_ (medicines,
+domain `A`, TARMED `00`/`01`/`35`, Tarif 590 chapter 1) or a _supply_ (medicines,
 materials, lab). The first group present in that order wins, and within it
 **the category with the largest total**:
 
@@ -51,12 +50,12 @@ materials, lab). The first group present in that order wins, and within it
 
 Where the data comes from:
 
-| Catalogue            | Official source                          | In `data/catalogue.json`                            |
-| -------------------- | ---------------------------------------- | --------------------------------------------------- |
-| TARMED 1.09 (`001`)  | tariff structure PDF (sumex1.net)        | all 447 chapters and sub-chapters with their titles |
-| TARDOC (`005`/`007`) | OAAT's browser, tardoc-online.ch         | all 65 domains and chapter groups, French titles    |
-| Tarif 590            | SASIS / santéservices, `tarif-590.xlsx`  | all positions: chapter → tier, French text → label  |
-| tariff types         | Forum Datenaustausch (`refresh-tariffs`) | fallback labels, `tariffs.py`                       |
+| Catalogue           | Official source                          | In `data/catalogue.json`                             |
+| ------------------- | ---------------------------------------- | ---------------------------------------------------- |
+| TARMED 1.09 (`001`) | tariff structure PDF (sumex1.net)        | all 447 chapters and sub-chapters with their titles  |
+| TARDOC (`007`)      | OAAT's browser, tardoc-online.ch         | all 65 domains and chapter groups, French titles     |
+| Tarif 590           | SASIS / santéservices, `tarif-590.xlsx`  | all positions: chapter → tier, French text → label   |
+| tariff types        | Forum Datenaustausch (`refresh-tariffs`) | reference only: labels are hardcoded in `tariffs.py` |
 
 The only editorial part is in `catalogue.py`: a short label per TARDOC/TARMED
 chapter (e.g. TARMED `08` _Auge_ → `Ophtalmo`), and for Tarif 590 methods whose
@@ -86,11 +85,11 @@ e.g. `Anna - Ostéopathie - 2025-03-15 - Muster`. Unfillable segments are droppe
 - Custom fields **fill blanks only**, unless `apply --overwrite` /
   `PAPERLESS_TARMED_WEBHOOK_OVERWRITE=1`.
 - Titles only with `apply --title` / `PAPERLESS_TARMED_WEBHOOK_TITLE=1`.
-- The review tag goes only on a justificatif with a skipped or substituted value.
+- The review tag goes only on a justificatif with an extraction warning (a skipped
+  or substituted value, a missing provider or service table, several justificatifs).
   A document with no form page is left alone, unless its Paperless type is
   `PAPERLESS_TARMED_DOCUMENT_TYPE`.
 - The done tag (`tarmed`) goes on a justificatif read with nothing to review.
-  A justificatif without either tag was never processed.
 - A **note** on the document records each outcome with its date and time: the
   reasons when it is first tagged for review (or the webhook crashed), the
   values and title written on success. A run that writes nothing adds no note.
@@ -106,13 +105,13 @@ Locally, `.env` is read (`--env-file` for another); real environment variables w
 
 | Command             | Does                                                                                                                           |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `extract FILE.pdf…` | Offline. Shows values, GLN/RCC, category source. `--json`, `--show-text`.                                                      |
+| `extract FILE.pdf…` | Offline. Shows values, GLN, category source. `--json`, `--show-text`.                                                          |
 | `fields`            | Values, your custom fields, the mapping, document types.                                                                       |
 | `pull`              | Download matching documents into the cache. `--refresh` re-downloads.                                                          |
 | `report`            | Quality table, then categories found and codes missing from the catalogue tables. `--only fail,differ`, `--csv`, `--out FILE`. |
 | `apply`             | **Dry run** unless `--apply`. `--overwrite`, `--title`, `--no-tags`, `--journal PATH`.                                         |
 | `serve`             | The webhook (container default). `--host`, `--port 8000`, `--log-level`.                                                       |
-| `refresh-tariffs`   | Update the tariff table. `--dry-run`.                                                                                          |
+| `refresh-tariffs`   | Show what changed in the official tariff list, then save it. `--dry-run`.                                                      |
 
 Selection flags for `pull`, `report`, `apply`: `--document-type NAME|ID`, `--tag`,
 `--query`, `--id N` (repeatable), `--since 2y|18m|90d|6w|YYYY-MM-DD`, `--limit N`.
@@ -158,16 +157,19 @@ container give `--since` explicitly.
 turns amber ("update waiting"). Portainer → **Pull and redeploy** turns it green;
 red means the container is gone.
 
-**Tariff table** (official names shown by `report`; the list changes):
+**Tariff table**: the official list of tariff types, kept only to see what
+changed. Nothing reads it for categories or labels; those are hardcoded in
+`tariffs.py`. A refresh prints the codes added, removed or renamed, so a new
+one can be added there:
 
 ```bash
 docker exec paperless-tarmed paperless-tarmed refresh-tariffs --dry-run
 docker exec paperless-tarmed paperless-tarmed refresh-tariffs
 ```
 
-Writes `/data/tariff_types.json`, which survives redeploys and wins over the
-image's generated copy (never hand-edit that). Needs `www.forum-datenaustausch.ch`,
-the only outbound access. Categories come from `tariffs.py`, not this table.
+Writes `/data/tariff_types.json`, the baseline for the next refresh's
+comparison; it survives redeploys and wins over the image's copy. Needs
+`www.forum-datenaustausch.ch`, the only outbound access.
 
 **Local use** (Python 3.11+): `python3 -m venv .venv && .venv/bin/pip install -e
 ".[dev,serve]" && cp .env.example .env`.
@@ -192,7 +194,7 @@ the only outbound access. Categories come from `tariffs.py`, not this table.
 
 ## Gotchas
 
-- **Use Document Added, not Document Updated.** `WEBHOOK_OVERWRITE` / `WEBHOOK_TITLE` make every run modify the document, so an update trigger loops (and renames files if `PAPERLESS_FILENAME_FORMAT` uses the title).
+- **Use Document Added, not Document Updated.** With `WEBHOOK_OVERWRITE` / `WEBHOOK_TITLE`, an update trigger makes the webhook revert manual edits on every update (and rename files if `PAPERLESS_FILENAME_FORMAT` uses the title).
 - **Portainer never builds this image** (`pull_policy: never`, no `build:` in compose): its rebuilds were unreliable and silently kept old code. Only the `build-images` job builds; a redeploy with no image fails with "No such image" — run the job (or `scripts/build-images.sh paperless-tarmed=paperless-tarmed:0.1.0`) first. Which code is running: `docker exec paperless-tarmed grep -c <new string> /usr/local/lib/python3*/site-packages/paperless_tarmed/<file>.py`.
 - **`webserver` must stay in Paperless's `PAPERLESS_ALLOWED_HOSTS`** (`stacks/paperless/compose.yaml`). Otherwise Django answers a bodyless 400 and logs nothing.
 - **The repo root ignores `**/data/`.** This directory's `.gitignore`re-includes`paperless_tarmed/data/` with a directory-level negation; a file-level one silently does nothing.

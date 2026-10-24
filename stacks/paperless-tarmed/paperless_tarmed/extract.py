@@ -1,9 +1,10 @@
 """Reading fields off a justificatif.
 
-Two label dialects appear in the wild and both are supported:
+Three label dialects are handled (the samples seen so far):
 
   Release 4.5G/fr   'Traitement 15.03.2025 - 20.05.2025'    'Montant de la facture: 62.55'
   Release 4.0 H     'Traitement du 15.03.2025 au 20.05.2025'  'A payer CHF 62.55'
+  Release 5.0       two-digit years, 'Montant dû: 81.60', wrapped labels
 
 Everything here is label-anchored. Nothing depends on coordinates or column
 positions, because OCR shifts those around.

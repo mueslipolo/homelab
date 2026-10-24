@@ -6,8 +6,9 @@
 #
 # Incremental: unchanged documents are not rewritten, and -d deletes files of
 # documents that are gone, so the folder mirrors the archive and the backups
-# only carry what changed. The export restores into any Paperless version
-# (document_importer), unlike the raw media folder and database.
+# only carry what changed. document_importer restores the export into the
+# same Paperless version (pin that image tag, then upgrade); the raw media
+# folder alone would also need the database.
 set -euo pipefail
 
 readonly EXPORT="/usr/src/paperless/export" # inside the container

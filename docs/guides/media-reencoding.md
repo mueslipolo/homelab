@@ -4,10 +4,8 @@
 
 ## What you get
 
-Large H.264 (or older) files re-encoded to HEVC in place, typically 3–6×
-smaller with no visible loss. It runs on a desktop with an Intel GPU and the
-`media` share mounted, not on the NAS: the NAS's GPU is about 5× slower and
-gives a worse size for the same quality.
+Large H.264 (or older) files re-encoded to HEVC in place. It runs on a desktop
+with an Intel GPU and the `media` share mounted, not on the NAS.
 
 **Presets**, by type of material (numbers in `reencode-presets.sh`):
 
@@ -54,7 +52,6 @@ It encodes the same excerpt with each preset into
 `~/reencode/compare/<episode>/`:
 
 - `summary`: estimated episode size and saving, and VMAF if ffmpeg has libvmaf
-  (95+ means indistinguishable)
 - `split-<preset>.mkv`: original left, re-encode right
 - `frames/`: matching still frames
 
@@ -80,12 +77,11 @@ profile without upgrades. Otherwise they may download the large release again.
 
 ## Troubleshooting
 
-| Symptom                                | Cause → fix                                                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `Read error at pos …` on large files   | The share is mounted through GVFS (`smb://`). Use the kernel CIFS mount above.                                      |
-| `vainfo` fails                         | Driver too old for the GPU; see Before you start.                                                                   |
-| Jellyfin stutters on a re-encoded file | You chose AV1: the NAS cannot decode it in hardware. Use HEVC.                                                      |
-| 3D picture (two images side by side)   | `3D`/`SBS`/`HOU` release; re-encoding keeps it 3D. Replace it, and block 3D in Sonarr/Radarr ([06](06-mediarr.md)). |
+| Symptom                              | Cause → fix                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `Read error at pos …` on large files | The share is mounted through GVFS (`smb://`). Use the kernel CIFS mount above.                                      |
+| `vainfo` fails                       | Driver too old for the GPU; see Before you start.                                                                   |
+| 3D picture (two images side by side) | `3D`/`SBS`/`HOU` release; re-encoding keeps it 3D. Replace it, and block 3D in Sonarr/Radarr ([06](06-mediarr.md)). |
 
 ## Next
 

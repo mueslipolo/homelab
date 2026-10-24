@@ -3,9 +3,10 @@
 # container into MEALIE_DUMP_DIR, and prunes old copies on both sides. Runs as
 # root from scripts/run-jobs.sh (see scripts/jobs.conf) -- needs docker exec/cp.
 #
-# Mealie's backup export is portable across versions, unlike a raw Postgres
-# data directory, which is why Hyper Backup takes these dumps and not
-# MEALIE_PGDATA_PATH (docs/guides/10-backups-and-jobs.md).
+# Mealie's own backup, restored through its UI into the same Mealie version
+# (then upgrade; a mismatched one is refused), unlike a raw Postgres data
+# directory: Hyper Backup takes these dumps and not MEALIE_PGDATA_PATH
+# (docs/guides/10-backups-and-jobs.md).
 set -euo pipefail
 
 # shellcheck source=scripts/lib/dump.sh

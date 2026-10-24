@@ -1,8 +1,9 @@
 name: renovate
 
 on:
-  # Daily: automerged updates land the day after their checks pass, and the
-  # 07:00 renovate-notify job sees new approvals the same morning.
+  # Daily: automerged updates land the day after their checks pass. If
+  # Forgejo's cron runs in Europe/Zurich, the 07:00 renovate-notify job sees
+  # new approvals the same morning.
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
@@ -23,7 +24,7 @@ jobs:
           # Internal proxy-network path, NOT https://forgejo.<public-domain>/ —
           # that resolves to Caddy's macvlan IP, which a job container cannot
           # hairpin back to (stacks/edge/README.md, "Reaching Caddy itself from
-          # another container"). Requires the runner to place job containers on
+          # a container"). Requires the runner to place job containers on
           # the `proxy` network; see stacks/forgejo-runner/README.md.
           RENOVATE_ENDPOINT: http://forgejo:3000/api/v1
           # Build clone URLs from RENOVATE_ENDPOINT instead of the API's
@@ -44,13 +45,14 @@ jobs:
           # GITEA_). The env var below must keep the GITHUB_COM_TOKEN name
           # regardless — that exact string is what Renovate reads.
           GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_COM_TOKEN }}
-          # Explicit list, because RENOVATE_AUTODISCOVER is false below: a repo
-          # is invisible to Renovate until it is named here.
           # Renovate's commits get their own neutral identity. Without this
           # they carry the token owner's Forgejo name and email, which then
           # go public with the GitHub copy.
           RENOVATE_GIT_AUTHOR: "Renovate Bot <bot@renovateapp.com>"
-          RENOVATE_REPOSITORIES: yves/homelab
+          # Explicit list, because RENOVATE_AUTODISCOVER is false below: a repo
+          # is invisible to Renovate until it is named here. This one, by the
+          # name Forgejo runs the workflow for.
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_AUTODISCOVER: "false"
           # The renovate image runs as uid 12021, but act_runner's job cwd
           # (/workspace/<owner>/<repo>) is auto-created by Docker as root:root

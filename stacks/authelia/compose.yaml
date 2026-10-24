@@ -1,11 +1,7 @@
 services:
   postgres:
-    # Replaces the SQLite storage backend — under concurrent write load
-    # (routine session/regulation writes from every full-gate app's
-    # forward-auth traffic, plus OIDC consent writes) SQLite's single-writer
-    # limitation produced real, reproducible "database is locked" failures,
-    # not just theoretical risk. Authelia's own guidance: PostgreSQL is the
-    # recommended backend once this happens with any regularity.
+    # Replaces the SQLite storage backend, which logged "database is locked"
+    # errors here.
     image: postgres:17
     restart: unless-stopped
     environment:
@@ -51,7 +47,7 @@ services:
       # not a container) — same mechanism as stacks/edge's Portainer/Forgejo
       # reverse_proxy blocks, needed here because Authelia's own LDAP client
       # runs inside this container, not on the host. See stacks/edge/README.md's
-      # "Reaching host-level services" gotcha before changing this.
+      # "Host services … via PROXY_GATEWAY_IP" gotcha before changing this.
       PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
       LDAP_BASE_DN: ${LDAP_BASE_DN}
       X_AUTHELIA_CONFIG_FILTERS: template

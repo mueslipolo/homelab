@@ -73,7 +73,7 @@ shares_json() { # <schedules>
 	printf '['
 	command -v synoshare >/dev/null || { printf ']'; return; }
 	while IFS= read -r name; do
-		# usbshareN are USB disks: backup destinations, not data.
+		# usbshareN are USB disks: here, only backup destinations.
 		case $name in '' | usbshare*) continue ;; esac
 		path=$(synoshare --get "$name" 2>/dev/null | sed -n 's/^[[:space:]]*Path[ .]*\[\(.*\)\][[:space:]]*$/\1/p' | head -n 1)
 		[ "$first" -eq 1 ] || printf ', '
@@ -89,16 +89,16 @@ shares_json() { # <schedules>
 # quoted; backup_folders is a JSON array of share-relative paths, passed on as
 # is. Fields go through as \x1f-separated: a tab would collapse empty ones.
 tasks_json() { # <schedules>
-	local first=1 name sched enc folders kind target line
+	local first=1 name sched enc folders kind line
 	[ -r "$HYPERBACKUP_CONF" ] || { printf '[]'; return; }
 	printf '['
-	while IFS=$'\x1f' read -r name kind target enc sched folders; do
+	while IFS=$'\x1f' read -r name kind enc sched folders; do
 		[[ $folders =~ ^\[.*\]$ ]] || folders='[]'
 		line=$(awk -F'|' -v id="$sched" '$1 == id' <<<"$1" | head -n 1)
 		[ "$first" -eq 1 ] || printf ', '
 		first=0
-		printf '{"name": %s, "dest": %s, "target": %s, "encrypted": %s, "enabled": %s, "schedule": %s, "folders": %s}' \
-			"$(json_str "$name")" "$(json_str "$kind")" "$(json_str "$target")" \
+		printf '{"name": %s, "dest": %s, "encrypted": %s, "enabled": %s, "schedule": %s, "folders": %s}' \
+			"$(json_str "$name")" "$(json_str "$kind")" \
 			"$([ "$enc" = true ] && echo true || echo false)" \
 			"$([ -n "$line" ] && [ "$(cut -d'|' -f2 <<<"$line")" = enabled ] && echo true || echo false)" \
 			"$([ -n "$line" ] && json_str "$(_when "$line")" || echo null)" "$folders"
@@ -114,8 +114,7 @@ tasks_json() { # <schedules>
 				if (trans == "local") kind = (share ~ /^usbshare/) ? "usb" : "local"
 				else if (trans == "aws_s3") kind = "s3"
 				else kind = trans
-				target = (conf[r, "remote_url"] != "") ? conf[r, "remote_url"] : share
-				printf "%s\037%s\037%s\037%s\037%s\037%s\n", conf[t, "name"], kind, target,
+				printf "%s\037%s\037%s\037%s\037%s\n", conf[t, "name"], kind,
 					conf[t, "enable_data_encrypt"], conf[t, "sched_id"], conf[t, "backup_folders"]
 			}
 		}' "$HYPERBACKUP_CONF")

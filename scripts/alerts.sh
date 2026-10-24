@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Pushes the dashboard's warnings to ntfy as they happen, so nobody has to look
-# at the dashboard: a scheduled job failed; a container crashed, restart-loops
-# or is unhealthy; a phone or computer stopped backing up; the volume is filling
-# up or grew unusually in a day; the scheduler cannot update its clone. Run by scripts/run-jobs.sh after every status.json refresh
-# (every 15 minutes) when NTFY_TOKEN is set.
+# Pushes these dashboard warnings to ntfy as they happen: a scheduled job
+# failed; a Hyper Backup task failed, was partial or is over 2 days old; a dump
+# is missing or over 2 days old; a share's newest snapshot is over 2 days old;
+# a container exited with an error, restart-loops, is unhealthy or was
+# restarted by docker in the last 20 minutes; a phone or computer stopped
+# backing up; the volume is filling up, or grew more than ALERT_GROWTH_GB
+# between the last two daily scans; the scheduler cannot update its clone. Not pushed: stacks or images behind git,
+# and a stale storage scan. Run by scripts/run-jobs.sh after every status.json
+# refresh (every 15 minutes) when NTFY_TOKEN is set.
 #
 # Pushes on changes only: an item turning amber or red, or getting worse, and
 # its return to normal. One late backup is one notification, not one per tick.
@@ -13,7 +17,8 @@
 #   NTFY_TOKEN          ntfy publish token
 #   NTFY_ALERT_TOPIC    default homelab
 #   DASHBOARD_URL       optional, e.g. https://dashboard.<domain>: tapping opens its tab
-#   ALERT_GROWTH_GB     default 100: a day's growth above this is reported
+#   ALERT_GROWTH_GB     default 100: growth between the last two daily scans
+#                       above this is reported
 set -euo pipefail
 
 # shellcheck source=scripts/lib/json.sh
@@ -49,6 +54,30 @@ current=$(
 	      (if .exit != 0 then "Job failed: " + .name else "Job ok again: " + .name end),
 	      (if .exit != 0 then "exit \(.exit): \(.message // "")" else "" end) ]),
 
+	  (($st.backups // [])[] |
+	    (if .result == "failed" then "bad"
+	     elif .result == "partial" or $now - (.at // 0) > 2 * 86400 then "warn" else "ok" end) as $lvl |
+	    [ "backup:" + .task, $lvl, "backups",
+	      (if $lvl == "ok" then "Hyper Backup ok again: " + .task
+	       elif .result == "failed" or .result == "partial" then "Hyper Backup " + .result + ": " + .task
+	       else "Hyper Backup: " + .task + " last ran \(days($now - (.at // 0))) days ago" end),
+	      (if $lvl == "ok" then "" else .message // "" end) ]),
+
+	  (($st.dumps // [])[] |
+	    (if (.latest // 0) == 0 or $now - .latest > 2 * 86400 then "bad" else "ok" end) as $lvl |
+	    [ "dump:" + .name, $lvl, "backups",
+	      (if $lvl == "ok" then "Dump ok again: " + .name
+	       elif (.latest // 0) == 0 then "No dump yet: " + .name
+	       else "Dump is \(days($now - .latest)) days old: " + .name end),
+	      (if $lvl == "ok" then "" else .file // "" end) ]),
+
+	  (($st.protection.shares // [])[] | select(.snapshot.enabled and (.snapshot.latest // 0) > 0) |
+	    (if $now - .snapshot.latest > 2 * 86400 then "warn" else "ok" end) as $lvl |
+	    [ "snapshot:" + .name, $lvl, "backups",
+	      (if $lvl == "ok" then "Snapshots ok again: " + .name
+	       else "Newest snapshot of " + .name + " is \(days($now - .snapshot.latest)) days old" end),
+	      (if $lvl == "ok" then "" else "schedule: \(.snapshot.schedule // "?")" end) ]),
+
 	  (($st.devices.devices // [])[] |
 	    ([.last_seen // 0, .newest_photo // 0] | max) as $last |
 	    (if $last == 0 then 1e12 else $now - $last end) as $age |
@@ -68,7 +97,7 @@ current=$(
 	       then ["bad", (if .oom then "killed: out of memory" else "crashed (exit \(.exit_code))" end)]
 	     elif .health == "unhealthy" then ["warn", "unhealthy"]
 	     elif .state == "running" and .restarts > 0 and ($now - (.started // 0)) < 1200
-	       then ["warn", "restarted by docker after a crash (\(.restarts) so far)"]
+	       then ["warn", "restarted by docker (\(.restarts) times)"]
 	     else ["ok", ""] end) as $c |
 	    [ "container:" + .name, $c[0], "system",
 	      (if $c[0] == "ok" then "Container " + .name + " is running again"
@@ -87,9 +116,12 @@ current=$(
 	      (if .pull_ok then "" else .pull_error // "" end) ]),
 
 	  (($sg.daily // []) | select(length >= 2) |
-	    (.[-1][1] - .[-2][1]) as $d | .[-1][0] as $day |
+	    (.[-1][1] - .[-2][1]) as $d | .[-1][0] as $day | .[-2][0] as $prev |
+	    # Two scans in a row are a day apart unless one is missing.
+	    (if ((($day + "T00:00:00Z") | fromdateiso8601) - (($prev + "T00:00:00Z") | fromdateiso8601)) > 86400
+	     then "since \($prev)" else "on \($day)" end) as $span |
 	    [ "growth:" + $day, (if $d > $growth_gb * 1073741824 then "warn" else "ok" end), "storage",
-	      "Used space grew \($d / 1073741824 | floor) GB on \($day)",
+	      "Used space grew \($d / 1073741824 | floor) GB \($span)",
 	      "more than the \($growth_gb) GB alert threshold" ])
 	] | .[] | map(clean) | join("\t")'
 )

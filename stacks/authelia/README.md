@@ -12,7 +12,7 @@ This page is the reference.
 | Reached at | `https://auth.<internal-domain>` via Caddy (`authelia:9091` inside, no published port). Login: it is the portal                                                                                                |
 | Data       | `AUTHELIA_SECRETS_ROOT` → secret files (**back up**)                                                                                                                                                           |
 |            | `AUTHELIA_DATA_ROOT` → `notification.txt` (filesystem notifier, no SMTP), old `users_database.yml` (rollback)                                                                                                  |
-|            | `AUTHELIA_PGDATA_PATH` → Postgres: sessions, consent, regulation (disposable)                                                                                                                                  |
+|            | `AUTHELIA_PGDATA_PATH` → Postgres: consent, regulation, OIDC state (disposable)                                                                                                                                |
 | Needs      | `proxy` network, [edge](../edge/README.md), DSM LDAP Server at `PROXY_GATEWAY_IP:389`; the stack creates private `authelia_db`                                                                                 |
 | Used by    | gated apps ([mediarr](../mediarr/README.md), [dashboard](../dashboard/README.md)); OIDC clients [paperless](../paperless/README.md), [mealie](../mealie/README.md), [forgejo](../forgejo/README.md), Portainer |
 | Config     | `.env.example` (every variable, and the list of secret files), `config/configuration.yml`                                                                                                                      |
@@ -32,7 +32,8 @@ This page is the reference.
   for the Postgres server; it must equal `secrets/postgres_password`.
 - **Digest to Authelia, password to the app.** Swapped, the handshake fails
   with an auth error, not a config error.
-- **Losing `storage_encryption_key` or the JWKS key breaks every OIDC client.**
+- **`storage_encryption_key` encrypts sensitive data in Postgres; the JWKS
+  key (`oidc_jwks_private_key.pem`) signs OIDC tokens.**
 - **Keep `X_AUTHELIA_CONFIG_FILTERS: template`**, else `{{ mustEnv … }}` stays
   literal and fails URL parsing. Keys use `secret` (strips trailing newlines),
   not `fileContent`.
@@ -63,7 +64,7 @@ This page is the reference.
   every login.
 - **Denied users see no Authelia page**: look for `error=access_denied` in the
   client's URL (Portainer shows nothing).
-- **Postgres, not SQLite:** SQLite gave `database is locked` errors under
-  forward-auth load. Switching backends starts empty: everyone logs in and
-  consents again.
+- **Postgres, not SQLite:** SQLite logged `database is locked` errors. Login
+  sessions are in memory, not in Postgres. Switching backends starts empty:
+  everyone consents again.
 - **Regulation:** 5 failures in 10 minutes → 1-hour ban.

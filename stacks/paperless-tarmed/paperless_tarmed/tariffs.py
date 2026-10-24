@@ -1,10 +1,10 @@
 """Tariff type -> short category, for the document title.
 
-The authoritative code list lives in `data/tariff_types.json`, generated from the
-official Forum Datenaustausch 'Tariftyp-Liste' by `paperless-tarmed refresh-tariffs`.
-Never hand-edit that file; re-run the refresh instead.
+`data/tariff_types.json` is the official Forum Datenaustausch 'Tariftyp-Liste',
+written by `paperless-tarmed refresh-tariffs`. Only that command reads it, to
+show what changed; nothing here depends on it. Never hand-edit it.
 
-The grouping below *is* editorial -- it maps official codes onto short labels
+The grouping below is editorial -- it maps official codes onto short labels
 readable in a title -- so it lives in code where it survives a refresh. It can be
 overridden or extended per deployment via PAPERLESS_TARMED_CATEGORIES. Anything
 unmapped yields no category, and the title simply omits that segment.

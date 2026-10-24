@@ -126,7 +126,8 @@ def _total(raw: RawJustificatif, cfg: Config, warnings: list[str]) -> FieldOutco
     if value is None:
         value = raw.montant_total
         if value is not None:
-            # These differ by Swiss 5-cent rounding, so this is not a silent swap.
+            # Not a silent swap: 'Montant total' can differ by rounding, a
+            # deposit or a fee, hence the warning.
             warnings.append(
                 "payable amount ('Montant de la facture' / 'A payer') not found; "
                 "used 'Montant total' instead"

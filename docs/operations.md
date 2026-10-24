@@ -18,7 +18,9 @@ conventions a new stack follows. Setting things up is in the
   commit per publish to the public copy, authored by the public identity,
   after the real-values check and gitleaks pass. Never `git push` to GitHub
   directly: it would publish Renovate's and the merges' commits.
-- **Images are pinned** to exact tags. Renovate runs daily: minor and patch
+- **Images are pinned** to a version tag (exact where upstream publishes one;
+  `postgres:17`, `redis:8`, Forgejo `17.0` and nginx `1.31` float within that
+  version). Renovate runs daily: minor and patch
   updates merge themselves once CI passes; majors (and Forgejo, Portainer)
   wait for approval on its Dependency Dashboard, and ntfy tells you
   ([guide 04](guides/04-forgejo-gitops.md#5-ci-runner-checks-renovate-optional),
@@ -65,7 +67,7 @@ Exceptions:
 - **`paperless-tarmed`**: Portainer never builds its image (it rebuilt
   unreliably). The poll redeploys on the push, before the `build-images` job
   has built the new image (within 15 minutes), so the old one keeps running;
-  the dashboard shows amber "update waiting". Then **Pull and redeploy** by
+  the dashboard shows amber "build pending", then "redeploy needed". Then **Pull and redeploy** by
   hand.
 - **`edge`** builds in Portainer (`pull_policy: build`), and a redeploy may
   still reuse the old image. After a `Dockerfile` change, check its container
@@ -116,8 +118,10 @@ Web editor stacks from it until Forgejo is back.
   breaks kept); pre-commit fixes it, CI checks it.
 - Every service: `restart: unless-stopped`,
   `security_opt: [no-new-privileges:true]`, `cap_drop: [ALL]` plus only the commented
-  `cap_add` it needs, a `deploy.resources.limits.memory`.
-- Images pinned to an exact tag (Renovate updates them). A locally built image
+  `cap_add` it needs, a `deploy.resources.limits.memory` (exception:
+  `forgejo-runner`, which has docker.sock, has no `cap_drop`).
+- Images pinned to a version tag, exact where upstream publishes one (Renovate
+  updates them). A locally built image
   is built by the `build-images` job (`scripts/jobs.conf`), not by Portainer:
   compose gets `pull_policy: never` and no `build:` (as `paperless-tarmed`).
 - `container_name` only when a host command uses it (`forgejo`,

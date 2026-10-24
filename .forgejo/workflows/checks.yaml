@@ -1,10 +1,11 @@
 name: checks
 
 # Server-side copy of the pre-commit hooks, plus the paperless-tarmed tests and
-# lint. Pre-commit alone is opt-in per clone and skipped by --no-verify; this is
-# the gate that cannot be. Push-only: Renovate's PR branches live in this repo,
-# so their pushes trigger it too, and no fork PR can ever reach the runner —
-# which matters, because the runner holds the host's docker.sock.
+# lint. Pre-commit alone is opt-in per clone and skipped by --no-verify; this
+# runs on every push but only reports after it: it blocks nothing. Push-only:
+# Renovate's PR branches live in this repo, so their pushes trigger it too, and
+# fork PRs don't trigger it. The runner is instance-wide (and holds the host's
+# docker.sock): any repo on this Forgejo can send it jobs.
 on:
   push:
   workflow_dispatch:

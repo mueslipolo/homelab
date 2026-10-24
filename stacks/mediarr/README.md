@@ -20,20 +20,19 @@ This page is the reference.
 
 ## Gotchas
 
-- **Never set `AuthenticationMethod` to `None`.** Recent versions reject it and
-  lock the app. Leave `Basic`/`Forms`; `DisabledForLocalAddresses` suffices
+- **Never set `AuthenticationMethod` to `None`.** Leave `Basic`/`Forms`; `DisabledForLocalAddresses` suffices
   because Caddy's requests come from a Docker private range.
 - **Caddy drops `X-Forwarded-For` for Sonarr, Radarr and Prowlarr**
-  (`arr_no_client_ip` in the Caddyfile). With the header, they treat even a
-  LAN client as remote and show their own login after Authelia's (seen on
-  Prowlarr 2.6: `200` without the header, `302 /login` with
+  (`arr_no_client_ip` in the Caddyfile). With the header, a LAN client is
+  treated as remote and gets the app's own login after Authelia's (tested on
+  Prowlarr 2.6 only: `200` without the header, `302 /login` with
   `X-Forwarded-For: 192.168.x.x`). Their logs then show Caddy's address.
 - **qBittorrent whitelist = `proxy` subnet**, not the LAN. Update it if the
   network is recreated with another subnet.
 - **Same `/data/torrents` path in qBittorrent and the \*arrs**: hardlinks, no
   remote path mapping. Don't mount downloads and library separately.
-- **Seerr, not Jellyseerr.** Jellyseerr was deprecated on 2026-02-14 and its
-  Jellyfin login fails on newer Jellyfin. Seerr migrated its config in place on
+- **Seerr, not Jellyseerr.** Seerr replaces Jellyseerr
+  ([migration guide](https://docs.seerr.dev/migration-guide)). Seerr migrated its config in place on
   first start, so the config folder is still `MEDIARR_CONFIG_ROOT/jellyseerr`,
   and the service keeps a `jellyseerr` network alias for integrations set up
   with that host. `jellyseerr.<internal-domain>` redirects to `seerr.`.
@@ -43,7 +42,7 @@ This page is the reference.
 - **Jellyfin transcoding** maps `/dev/dri/renderD128` and `/dev/dri/card0`;
   `PUID` must be able to open them (host `render`/`video` group).
 - **Hardening.** All: `no-new-privileges`, `cap_drop: [ALL]`. LSIO images (all
-  but flaresolverr, maintainerr) add `CHOWN, SETUID, SETGID, DAC_OVERRIDE`.
+  but flaresolverr, seerr, maintainerr) add `CHOWN, SETUID, SETGID, DAC_OVERRIDE`.
   maintainerr runs as `${PUID}:${PGID}` without caps; if it can't write its
   config folder, give it the same `cap_add` (untested).
 - **Memory limits are estimates** (jellyfin 2G, qbittorrent 1G, flaresolverr 1G
@@ -53,7 +52,6 @@ This page is the reference.
   UIs (guide 06, steps 5–10).
 - **Indexers behind Cloudflare challenges FlareSolverr can't solve** are
   disabled here (7 of 14: 1337x, BitSearch, NorTorrent, OxTorrent-vip,
-  TorrentGalaxyClone, YourBittorrent, ZkTorrent). Not a resource issue (CPU <
-  3 %).
+  TorrentGalaxyClone, YourBittorrent, ZkTorrent).
 - **Orphaned `bazarr` container** on a NAS that ran an older version: stop and
   remove it before deploying (bazarr is no longer in the stack).

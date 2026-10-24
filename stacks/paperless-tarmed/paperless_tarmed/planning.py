@@ -153,8 +153,6 @@ def outcome_marks(
       listing what was written -- only when something was, so a re-run that
       changes nothing leaves no trace.
     - anything else (not a justificatif): nothing.
-
-    A justificatif without the done tag has therefore never been processed.
     """
     when = when or datetime.now().astimezone()
     stamp = f"paperless-tarmed, {when:%Y-%m-%d %H:%M}"

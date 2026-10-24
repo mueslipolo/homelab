@@ -20,7 +20,7 @@ token and two lines change, see [Another DNS provider](#another-dns-provider).
 - **One wildcard certificate** for all apps: the certificate transparency logs,
   which are public, show `*.home.example.com` and not the names of your apps.
 - **Caddy gets its own LAN IP** (macvlan): DSM's nginx holds ports 80 and 443
-  on the NAS's IP and puts them back after updates.
+  on the NAS's IP.
 - **Caddy is built with the Infomaniak plugin** (`stacks/edge/Dockerfile`,
   `xcaddy`): the official image has no DNS providers.
 
@@ -93,7 +93,7 @@ sudo docker compose logs -f caddy
 ```
 
 **Check:** the log shows `certificate obtained successfully` for
-`*.home.example.com` within a minute or two (the TXT record has to propagate).
+`*.home.example.com`.
 
 ### 4. Point the LAN's DNS at Caddy
 

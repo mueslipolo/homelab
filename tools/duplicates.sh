@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Find identical files inside ONE folder and delete the extra copies, keeping
 # one of each. Runs on the laptop, over the cifs mount of the NAS share (see
-# stacks/mediarr/README.md, "Re-encoding", for the mount).
+# docs/guides/media-reencoding.md for the mount).
 #
 #   duplicates.sh [-a] [-k PATTERN]... [-m SIZE] DIR
 #
@@ -73,7 +73,7 @@ plan="$OUT/$stamp-plan.txt"
 # belong to different photos.
 log="$OUT/$stamp-log.txt"
 echo "Looking for duplicates in $DIR..."
-echo "(the last stage reads every candidate file in full; on the NAS roughly 5-10 min per 100 GB)"
+echo "(the last stage reads every candidate file in full)"
 # Identical = same size, same first and last bytes, and the same BLAKE3
 # (cryptographic) hash of the whole content; fclones' default hash is faster
 # but not cryptographic, and these are photos about to be deleted.

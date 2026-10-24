@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Nightly picture of the disk for the dashboard's Storage tab: where the
-# space goes, how it changes, and which series and films are worth
-# re-encoding. Writes $DASHBOARD_LOCAL_DIR/storage.json; keeps its history
+# space goes, how it changes, and the size of each series and film.
+# Writes $DASHBOARD_LOCAL_DIR/storage.json; keeps its history
 # and probe cache in $OPS_HOME/storage/. Runs as root from run-jobs.sh.
 #
 # Sources:
 #   df                      volume total, used, free
 #   btrfs qgroups           size per shared folder, Drive history, snapshots
 #   btrfs filesystem du     Drive history's own space, when qgroups lack it
-#   docker system df        Docker's share and what a prune would free
-#   find + ffprobe          the media library: size, length and codec per
+#   docker system df        Docker's share
+#   find + ffprobe          the media library: size and length per
 #                           file (ffprobe runs in the Jellyfin container; a
 #                           file is probed once, then remembered by its
 #                           path, size and date), then summed per title
@@ -45,12 +45,11 @@ trap 'rm -rf -- "$TMP"' EXIT
 read -r total used free < <(df -B1 -P "$VOLUME" | awk 'NR == 2 { print $2, $3, $4 }')
 subvolumes >"$TMP/subvols.tsv"      # name \t kind \t rfer \t excl
 drive_own "$TMP/subvols.tsv"
-docker_usage >"$TMP/docker.tsv"     # total \t reclaimable
-recycle_bins "$VOLUME" >"$TMP/recycle.tsv"
+docker_usage >"$TMP/docker.tsv"
 if [ -n "$MEDIA" ] && [ -d "$MEDIA" ]; then
 	media_files "$MEDIA" >"$TMP/files.tsv"                            # rel \t size \t mtime
 	probe_new "$TMP/files.tsv" "$STATE/probe.tsv" "$IN_CONTAINER"     # updates the cache
-	media_items "$TMP/files.tsv" "$STATE/probe.tsv" >"$TMP/items.tsv" # kind \t name \t bytes \t files \t episodes \t secs \t hevc \t saving
+	media_items "$TMP/files.tsv" "$STATE/probe.tsv" >"$TMP/items.tsv" # kind \t name \t bytes \t files \t episodes \t secs
 	media_seasons "$TMP/files.tsv" >"$TMP/seasons.tsv"                # series \t season \t bytes \t episodes
 else
 	: >"$TMP/items.tsv"

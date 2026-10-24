@@ -60,14 +60,14 @@ server:
 .forgejo/ci=homelab-ci:1` by hand).
 
 - **Register with `forgejo-cli`, not a web UI token:** `forgejo-runner register --token …`
-  fails with `invalid_argument: runner registration token not found` and is deprecated.
+  fails with `invalid_argument: runner registration token not found`.
 - **Data wiped?** Re-register with the **same secret** (same UUID) and rewrite
   `config.yaml`. A new secret makes a new runner entry.
 - **`config.yaml` is read only at start**, silently: `docker restart forgejo-runner`
   after edits. What's live:
   ```bash
   grep -A4 '^container:' "$RUNNER_DATA_ROOT"/config.yaml
-  docker run --rm --network proxy alpine wget -qO- http://forgejo:3000/api/v1/version
+  docker run --rm --network proxy alpine wget -qO- http://forgejo:3000/api/healthz
   ```
 - **Keep `container.network: proxy`:** job containers don't inherit host
   networking; on their own `WORKFLOW-<hash>` bridge `forgejo:3000` doesn't

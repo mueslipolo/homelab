@@ -3,9 +3,8 @@
 # running Synology Drive Client) still doing it? Sourced by dashboard-status.sh
 # (needs scripts/lib/json.sh).
 #
-# Which devices: uploaders.conf, next to jobs.env (UPLOADERS_CONF, default
-# $OPS_HOME/uploaders.conf). One line per device, '|'-separated because
-# device names have spaces:
+# Which devices: $OPS_HOME/uploaders.conf (UPLOADERS_CONF overrides). One
+# line per device, '|'-separated because device names have spaces:
 #
 #   # owner | kind     | device   | max days | photos folder (optional)
 #   bob     | computer | laptop   | 21
@@ -17,9 +16,12 @@
 #   photos     a phone's DCIM folder, if not the usual one (absolute path)
 #
 # Signals per device, the newer one counts:
-#   seen       Synology Drive's connection list, which holds only devices
-#              connected right now; so the last sighting is kept in
-#              $JOBS_STATE_DIR/devices-seen.tsv (state, not configuration)
+#   seen       Synology Drive's client list (SYNO.SynologyDrive.Connection):
+#              a client whose client_status is on_line counts as seen now,
+#              any other as of its last_auth_time. The newest sighting per
+#              device is kept in $JOBS_STATE_DIR/devices-seen.tsv (state, not
+#              configuration), so a device stays known once it has left the
+#              list
 #   photos     the newest photo or video file in the phone's DCIM tree: when
 #              its backup last added one. DSM's @eaDir thumbnails skipped.
 # Devices uploading but not in the file are listed too, so a new or renamed

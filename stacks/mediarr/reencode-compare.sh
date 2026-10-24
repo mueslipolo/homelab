@@ -146,7 +146,7 @@ ffmpeg -hide_banner -filters 2>/dev/null | grep -q libvmaf && vmaf=1
 			"$(awk -v a="$full_size" -v b="$est" 'BEGIN { printf "%.0f", (1 - b / a) * 100 }')" "$score" "$note"
 	done
 	if [ "$vmaf" = 1 ]; then
-		printf '\nVMAF: 95+ = indistinguishable from the original, below 90 starts to show.\n'
+		printf '\nRough rule of thumb: VMAF 95+ = indistinguishable from the original, below 90 starts to show.\n'
 	else
 		printf '\n(No VMAF score: this ffmpeg is built without libvmaf. Judge by eye.)\n'
 	fi

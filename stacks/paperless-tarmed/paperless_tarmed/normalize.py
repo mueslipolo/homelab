@@ -93,10 +93,10 @@ def close_patient(
     """Near-match a misspelt name against the configured list.
 
     Providers mistype names ('Delphinne' for 'Delphine'), and an exact match
-    then fails on a document that is otherwise perfectly readable. The candidate
-    set is tiny, so a high similarity threshold is safe -- but only when a single
-    name stands out, or one clearly beats the runner-up. Two plausible family
-    members must never be silently disambiguated.
+    then fails on a document that is otherwise readable. A name is returned
+    only when it alone passes `cutoff`, or leads the runner-up by 0.08; both
+    numbers are chosen, not measured. Otherwise None, rather than pick between
+    two family members.
 
     `cutoff` of 0 disables this entirely.
     """
@@ -122,7 +122,7 @@ def close_patient(
         return next(iter(scores))
     if len(scores) > 1:
         ranked = sorted(scores.items(), key=lambda kv: -kv[1])
-        # Require a clear winner; otherwise refuse rather than pick.
+        # Require a lead of 0.08 (a chosen margin); otherwise refuse.
         if ranked[0][1] - ranked[1][1] >= 0.08:
             return ranked[0][0]
     return None

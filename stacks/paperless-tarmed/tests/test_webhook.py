@@ -60,6 +60,11 @@ def test_missing_document_id_is_a_bad_request(client) -> None:
     assert client.seen == []
 
 
+def test_a_form_body_is_a_bad_request(client) -> None:
+    assert client.post("/hook", data={"doc_id": "7"}, headers=AUTH).status_code == 400
+    assert client.seen == []
+
+
 def test_no_secret_configured_refuses_every_request(monkeypatch) -> None:
     """An unset secret must not quietly disable auth."""
     monkeypatch.delenv("PAPERLESS_TARMED_WEBHOOK_SECRET", raising=False)

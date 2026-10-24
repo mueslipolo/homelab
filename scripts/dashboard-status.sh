@@ -28,7 +28,7 @@ backup_log_path() {
 		/var/log/synolog/synobackup.log; do
 		[ -n "$p" ] && [ -r "$p" ] && { echo "$p"; return; }
 	done
-	return 0 # none readable: the page shows "No result found"
+	return 0 # none readable: the page shows "no result"
 }
 BACKUP_LOG=$(backup_log_path)
 readonly BACKUP_LOG
@@ -47,10 +47,10 @@ readonly BACKUP_LOG
 . "$(dirname -- "$0")/lib/containers.sh"
 
 volume_json() {
-	local size used avail pct
-	read -r size used avail pct < <(df -Pk "$VOLUME" | awk 'NR == 2 { print $2, $3, $4, $5 }')
-	printf '{"path": %s, "size_kb": %s, "used_kb": %s, "avail_kb": %s, "used_pct": %s}' \
-		"$(json_str "$VOLUME")" "$size" "$used" "$avail" "${pct%\%}"
+	local size avail pct
+	read -r size avail pct < <(df -Pk "$VOLUME" | awk 'NR == 2 { print $2, $4, $5 }')
+	printf '{"path": %s, "size_kb": %s, "avail_kb": %s, "used_pct": %s}' \
+		"$(json_str "$VOLUME")" "$size" "$avail" "${pct%\%}"
 }
 
 # Newest regular file in a folder, as {"name", "dir", "latest" (epoch or null)}.
@@ -113,7 +113,8 @@ jobs_json() {
 	printf '['
 	if [ -n "$dir" ]; then
 		for f in "$dir"/*.json; do
-			[ -f "$f" ] && [ "${f##*/}" != _scheduler.json ] || continue
+			[ -f "$f" ] || continue
+			[ "${f##*/}" != _scheduler.json ] || continue
 			[ "$first" -eq 1 ] || printf ', '
 			first=0
 			tr -d '\n' <"$f"
@@ -128,7 +129,7 @@ jobs_json() {
 #              (lib/code.sh: anything but Markdown)
 #   built   -- the image under the tag: its commit, build time, and whether it
 #              was built from the current code (code hash label)
-#   running -- the container: its build's commit and time, when it started,
+#   running -- the container: its build's commit, when it started,
 #              and whether it runs the image now under the tag
 # Labels come from build-images.sh; a container keeps its image's labels even
 # once that image has been replaced under the tag.
@@ -148,8 +149,8 @@ images_json() {
 		case $stack in */*) continue ;; esac
 		[ "$first" -eq 1 ] || printf ', '
 		first=0
-		printf '{"stack": %s, "image": %s, "code": %s, "built": %s, "running": %s}' \
-			"$(json_str "$stack")" "$(json_str "$image")" \
+		printf '{"stack": %s, "code": %s, "built": %s, "running": %s}' \
+			"$(json_str "$stack")" \
 			"$(code_json "$repo" "$stack")" "$(built_json "$repo" "$stack" "$image")" \
 			"$(running_json "$stack" "$image")"
 	done
@@ -158,9 +159,9 @@ images_json() {
 
 code_json() { # <repo> <stack>
 	local info
-	info=$(code_commit "$1" "stacks/$2" '%h|%ct') && [ -n "$info" ] ||
-		{ printf 'null'; return; }
-	printf '{"commit": %s, "at": %s}' "$(json_str "${info%%|*}")" "${info#*|}"
+	info=$(code_commit "$1" "stacks/$2" '%h') || info=
+	[ -n "$info" ] || { printf 'null'; return; }
+	printf '{"commit": %s}' "$(json_str "$info")"
 }
 
 # Labels of an image or a container: commit|built|tree
@@ -179,15 +180,15 @@ built_json() { # <repo> <stack> <image>
 }
 
 running_json() { # <container> <image>
-	local info commit at tree started id latest
+	local info commit started id latest
 	info=$(_labels "$1") || { printf 'null'; return; }
-	IFS='|' read -r commit at tree <<<"$info"
+	commit=${info%%|*}
 	started=$(docker inspect --format '{{ .State.StartedAt }}' "$1" 2>/dev/null)
 	started=$(date -d "$started" +%s 2>/dev/null || echo null)
 	id=$(docker inspect --format '{{ .Image }}' "$1" 2>/dev/null)
 	latest=$(docker image inspect --format '{{ .Id }}' "$2" 2>/dev/null || true)
-	printf '{"commit": %s, "at": %s, "started": %s, "state": %s, "same_image": %s}' \
-		"$(json_str "${commit:-?}")" "$(_num "$at")" "$started" \
+	printf '{"commit": %s, "started": %s, "state": %s, "same_image": %s}' \
+		"$(json_str "${commit:-?}")" "$started" \
 		"$(json_str "$(docker inspect --format '{{ .State.Status }}' "$1" 2>/dev/null)")" \
 		"$([ -n "$id" ] && [ "$id" = "$latest" ] && echo true || echo false)"
 }

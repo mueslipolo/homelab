@@ -8,12 +8,9 @@
 	}
 }
 
-# Forward-auth gate, proven via a PoC on dashboard alone (Phase 5 Step 2a)
-# before being rolled out to the other full-gate apps below (Step 3).
-# Deliberately NOT imported into: jellyfin (confirmed bypass, Chromecast
-# can't complete a browser SSO redirect), mealie (needs the hybrid bypass
-# pattern instead, its mobile app hits /api directly — Step 2b, not done
-# yet), auth itself (a login portal gated behind login is unreachable).
+# Forward-auth gate. Deliberately NOT imported into: jellyfin (Chromecast
+# can't complete a browser SSO redirect), mealie and paperless (native OIDC),
+# auth itself (a login portal gated behind login is unreachable).
 # For the *arrs: their "Disabled for Local Addresses" only skips their own
 # login for a request with no X-Forwarded-For. With the header, even a LAN
 # address gets the login form (tested on Prowlarr 2.6). Without it they see
@@ -39,10 +36,8 @@ dashboard.{$INTERNAL_DOMAIN} {
 
 mealie.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
-	# No forward_auth — switched to native OIDC (mealie's own OIDC_AUTO_REDIRECT),
-	# same reasoning as paperless/portainer/forgejo below. Was full-gate; Mealie
-	# has no trusted-header auto-login support, so the old setup double-logged
-	# (Authelia, then Mealie's own form) instead of true SSO.
+	# No forward_auth: native OIDC (mealie's own OIDC_AUTO_REDIRECT). Was
+	# full-gate; forward_auth plus Mealie's own login meant two logins.
 	reverse_proxy mealie:9000
 }
 
@@ -111,7 +106,7 @@ maintainerr.{$INTERNAL_DOMAIN} {
 	reverse_proxy maintainerr:6246
 }
 
-# Authelia's own login portal — Phase 5. Deliberately not gated by Authelia
+# Authelia's own login portal. Deliberately not gated by Authelia
 # itself (see authelia's own access_control bypass rule for this hostname);
 # a login portal that requires being logged in to reach is unreachable.
 auth.{$INTERNAL_DOMAIN} {
@@ -121,9 +116,9 @@ auth.{$INTERNAL_DOMAIN} {
 
 # Host-level services, not containers on the proxy network — reached via the
 # proxy network's OWN gateway IP, not host.docker.internal and not the NAS's
-# real LAN IP. See the "Reaching host-level services" gotcha in this stack's
-# README before changing this — the obvious-looking alternatives both fail
-# for non-obvious reasons.
+# real LAN IP. See the "Host services … via PROXY_GATEWAY_IP" gotcha in this
+# stack's README before changing this: the alternatives did not answer (cause
+# not established).
 portainer.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	# Portainer's 9443 is HTTPS-only (self-signed) — its plain-HTTP port (9000)

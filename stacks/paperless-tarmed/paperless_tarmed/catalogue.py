@@ -8,9 +8,9 @@ decided from those codes alone:
      service  -- a treatment (a Tarif 590 method, a TARDOC or TARMED chapter,
                  physio, psy, hospital, ...);
      supply   -- what is dispensed alongside (medicines, materials, lab);
-     generic  -- the catalogues' own basic positions (TARDOC chapters AA/AR,
-                 TARMED chapter 00, Tarif 590 code 1200), which every visit
-                 bills whatever its nature.
+     generic  -- the catalogues' basic positions (TARDOC domain A, TARMED
+                 chapters 00/01/35, Tarif 590 chapter 1), billed alongside
+                 visits of any kind.
 2. The first tier present, in the order service > generic > supply, wins;
    within it, the **category with the largest total amount** (ties: the one
    listed first; no amounts: count lines).
@@ -48,7 +48,8 @@ SUPPLY_TARIFFS = frozenset(
     {"400", *CODES_BY_CATEGORY["Pharma"], *CODES_BY_CATEGORY["Matériel"], *CODES_BY_CATEGORY["Labo"]}
 )
 
-TARDOC_TARIFFS = frozenset({"005", "007"})
+# 005 is the outpatient flat rates (Pauschalen), not TARDOC.
+TARDOC_TARIFFS = frozenset({"007"})
 TARMED_TARIFFS = frozenset({"001"})
 TARIF_590 = "590"
 
@@ -96,7 +97,7 @@ TARIF_590_SHORT: dict[str, str] = {
 # TARDOC: the two letters that open a position code ('CG.15.0010') are its
 # chapter group, the first letter its domain; catalogue.json has the official
 # title of each. Domain A, "Prestations de base: médicales, paramédicales",
-# is billed by every specialty whatever the visit: generic as a whole.
+# is treated as generic as a whole.
 TARDOC_GENERIC_DOMAINS = frozenset({"A"})
 
 # The one editorial part: a short French label per official chapter, for the
@@ -123,7 +124,7 @@ TARDOC_GROUPS: dict[str, str] = {
 # TARMED: the number before the first dot ('39.3000') is the main chapter.
 # Short label and tier per official main chapter (titles in catalogue.json).
 # 00 basic services, 01 bandages and 35 operating theatre / day clinic are
-# billed whatever the visit: generic.
+# treated as generic.
 TARMED_GENERIC = frozenset({"00", "01", "35"})
 TARMED_CHAPTERS: dict[str, str] = {
     "00": "Médecin", "01": "Médecin", "02": "Psy", "03": "Pédiatrie", "04": "Dermato",
@@ -240,7 +241,6 @@ def render_summary(results) -> str:
     out = ["", "=" * 74, " CATEGORIES", "=" * 74, ""]
     out += [f"  {count:>4}  {label}" for label, count in categories.most_common()]
     if uncategorised:
-        # Almost always: no service line could be read off the table.
         out += ["", f"  (none) = {len(uncategorised)} doc(s); service lines read per doc:"]
         out += ["  " + ", ".join(f"#{d} ({n})" for d, n in uncategorised)]
     out += ["", "=" * 74, f" CODES NOT IN THE CATALOGUE TABLES ({len(missing)}) -- add to catalogue.py", "=" * 74, ""]

@@ -1,14 +1,14 @@
 # storage.json for the dashboard's Storage tab, from storage-scan.sh's files.
 # Run by storage_json() in storage.sh; plain POSIX awk (DSM: no gawk-isms).
 #
-# Inputs (by file name): subvols.tsv, docker.tsv, recycle.tsv, items.tsv,
+# Inputs (by file name): subvols.tsv, docker.tsv, items.tsv,
 # seasons.tsv, folders.tsv, held.tsv, metadata.tsv, history.tsv. Variables: today, total, used, free, generated, media_share,
 # targets ("<today-7> <today-30> <today-90>"), weeks (12 dates, oldest first).
 #
 # Trend rules:
 #   growth   used now minus used on the last day at or before 30 days ago
-#            (or the first day of history, if younger); the daily rate adds up
-#            only the days that grew, so a clean-up doesn't fake a slowdown.
+#            (or the first day of history, if younger); the daily rate is that
+#            change divided by the days between.
 #   changes  per series, the films together, each shared folder (but the
 #            media one, shown by series and film) and Drive's history, over
 #            the same period: the 4 largest increases and 2 largest decreases
@@ -48,13 +48,12 @@ FILENAME ~ /subvols\.tsv$/ {
 	if ($4 > 0 && $2 != "drive") excl_known = 1   # drive_own() measures Drive alone
 	next
 }
-FILENAME ~ /docker\.tsv$/ { docker_total = $1; docker_free = $2; have_docker = 1; next }
-FILENAME ~ /recycle\.tsv$/ { recycle = $1; next }
+FILENAME ~ /docker\.tsv$/ { docker_total = $1; have_docker = 1; next }
 FILENAME ~ /items\.tsv$/ {
 	k = $1 FS $2
 	ikind[k] = $1; iname[k] = $2; ibytes[k] = $3; ifiles[k] = $4; iep[k] = $5
-	isecs[k] = $6; ihevc[k] = $7; isave[k] = $8; iremux[k] = $9
-	tot[$1] += $3; cnt[$1]++; reencode += $8
+	isecs[k] = $6
+	tot[$1] += $3; cnt[$1]++
 	next
 }
 FILENAME ~ /seasons\.tsv$/ { seasons[$1] = seasons[$1] sprintf("%s[%s, %s, %s]", (seasons[$1] == "" ? "" : ", "), js($2), n0($3), n0($4)); next }
@@ -91,15 +90,8 @@ END {
 	# ---- growth
 	if (base != "") {
 		g = used - hist("used", "-", base)
-		prev = ""; up = 0
-		for (i = 1; i <= ND; i++) {
-			if (DT[i] < base || !((DT[i] FS "used" FS "-") in H)) continue
-			v = H[DT[i] FS "used" FS "-"]
-			if (prev != "" && v > prev) up += v - prev
-			prev = v
-		}
 		span = day(today) - day(base)
-		printf "  \"growth\": {\"since\": %s, \"delta\": %s, \"per_day\": %s},\n", js(base), n0(g), (span > 0 ? n0(up / span) : "null")
+		printf "  \"growth\": {\"since\": %s, \"delta\": %s, \"per_day\": %s},\n", js(base), n0(g), (span > 0 ? n0(g / span) : "null")
 	} else printf "  \"growth\": null,\n"
 
 	# ---- where the space goes
@@ -187,19 +179,13 @@ END {
 			for (k in ikind) if (ikind[k] == kind && !(k in taken) && (best == "" || ibytes[k] > ibytes[best])) best = k
 			if (best == "") break
 			taken[best]
-			printf "%s\n      {\"name\": %s, \"bytes\": %s, \"files\": %s, \"episodes\": %s, \"gb_per_hour\": %s, \"hevc\": %s, \"saving\": %s, \"remux\": %s%s}", \
-				sep, js(iname[best]), n0(ibytes[best]), n0(ifiles[best]), n0(iep[best]), \
-				(isecs[best] > 0 ? sprintf("%.2f", ibytes[best] / 1e9 / (isecs[best] / 3600)) : "null"), \
-				(ihevc[best] >= ibytes[best] ? "true" : "false"), n0(isave[best]), (iremux[best] ? "true" : "false"), \
+			printf "%s\n      {\"name\": %s, \"bytes\": %s, \"episodes\": %s, \"gb_per_hour\": %s%s}", \
+				sep, js(iname[best]), n0(ibytes[best]), n0(iep[best]), \
+				(isecs[best] > 0 ? sprintf("%.2f", ibytes[best] / 1073741824 / (isecs[best] / 3600)) : "null"), \
 				(kind == "series" ? ", \"seasons\": [" seasons[iname[best]] "]" : "")
 			sep = ","
 		}
 		printf "\n    ]}%s\n", (pass == 1 ? "," : "")
 	}
-	printf "  },\n"
-
-	# ---- what could be freed
-	printf "  \"reclaim\": {\"reencode\": %s, \"drive\": %s, \"snapshots\": %s, \"docker\": %s, \"recycle\": %s}\n}\n", \
-		n0(reencode), (drive_r != "" ? n0(drive_v) : "null"), (excl_known ? n0(snap_x) : "null"), \
-		(have_docker ? n0(docker_free) : "null"), (recycle != "" ? n0(recycle) : "null")
+	printf "  }\n}\n"
 }

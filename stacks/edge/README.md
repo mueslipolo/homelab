@@ -31,13 +31,16 @@ This page is the reference.
 - **`INFOMANIAK_API_TOKEN` controls the domain's DNS**: the most sensitive
   secret here. It lives only in Portainer.
 - **Stale image on redeploy.** No `image:` key, so `pull_policy: build` stays;
-  Portainer may still skip the build (root `README.md`). After a `Dockerfile`
+  Portainer may still skip the build ([guide 02, Troubleshooting](../../docs/guides/02-portainer.md#troubleshooting)). After a `Dockerfile`
   change, check `docker inspect --format '{{.Created}}' <caddy-container>` moved.
 - **`--watch` applies Caddyfile changes.** A Portainer redeploy does not
   recreate the container when only the Caddyfile changed, and Caddy reads it
   at start, so the old config kept running (a new host got the 404 catch-all).
-  Caddy now re-reads the file every second and reloads on change; a broken
-  file logs `unable to load latest config` and the last good config stays.
+  Caddy now re-reads the file every second and reloads on change. A file that
+  fails to load logs `unable to load latest config` and **stops the watching**:
+  the last good config keeps serving, and later changes are ignored until
+  `docker restart` of the Caddy container. A config that loads but fails to
+  apply logs `applying latest config` and the watching goes on.
   Mount the folder, not the file: a single-file mount can stay pinned to the
   old file.
 - **`mac_address` is service-level** (+ `networks.lan.priority: 1000`): the
@@ -49,9 +52,9 @@ This page is the reference.
 - **`{$VAR}` vs `{env.VAR}`:** parse time for site addresses, runtime for the
   token and upstreams.
 - **Host services (Portainer, Forgejo, LDAP) via `PROXY_GATEWAY_IP`**, the
-  `proxy` network's gateway (`docker network inspect proxy`). Docker's bridge
-  isolation blocks other routes, and `host.docker.internal` is `docker0`,
-  another bridge.
+  `proxy` network's gateway (`docker network inspect proxy`). Observed: the
+  NAS's LAN IP and `host.docker.internal` did not answer from the `proxy`
+  network; cause not established.
 - **Portainer upstream:** `{env.PROXY_GATEWAY_IP}:9443` with
   `transport http { tls_insecure_skip_verify }` (self-signed, on-host hop).
   Never add `https://`: scheme + placeholder crash-loops Caddy.

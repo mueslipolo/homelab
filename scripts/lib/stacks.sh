@@ -10,7 +10,7 @@
 
 PORTAINER_URL="${PORTAINER_URL:-https://127.0.0.1:9443}"
 
-# One line per stack: name, id, status (1 active, 2 stopped), compose path,
+# One line per stack: name, status (1 active, 2 stopped), compose path,
 # deployed commit, update time; \x1f-separated (a tab would collapse empty
 # fields). Only these fields leave the API response: it also holds every
 # stack's environment, passwords included.
@@ -20,7 +20,7 @@ _portainer_stacks() {
 	# The token goes in on stdin, never on the command line.
 	body=$(printf 'header = "X-API-Key: %s"\n' "$PORTAINER_TOKEN" |
 		curl -sS -m 20 --fail "${insecure[@]}" -K - "$PORTAINER_URL/api/stacks") || return 1
-	_jq -r '.[] | [.Name, (.Id | tostring), (.Status | tostring),
+	_jq -r '.[] | [.Name, (.Status | tostring),
 		(.GitConfig.ConfigFilePath // ""), (.GitConfig.ConfigHash // ""),
 		((.UpdateDate // .CreationDate // 0) | tostring)] | join("\u001f")' <<<"$body"
 }
@@ -29,11 +29,11 @@ _portainer_stacks() {
 #   "current": true|false|null}], or null when Portainer cannot be asked.
 #   current = the stack folder's last commit is part of what was deployed.
 stacks_json() { # <repo>
-	local repo=$1 lines name id status path hash at dir code first=1 current
+	local repo=$1 lines name status path hash at dir code first=1 current
 	[ -n "${PORTAINER_TOKEN:-}" ] || { printf 'null'; return; }
 	lines=$(_portainer_stacks 2>/dev/null) || { printf 'null'; return; }
 	printf '['
-	while IFS=$'\x1f' read -r name id status path hash at; do
+	while IFS=$'\x1f' read -r name status path hash at; do
 		[ -n "$name" ] || continue
 		code=null current=null
 		if [ -n "$path" ]; then
@@ -46,8 +46,8 @@ stacks_json() { # <repo>
 		fi
 		[ "$first" -eq 1 ] || printf ', '
 		first=0
-		printf '{"name": %s, "id": %s, "active": %s, "git": %s, "deployed": %s, "code": %s, "current": %s}' \
-			"$(json_str "$name")" "$(_num "$id")" "$([ "$status" = 1 ] && echo true || echo false)" \
+		printf '{"name": %s, "active": %s, "git": %s, "deployed": %s, "code": %s, "current": %s}' \
+			"$(json_str "$name")" "$([ "$status" = 1 ] && echo true || echo false)" \
 			"$([ -n "$path" ] && echo true || echo false)" \
 			"$([ -n "$hash" ] && printf '{"commit": %s, "at": %s}' "$(json_str "${hash:0:7}")" "$(_num "$at")" || echo null)" \
 			"$code" "$current"

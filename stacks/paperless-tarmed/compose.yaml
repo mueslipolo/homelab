@@ -33,9 +33,9 @@ services:
       PAPERLESS_TARMED_WEBHOOK_SECRET: ${PAPERLESS_TARMED_WEBHOOK_SECRET:?set PAPERLESS_TARMED_WEBHOOK_SECRET}
 
       # The webhook plans writes exactly like `apply`: blanks only, title
-      # untouched. Turning either of these on makes an automated run able to
-      # modify a document it has already processed, which is also what lets a
-      # "Document Updated" trigger feed itself.
+      # untouched. Turning either of these on lets an automated run replace
+      # values already in Paperless, so a "Document Updated" trigger would
+      # revert manual edits on every update.
       PAPERLESS_TARMED_WEBHOOK_OVERWRITE: ${PAPERLESS_TARMED_WEBHOOK_OVERWRITE:-0}
       PAPERLESS_TARMED_WEBHOOK_TITLE: ${PAPERLESS_TARMED_WEBHOOK_TITLE:-0}
 
@@ -55,7 +55,7 @@ services:
       TZ: ${TZ:-Europe/Zurich}
 
     volumes:
-      # Holds the pull cache, the refreshed tariff table and the change journal.
+      # Holds the pull cache, refresh-tariffs' saved list and the change journal.
       # Set PAPERLESS_TARMED_DATA to an absolute path on the NAS, e.g.
       # <nas-volume-path>/docker/paperless-tarmed/data -- a relative path resolves
       # inside Portainer's stack directory.

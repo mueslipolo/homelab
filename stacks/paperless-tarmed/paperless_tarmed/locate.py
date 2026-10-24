@@ -10,7 +10,7 @@ from dataclasses import dataclass
 # OCR drops them regularly.
 #
 # Anchored to the start of a line (after a little non-letter OCR noise): the
-# form's heading always starts its line, while a billing office's cover letter
+# form's heading starts its line in the samples seen, while a billing office's cover letter
 # mentions the form mid-sentence -- 'Le justificatif de remboursement ... ci-
 # joint' -- and was taken for justificatif #1, so the letter got extracted
 # instead of the form behind it.

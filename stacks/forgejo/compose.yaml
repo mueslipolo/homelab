@@ -8,6 +8,7 @@ services:
       - USER_UID=1000
       - USER_GID=1000
       - FORGEJO__service__DISABLE_REGISTRATION=true
+      - FORGEJO__service__REQUIRE_SIGNIN_VIEW=true
       - GITEA_WORK_DIR=/var/lib/gitea
       - GITEA_CUSTOM=/var/lib/gitea/custom
       - GITEA_TEMP=/tmp/gitea

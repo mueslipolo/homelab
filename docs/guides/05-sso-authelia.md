@@ -7,7 +7,8 @@
 
 One account per person, kept in Synology's LDAP Server and shared by DSM, SMB,
 Drive and every web app. One login at `https://auth.home.example.com` covers
-all apps for a year of consent.
+every app until the session ends (Authelia's defaults: 1 hour, 5 minutes
+idle); OIDC consent is remembered for a year.
 
 Each app uses one of three modes, chosen by how it logs in:
 
@@ -25,7 +26,7 @@ exposing anything to the internet.
 | What                       | Example                                          | How                                                                                                                               |
 | -------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | HTTPS working              | `https://whoami.home.example.com`                | [03 HTTPS](03-https-letsencrypt.md). Authelia's cookie domain and OIDC issuer are `INTERNAL_DOMAIN`.                              |
-| `PROXY_GATEWAY_IP`         | `172.0.2.1`                                      | `sudo docker network inspect proxy --format '{{json .IPAM.Config}}'`: how containers reach host services such as LDAP.            |
+| `PROXY_GATEWAY_IP`         | `192.0.2.1`                                      | `sudo docker network inspect proxy --format '{{json .IPAM.Config}}'`: how containers reach host services such as LDAP.            |
 | Synology LDAP Server       | base DN `dc=home,dc=example,dc=com`              | Package Center → LDAP Server → Settings → enable, FQDN `home.example.com` (it gives the base DN), set the root password.          |
 | A group for admins         | `infra-admins`                                   | LDAP Server → Manage groups. Members may log in to Portainer and Forgejo. Not `admins` or `administrators` (see Troubleshooting). |
 | DSM joined to its own LDAP | —                                                | Control Panel → Domain/LDAP → LDAP, the NAS itself. Same accounts for DSM, SMB and Drive.                                         |
@@ -68,7 +69,7 @@ sudo docker run --rm "authelia/authelia:$AUTHELIA_VERSION" authelia crypto hash 
 sudo chmod 600 *
 ```
 
-**Check:** `ls` lists the ten files (fewer if you skipped clients), none empty.
+**Check:** `ls` lists the eleven files (fewer if you skipped clients), none empty.
 
 ### 2. Adjust the access rules
 
@@ -83,7 +84,7 @@ Variables, from [`stacks/authelia/.env.example`](../../stacks/authelia/.env.exam
 
 ```bash
 INTERNAL_DOMAIN=home.example.com
-PROXY_GATEWAY_IP=172.0.2.1
+PROXY_GATEWAY_IP=192.0.2.1
 LDAP_BASE_DN=dc=home,dc=example,dc=com
 AUTHELIA_SECRETS_ROOT=/volume1/docker/authelia/secrets
 AUTHELIA_DATA_ROOT=/volume1/docker/authelia/data
@@ -114,7 +115,9 @@ In your Caddyfile, `import authelia` in the app's block:
 sonarr.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import authelia
-	reverse_proxy sonarr:8989
+	reverse_proxy sonarr:8989 {
+		import arr_no_client_ip
+	}
 }
 ```
 
@@ -152,7 +155,7 @@ user outside `infra-admins` is refused by Portainer and Forgejo.
 
 | Mode   | Do                                                                                                                                                                                                                     |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gate   | `import authelia` in its Caddy block + an `access_control` rule; restart Authelia and Caddy; turn the app's login off for local addresses.                                                                             |
+| Gate   | `import authelia` in its Caddy block + an `access_control` rule; restart Authelia (Caddy reloads by itself); turn the app's login off for local addresses.                                                             |
 | OIDC   | Generate a secret (step 1), copy a client block in `config/configuration.yml` (new `client_id`, `redirect_uris`, the hash file, `authorization_policy`), list the file in `.env.example`, redeploy; configure the app. |
 | Bypass | Nothing in Authelia; no `import authelia`. The app's own login is the only control.                                                                                                                                    |
 
@@ -182,4 +185,5 @@ Don't name the admin group `admins` (it collides with the policy name) or
 - [06 mediarr](06-mediarr.md): gated apps.
 - [07 Paperless](07-paperless.md), [08 Mealie](08-mealie.md): OIDC apps.
 - [10 backups](10-backups-and-jobs.md): back up the secrets folder; Postgres
-  holds only sessions and consent.
+  holds only disposable state (OIDC consent and tokens, login attempts);
+  login sessions live in memory.

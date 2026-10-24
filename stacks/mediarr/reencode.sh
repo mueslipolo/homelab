@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Re-encode large H.264 (or older) videos to HEVC on an Intel GPU, in place.
 # Meant for a desktop with the NAS's media share mounted (SMB); see
-# stacks/mediarr/README.md, "Re-encoding". Not run on the NAS.
+# docs/guides/media-reencoding.md. Not run on the NAS.
 #
 #   reencode.sh [-n] PRESET DIR...
 #
@@ -175,7 +175,7 @@ if [ "$DRY" = 1 ]; then
 		done
 		total=0
 		for g in "${!g_size[@]}"; do total=$((total + g_size[$g])); done
-		printf '%10s in total, typically 60-85%% less after re-encoding. Not sure which\n' "$(human "$total")"
+		printf '%10s in total (one measured sitcom episode shrank 84%%). Not sure which\n' "$(human "$total")"
 		printf 'preset fits a series? Try one episode: reencode-compare.sh "<episode>"\n'
 	fi
 	printf '\n%d file(s) would be re-encoded with preset %s, %d skipped (HEVC/AV1 or below %s Mbit/s)\n' \

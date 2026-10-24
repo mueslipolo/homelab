@@ -29,12 +29,13 @@ from git.
 The tabs, with made-up data (`tools/dashboard-demo/screenshots.sh` regenerates
 them):
 
-| Tab      | Shows                                                                                                                                                              |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Services | a card per app, with its stack's README; the left panel sums up every tab                                                                                          |
-| Storage  | where the space goes (treemap by share and folder), 90 days of used space, per-folder trends, the media library (treemap by title and season), what could be freed |
-| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading                                                           |
-| System   | each Portainer stack against git, with its deploy date, containers and built image; jobs; the scheduler                                                            |
+| Tab      | Shows                                                                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Services | a card per app, with its stack's README; the left panel sums up every tab                                                                     |
+| Storage  | where the space goes (treemap by share and folder), 90 days of used space, per-folder trends, the media library (treemap by title and season) |
+| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading                                      |
+| System   | each Portainer stack against git, with its deploy date, containers and built image; jobs; the scheduler                                       |
+| Network  | the LAN diagram and device cards, from `devices.json`                                                                                         |
 
 ![Services tab](../images/dashboard-services.png)
 
@@ -66,14 +67,15 @@ sudo chmod 755 /volume1/docker/dashboard-local
 ```
 
 Optionally add `devices.json` (mode 644): the Network tab's cards and labels,
-see the [reference](../../stacks/dashboard/README.md#devicesjson). Without it,
-the tab shows the diagram with generic labels.
+and `repo` (`<owner>/homelab`) for the links to this repo on Forgejo, see the
+[reference](../../stacks/dashboard/README.md#devicesjson). Without it, the tab
+shows the diagram with generic labels and the Forgejo links are hidden.
 
 ### 2. Make the cards yours
 
 The services are the `GROUPS` / `OPS` arrays in `stacks/dashboard/html/index.html`.
 Links derive from the page's address (`https://<app>.home.example.com`), so a
-card needs only its subdomain. Logos: `html/icons/<subdomain>.png`, or mapped
+card needs only its subdomain. Logos: `html/icons/<subdomain>.svg`, or mapped
 in `ICON`.
 
 ### 3. Deploy
@@ -121,7 +123,7 @@ the Storage tab fills after the first night.
 | `403` or a tab stays empty              | A file in the local folder is not world-readable (nginx runs unprivileged): `chmod 644`.                              |
 | Deploy fails: mount source missing      | `DASHBOARD_LOCAL_DIR` unset, or the folder does not exist.                                                            |
 | Still "No status report" after 15 min   | The scheduler does not write here: compare `DASHBOARD_LOCAL_DIR` in `jobs.env`, read `$OPS_HOME/logs/`.               |
-| Every Hyper Backup task looks old       | DSM's log moved after a package upgrade: set `HYPERBACKUP_LOG` in `jobs.env` (reference, `status.json`).              |
+| Every Hyper Backup task looks old       | DSM's log stopped updating here (2024-11): set `HYPERBACKUP_LOG` in `jobs.env` (reference, `status.json`).            |
 | Stacks all "unknown"                    | Their deployed commit is not in the scheduler's clone (history rewritten?): Pull and redeploy each.                   |
 | Container restarts after a compose edit | `read_only: true` needs its tmpfs mounts (`/tmp`, `/var/cache/nginx`, `/var/run`), and nginx listens on 8080, not 80. |
 

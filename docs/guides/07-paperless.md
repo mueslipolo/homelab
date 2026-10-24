@@ -141,14 +141,14 @@ Reference: [`stacks/paperless-tarmed/README.md`](../../stacks/paperless-tarmed/R
 
 ## Troubleshooting
 
-| Symptom                                                            | Cause → fix                                                                                                                                              |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `broker` restarts, `Permission denied` on `/data`                  | `redis/` not owned by `PAPERLESS_UID:PAPERLESS_GID` (step 1).                                                                                            |
-| `Bad Request (400)` in the browser                                 | `PAPERLESS_ALLOWED_HOSTS` takes bare hostnames, `PAPERLESS_URL` keeps `https://`.                                                                        |
-| paperless-tarmed gets a bodyless `400`, nothing in Paperless's log | `webserver` removed from `PAPERLESS_ALLOWED_HOSTS`: Django rejects the `Host: webserver` header (DisallowedHost).                                        |
-| Authelia button: `invalid_client` or redirect error                | Secret swapped with the Digest, or the callback differs: it must be exactly `https://paperless.home.example.com/accounts/oidc/authelia/login/callback/`. |
-| "A user with that username already exists"                         | Expected: link the local account once (step 5).                                                                                                          |
-| Files stay in the inbox                                            | Not readable by `PAPERLESS_UID`, or not a supported type: `sudo docker logs <webserver-container>`.                                                      |
+| Symptom                                             | Cause → fix                                                                                                                                              |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `broker` restarts, `Permission denied` on `/data`   | `redis/` not owned by `PAPERLESS_UID:PAPERLESS_GID` (step 1).                                                                                            |
+| `Bad Request (400)` in the browser                  | `PAPERLESS_ALLOWED_HOSTS` takes bare hostnames, `PAPERLESS_URL` keeps `https://`.                                                                        |
+| paperless-tarmed gets a `400` (DisallowedHost)      | `webserver` removed from `PAPERLESS_ALLOWED_HOSTS`: Django rejects the `Host: webserver` header (DisallowedHost).                                        |
+| Authelia button: `invalid_client` or redirect error | Secret swapped with the Digest, or the callback differs: it must be exactly `https://paperless.home.example.com/accounts/oidc/authelia/login/callback/`. |
+| "A user with that username already exists"          | Expected: link the local account once (step 5).                                                                                                          |
+| Files stay in the inbox                             | Not readable by `PAPERLESS_UID`, or not a supported type: `sudo docker logs <webserver-container>`.                                                      |
 
 ## Next
 

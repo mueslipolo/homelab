@@ -48,7 +48,7 @@ Portainer → Stacks → Add stack → **Web editor**, name `forgejo`, paste
 [`stacks/forgejo/compose.yaml`](../../stacks/forgejo/compose.yaml), variable
 `FORGEJO_DATA_ROOT=/volume1/forgejo/data` → Deploy.
 
-**Check:** `curl -s http://192.0.2.10:3000/api/v1/version` → `{"version":"…"}`.
+**Check:** `curl -s http://192.0.2.10:3000/api/healthz` → `"status": "pass"`.
 
 ### 2. First run and the repo
 
@@ -123,9 +123,6 @@ What Renovate does with an update (`renovate.json`):
    | `RENOVATE_GITHUB_COM_TOKEN` | a GitHub token with **no scopes**: release notes in PR bodies |
    | `PRIVATE_PATTERNS`          | your `.private-patterns` file, for the no-real-values check   |
 
-5. In `.forgejo/workflows/renovate.yaml`, set `RENOVATE_REPOSITORIES` to your
-   `<owner>/homelab`.
-
 **Check:** Site Administration → Actions → Runners shows `nas-runner`
 **Idle**; a push runs `checks` green; Actions → renovate → Run workflow opens
 a "Dependency Dashboard" issue.
@@ -160,5 +157,5 @@ is part of the callback URL `/user/oauth2/authelia/callback`), client ID
 
 - [05 Authelia](05-sso-authelia.md): SSO for Forgejo and Portainer.
 - [10 Backups and jobs](10-backups-and-jobs.md): the daily `forgejo dump`
-  (the only valid Forgejo backup) and the scheduler, which clones this repo
+  and the scheduler, which clones this repo
   with a read-only deploy key.

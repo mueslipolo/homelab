@@ -33,7 +33,7 @@ app = FastAPI(title="paperless-tarmed", version="0.1.0")
 _lock = threading.Lock()
 
 def _doc_id_from(payload: Any, request: Request) -> int | None:
-    """Accept the id however the workflow is configured to send it."""
+    """The id from a JSON body or the query string."""
     candidates: list[Any] = []
     if isinstance(payload, dict):
         for key in ("doc_id", "document_id", "id", "pk"):
@@ -200,10 +200,11 @@ async def hook(
     if not hmac.compare_digest(x_paperless_tarmed_secret or "", cfg.webhook_secret):
         raise HTTPException(status_code=401, detail="bad or missing secret")
 
+    # JSON only: a form body would need python-multipart, which is not installed.
     try:
         payload = await request.json()
     except Exception:
-        payload = dict(await request.form()) if await request.body() else {}
+        payload = {}
 
     doc_id = _doc_id_from(payload, request)
     if doc_id is None:

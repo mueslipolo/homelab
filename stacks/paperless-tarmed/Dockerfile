@@ -14,8 +14,8 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY paperless_tarmed ./paperless_tarmed
 
-# pypdfium2 and httpx ship manylinux wheels for x86_64, aarch64 and armv7l, so
-# this resolves without a build toolchain on any Synology architecture.
+# No build toolchain in the image: every dependency needs a wheel for the
+# NAS's architecture. Tested on x86_64 only.
 RUN pip install --no-cache-dir ".[serve]"
 
 RUN useradd --create-home --uid 1000 paperless-tarmed \

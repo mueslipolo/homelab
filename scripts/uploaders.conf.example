@@ -1,6 +1,7 @@
 # Devices that must keep uploading to the NAS: phones backing up photos,
-# computers running Synology Drive Client. Copy to uploaders.conf next to
-# jobs.env (outside git: real names). Shown on the dashboard's Backups tab.
+# computers running Synology Drive Client. Copy to $OPS_HOME/uploaders.conf
+# (UPLOADERS_CONF overrides; outside git: real names). Shown on the
+# dashboard's Backups tab.
 #
 # owner    the DSM user (as in the Drive Admin Console's Client List)
 # kind     phone or computer

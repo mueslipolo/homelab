@@ -18,6 +18,7 @@ log:
 # (users) / posixGroup+memberUid (groups) schema, confirmed real attribute
 # names (uid, displayName, mail, memberOf, cn), not the groupOfUniqueNames/
 # uniqueMember schema an earlier draft of this plan assumed.
+# distinguishedName below was not part of that check (no filter here uses it).
 authentication_backend:
   ldap:
     implementation: 'custom'
@@ -41,11 +42,9 @@ session:
       default_redirection_url: 'https://dashboard.{{ mustEnv "INTERNAL_DOMAIN" }}'
       same_site: 'lax'
 
-# Postgres, not the `local` (SQLite) backend — SQLite's single-writer
-# limitation produced real "database is locked" failures under concurrent
-# write load (routine session/regulation writes from every full-gate app's
-# forward-auth traffic, colliding with OIDC consent writes), not just
-# theoretical risk. Password supplied via AUTHELIA_STORAGE_POSTGRES_PASSWORD_FILE
+# Postgres, not the `local` (SQLite) backend, which logged "database is
+# locked" errors here. Login sessions are not stored here: they are in
+# Authelia's memory (no session.redis). Password supplied via AUTHELIA_STORAGE_POSTGRES_PASSWORD_FILE
 # in compose.yaml, not here — same pattern as the LDAP bind password below.
 storage:
   postgres:
@@ -65,9 +64,8 @@ regulation:
   find_time: '10 minutes'
   ban_time: '1 hour'
 
-# Native OIDC clients — Phase 5 Step 4+. Each registered app is its own OIDC
-# client here; none of them sit behind Caddy's forward_auth like the
-# full-gate apps above. `secret` (not `fileContent`) is used for both the
+# Native OIDC clients. Each registered app is its own OIDC client here; none
+# of them sit behind Caddy's forward_auth like the full-gate apps below. `secret` (not `fileContent`) is used for both the
 # JWKS key and client secrets specifically because it strips trailing
 # newlines — matters for the PEM key, and recommended by Authelia's own docs
 # for exactly this use case.
@@ -196,8 +194,7 @@ access_control:
   rules:
     - domain: 'auth.{{ mustEnv "INTERNAL_DOMAIN" }}'
       policy: 'bypass'
-    # Full-gate apps — proven via a PoC on dashboard alone (Step 2a), rolled
-    # out here (Step 3) once confirmed. default_policy: deny only matters for
+    # Full-gate apps. default_policy: deny only matters for
     # hostnames that actually call Authelia's forward-auth endpoint (see the
     # Caddyfile) — jellyfin deliberately has no `import authelia` line
     # (confirmed bypass, Chromecast), so this policy never applies to it

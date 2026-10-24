@@ -34,7 +34,7 @@ DESCRIPTIONS: dict[str, str] = {
     PATIENT: "Patient given name, normalised against the configured list",
     TREATMENT_DATE: "Oldest treatment date on the justificatif",
     TOTAL: "Payable total ('Montant de la facture' / 'A payer')",
-    TOTAL_UNROUNDED: "Total before Swiss 5-cent rounding ('Montant total')",
+    TOTAL_UNROUNDED: "'Montant total' as printed",
     CATEGORY: "Short category derived from the line items' tariff type",
     PROVIDER: "Short provider label (fournisseur de prestations)",
     PROVIDER_GLN: "Provider's 13-digit GLN/EAN",

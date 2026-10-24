@@ -27,8 +27,8 @@ Why this order:
 - **Authelia after HTTPS:** its portal and OIDC issuer are
   `https://auth.<internal-domain>`.
 - **Apps after Authelia:** their Caddy blocks use `import authelia`, or they
-  are OIDC clients. Without Authelia, see each app guide's "without Authelia"
-  notes.
+  are OIDC clients. Without Authelia, see the "without Authelia" notes in guides 06, 07 and 09;
+  Mealie (08) needs Authelia.
 - **Paperless before paperless-tarmed:** the add-on calls Paperless's API.
 
 Last, on the workstation you edit this repo from:

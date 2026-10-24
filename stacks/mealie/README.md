@@ -26,12 +26,8 @@ This page is the reference.
   start). Without them: `chmod: ... Operation not permitted`, never healthy.
 - **Authelia redirect URIs:** `/login` and `/login?direct=1`, exact (no
   wildcards).
-- **OIDC, not the Caddy gate:** Mealie has no trusted-header login, so the gate
-  meant two logins. `OIDC_AUTO_REDIRECT=true` + `ALLOW_PASSWORD_LOGIN=false`
-  give real SSO.
-- **Redirect to `http://`?** Not seen (`BASE_URL` suffices). If it happens,
-  Mealie's docs say add `--forwarded-allow-ips=<caddy-ip>` to its Gunicorn so
-  `X-Forwarded-Proto` is trusted.
+- **OIDC, not the Caddy gate:** the gate plus Mealie's own login meant two
+  logins. `OIDC_AUTO_REDIRECT=true` + `ALLOW_PASSWORD_LOGIN=false` give real SSO.
+- **Redirect to `http://`?** Not seen (`BASE_URL` suffices).
 - **`/api` is protected by Mealie alone** (OIDC-backed session or token), not
   Caddy: the mobile app calls it directly.
-- **`DEFAULT_EMAIL` is personal data**: real value only in Portainer.

@@ -50,10 +50,10 @@ fs_metadata() {
 		END { if (found) printf "%.0f\n", t }'
 }
 
-# Docker's total and what a prune would free: total \t reclaimable (bytes).
+# Docker's total, in bytes (one line).
 docker_usage() {
 	command -v docker >/dev/null || return 0
-	docker system df --format '{{.Type}}\t{{.Size}}\t{{.Reclaimable}}' 2>/dev/null | awk -F'\t' '
+	docker system df --format '{{.Type}}\t{{.Size}}' 2>/dev/null | awk -F'\t' '
 		function bytes(s,   n, u) {
 			if (!match(s, /^[0-9.]+/)) return 0
 			n = substr(s, 1, RLENGTH); u = substr(s, RLENGTH + 1); sub(/ .*/, "", u)
@@ -63,19 +63,8 @@ docker_usage() {
 			if (u == "TB") return n * 1e12
 			return n
 		}
-		{ total += bytes($2); if ($1 == "Images" || $1 == "Build Cache") free += bytes($3) }
-		END { if (NR) printf "%.0f\t%.0f\n", total, free }'
-}
-
-# Total size of the shared folders' recycle bins, in bytes (one line).
-recycle_bins() { # <volume>
-	local d kb total=0
-	for d in "$1"/*/'#recycle'; do
-		[ -d "$d" ] || continue
-		kb=$(du -sk -- "$d" 2>/dev/null | cut -f1)
-		total=$((total + ${kb:-0} * 1024))
-	done
-	echo "$total"
+		{ total += bytes($2) }
+		END { if (NR) printf "%.0f\n", total }'
 }
 
 # Video files under the media folder: path relative to it \t size \t mtime.
@@ -124,15 +113,10 @@ probe_new() { # <files.tsv> <cache> <media path inside the container>
 }
 
 # One line per series (tv/<name>/...) and per film (movies/<name>/...):
-# kind \t name \t bytes \t files \t episodes \t seconds \t hevc bytes \t
-# estimated saving \t remux (0/1).
-# The saving uses reencode-presets.sh's rule: only files that are not
-# HEVC/AV1 and above the preset's threshold (series 6, film 9 Mbit/s) count,
-# and each would end up near the preset's typical size (series ~4.5, film
-# ~7 Mbit/s, audio included). An estimate, not a measurement.
+# kind \t name \t bytes \t files \t episodes \t seconds.
 media_items() { # <files.tsv> <cache>
 	awk -F'\t' '
-		FILENAME == ARGV[1] { codec[$1] = $4; secs[$1] = $5; next }
+		FILENAME == ARGV[1] { secs[$1] = $5; next }
 		{
 			n = split($1, part, "/")
 			if (n < 3) next
@@ -141,27 +125,17 @@ media_items() { # <files.tsv> <cache>
 			else if (top ~ /^(movies|films)$/) kind = "film"
 			else next
 			key = kind FS part[2]
-			size = $2; c = ($1 in codec) ? codec[$1] : "?"; d = ($1 in secs) ? secs[$1] : 0
-			bytes[key] += size; files[key]++; seconds[key] += d
+			bytes[key] += $2; files[key]++; seconds[key] += ($1 in secs) ? secs[$1] : 0
 			ep = 1
 			if (kind == "series" && match(part[n], /[Ss][0-9]+[Ee][0-9]+([- ]?[Ee][0-9]+)*/)) {
 				m = substr(part[n], RSTART, RLENGTH); ep = gsub(/[Ee][0-9]+/, "", m)
 			}
 			episodes[key] += ep
-			if (c == "hevc" || c == "av1") { hevc[key] += size; next }
-			if (d <= 0) next
-			rate = size * 8 / d
-			if (kind == "film" && (rate > 20e6 || part[n] ~ /[Rr][Ee][Mm][Uu][Xx]/)) remux[key] = 1
-			if (rate > (kind == "series" ? 6e6 : 9e6)) {
-				after = d * (kind == "series" ? 4.5e6 : 7e6) / 8
-				if (size > after) saving[key] += size - after
-			}
 		}
 		END {
 			for (key in bytes) {
 				split(key, k, FS)
-				printf "%s\t%s\t%.0f\t%d\t%d\t%.0f\t%.0f\t%.0f\t%d\n", k[1], k[2], bytes[key], files[key],
-					episodes[key], seconds[key], hevc[key], saving[key], remux[key]
+				printf "%s\t%s\t%.0f\t%d\t%d\t%.0f\n", k[1], k[2], bytes[key], files[key], episodes[key], seconds[key]
 			}
 		}' "$2" "$1" | sort
 }
@@ -274,7 +248,7 @@ storage_json() { # <today> <total> <used> <free> <tmp dir> <history.tsv>
 	awk -F'\t' -v today="$t" -v total="$2" -v used="$3" -v free="$4" -v targets="$targets" -v weeks="$weeks" \
 		-v generated="$(date +%s)" -v media_share="$(media_share)" \
 		-f "$(dirname -- "${BASH_SOURCE[0]}")/storage.awk" \
-		"$5/subvols.tsv" "$5/docker.tsv" "$5/recycle.tsv" "$5/items.tsv" "$5/seasons.tsv" "$5/folders.tsv" "$5/held.tsv" "$5/metadata.tsv" "$6"
+		"$5/subvols.tsv" "$5/docker.tsv" "$5/items.tsv" "$5/seasons.tsv" "$5/folders.tsv" "$5/held.tsv" "$5/metadata.tsv" "$6"
 }
 
 # The shared folder holding the media library (its size is already shown

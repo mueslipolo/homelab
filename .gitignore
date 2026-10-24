@@ -33,3 +33,4 @@ Thumbs.db
 /PRIVATE-real-values-do-not-publish/
 .private-patterns
 CLAUDE.local.md
+__pycache__/

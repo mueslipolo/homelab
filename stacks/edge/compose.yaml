@@ -7,11 +7,14 @@ services:
     # and reuses whatever image already carries that tag: a redeploy fetches the
     # new Dockerfile/Caddyfile, starts the old binary, and reports success. Same
     # failure as stacks/paperless-tarmed, which is where it was first diagnosed.
+    # Portainer can still skip the build even with this (guide 02,
+    # Troubleshooting): after a Dockerfile change, check the image's .Created.
     pull_policy: build
     # --watch: Caddy re-reads its Caddyfile every second and reloads it when it
     # changes. A Portainer redeploy does not recreate the container for a
     # Caddyfile change alone, so without it the old config keeps running. A
-    # broken Caddyfile fails the reload and the last good config stays.
+    # Caddyfile that fails to load stops the watching: the last good config
+    # keeps serving and later changes are ignored until a restart.
     # CADDYFILE=Caddyfile.minimal for guide 03's one-app start.
     command: ["caddy", "run", "--config", "/etc/caddy/${CADDYFILE:-Caddyfile}", "--adapter", "caddyfile", "--watch"]
     restart: unless-stopped

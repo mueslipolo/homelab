@@ -125,7 +125,8 @@ class Config:
     fields: dict[str, str] = field(default_factory=dict)
 
     #: Similarity threshold for near-matching a misspelt patient name against
-    #: the list. 0 disables it; 1 demands an exact match.
+    #: the list. 0 disables it; 1 demands an exact match. 0.85 is a chosen
+    #: default, not a measured one.
     patient_fuzzy: float = 0.85
     #: Optional allow-list of patient names. When empty, whatever given name the
     #: document carries is used as-is, which keeps the tool usable out of the box.
@@ -137,7 +138,6 @@ class Config:
     #: tariff type code -> category label, merged over the built-in grouping.
     #: Used only when the service description yields nothing.
     category_overrides: dict[str, str] = field(default_factory=dict)
-    #: description keyword -> category label, checked before the built-in table.
 
     #: Fallback when the document does not state one.
     currency: str = "CHF"
@@ -180,7 +180,6 @@ class Config:
     #: PAPERLESS_URL is usually the internal service address, useless on a phone.
     public_url: str = ""
     cache_dir: Path = field(default_factory=lambda: Path(".cache"))
-    # Synology instances often sit behind a self-signed certificate.
     verify_ssl: bool = True
     timeout: float = 60.0
 
@@ -224,7 +223,7 @@ class Config:
         )
 
     def unknown_field_keys(self) -> list[str]:
-        """Mapped keys this extractor does not produce -- almost always a typo."""
+        """Mapped keys this extractor does not produce, e.g. a typo."""
         return sorted(k for k in self.fields if k not in values.ALL)
 
     def require_api(self) -> None:

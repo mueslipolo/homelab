@@ -90,23 +90,23 @@ def status():
                 {"name": "media", "path": "/volume1/media", "snapshot": None},
             ],
             "tasks": [
-                {"name": "Off-site", "dest": "s3", "target": "", "encrypted": True, "enabled": True, "schedule": "daily 20:40",
+                {"name": "Off-site", "dest": "s3", "encrypted": True, "enabled": True, "schedule": "daily 20:40",
                  "folders": ["/homes", "/paperless", "/forgejo/dumps", "/mealie/dumps", "/docker/authelia/secrets"]},
-                {"name": "USB disk", "dest": "usb", "target": "", "encrypted": False, "enabled": True, "schedule": "daily 03:00",
+                {"name": "USB disk", "dest": "usb", "encrypted": False, "enabled": True, "schedule": "daily 03:00",
                  "folders": ["/homes", "/paperless", "/forgejo/dumps", "/mealie/dumps", "/docker/authelia/secrets"]},
             ],
         },
         "stacks": [
-            {"name": n, "id": i, "active": True, "git": g, "current": True if g else None,
+            {"name": n, "active": True, "git": g, "current": True if g else None,
              "deployed": {"commit": commit, "at": at(days=1, hours=3)} if g else None,
              "code": {"commit": commit, "at": at(days=1, hours=3)} if g else None}
-            for i, (n, g) in enumerate([("authelia", True), ("dashboard", True), ("edge", True), ("forgejo", False),
+            for n, g in [("authelia", True), ("dashboard", True), ("edge", True), ("forgejo", False),
                                         ("forgejo-runner", True), ("mealie", True), ("mediarr", True),
-                                        ("paperless", True), ("paperless-tarmed", True)], 1)
+                                        ("paperless", True), ("paperless-tarmed", True)]
         ],
         "images": [
             {"stack": "paperless-tarmed",
-             "code": {"commit": commit, "at": at(days=1, hours=3)},
+             "code": {"commit": commit},
              "built": {"commit": commit, "at": at(days=1, hours=2, minutes=50), "from_current_code": True},
              "running": {"state": "running", "commit": commit, "started": at(days=1, hours=2, minutes=40), "same_image": True}},
         ],
@@ -153,8 +153,7 @@ def library_tail(media):
         w = [1 / (i + 3) ** 0.9 * rnd.uniform(0.8, 1.2) for i in range(n)]
         for x in w:
             b = int(left * x / sum(w))
-            t = {"name": f"{label} {len(m['titles']) + 1}", "bytes": b, "gb_per_hour": round(rnd.uniform(1.5, 9), 2),
-                 "hevc": rnd.random() < 0.3, "saving": 0, "remux": False}
+            t = {"name": f"{label} {len(m['titles']) + 1}", "bytes": b, "gb_per_hour": round(rnd.uniform(1.5, 9), 2)}
             if kind == "series":
                 t["episodes"] = rnd.randint(6, 60)
             m["titles"].append(t)
@@ -189,18 +188,18 @@ def storage():
     ]
     media = {
         "series": {"bytes": int(2.9 * TIB), "count": 64, "titles": [
-            {"name": "The Expanse", "bytes": int(312 * GIB), "episodes": 62, "gb_per_hour": 5.6, "hevc": False, "saving": int(160 * GIB), "remux": False},
-            {"name": "Battlestar Galactica", "bytes": int(241 * GIB), "episodes": 75, "gb_per_hour": 3.8, "hevc": False, "saving": int(110 * GIB), "remux": False},
-            {"name": "Severance", "bytes": int(118 * GIB), "episodes": 19, "gb_per_hour": 7.1, "hevc": True, "saving": 0, "remux": False},
-            {"name": "Parks and Recreation", "bytes": int(96 * GIB), "episodes": 125, "gb_per_hour": 1.6, "hevc": False, "saving": int(41 * GIB), "remux": False},
-            {"name": "Planet Earth II", "bytes": int(88 * GIB), "episodes": 6, "gb_per_hour": 14.2, "hevc": False, "saving": int(52 * GIB), "remux": True},
+            {"name": "The Expanse", "bytes": int(312 * GIB), "episodes": 62, "gb_per_hour": 5.6},
+            {"name": "Battlestar Galactica", "bytes": int(241 * GIB), "episodes": 75, "gb_per_hour": 3.8},
+            {"name": "Severance", "bytes": int(118 * GIB), "episodes": 19, "gb_per_hour": 7.1},
+            {"name": "Parks and Recreation", "bytes": int(96 * GIB), "episodes": 125, "gb_per_hour": 1.6},
+            {"name": "Planet Earth II", "bytes": int(88 * GIB), "episodes": 6, "gb_per_hour": 14.2},
         ]},
         "film": {"bytes": int(1.6 * TIB), "count": 212, "titles": [
-            {"name": "Dune: Part Two (2024)", "bytes": int(64 * GIB), "gb_per_hour": 23.4, "hevc": True, "saving": 0, "remux": True},
-            {"name": "Oppenheimer (2023)", "bytes": int(58 * GIB), "gb_per_hour": 19.3, "hevc": False, "saving": int(36 * GIB), "remux": True},
-            {"name": "Blade Runner 2049 (2017)", "bytes": int(41 * GIB), "gb_per_hour": 15.0, "hevc": False, "saving": int(24 * GIB), "remux": False},
-            {"name": "Interstellar (2014)", "bytes": int(33 * GIB), "gb_per_hour": 11.8, "hevc": True, "saving": 0, "remux": False},
-            {"name": "Arrival (2016)", "bytes": int(18 * GIB), "gb_per_hour": 9.4, "hevc": False, "saving": int(9 * GIB), "remux": False},
+            {"name": "Dune: Part Two (2024)", "bytes": int(64 * GIB), "gb_per_hour": 23.4},
+            {"name": "Oppenheimer (2023)", "bytes": int(58 * GIB), "gb_per_hour": 19.3},
+            {"name": "Blade Runner 2049 (2017)", "bytes": int(41 * GIB), "gb_per_hour": 15.0},
+            {"name": "Interstellar (2014)", "bytes": int(33 * GIB), "gb_per_hour": 11.8},
+            {"name": "Arrival (2016)", "bytes": int(18 * GIB), "gb_per_hour": 9.4},
         ]},
     }
     library_tail(media)
@@ -239,13 +238,12 @@ def storage():
                     "measured": int(b * 0.98), "folders": [{"path": f, "bytes": int(fb * GIB)} for f, fb in FOLDERS.get(n, [])]}
                    for n, b, d7, d30, g in shares],
         "media": media,
-        "reclaim": {"reencode": int(420 * GIB), "drive": int(310 * GIB), "snapshots": None,
-                    "docker": int(6 * GIB), "recycle": int(3 * GIB)},
     }
 
 
 DEVICES = {
     "tagline": "nas · Synology DS920+",
+    "repo": "admin/homelab",
     "devices": [
         {"name": "Synology DS920+", "desc": "NAS", "url": "https://192.0.2.10:5001", "label": "192.0.2.10:5001"},
         {"name": "Router", "desc": "Gateway, DHCP, LAN DNS", "url": "http://192.0.2.1/", "label": "192.0.2.1"},

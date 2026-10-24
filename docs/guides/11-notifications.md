@@ -9,7 +9,7 @@ Push notifications on your phone from everything that needs your attention, on
 a server of your own: [ntfy](https://ntfy.sh), at `https://ntfy.home.example.com`.
 
 A message is one HTTP request to a _topic_; the ntfy app shows it as a normal
-phone notification. This setup uses three topics, so you can mute one:
+phone notification. This setup uses four topics, so you can mute one:
 
 | Topic       | From                                                                      | Example                                                                             |
 | ----------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
@@ -103,8 +103,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer tk_…' -d te
    own, and a fresh login shows none.
 3. Android: keep **instant delivery** on (the app keeps a connection open; that
    is how it receives), and Settings → **Connection protocol** →
-   **WebSockets**, which the app suggests: it uses less battery, and Caddy
-   passes WebSockets through as is.
+   **WebSockets** works through Caddy as is.
 4. The VPN, so it works away from home:
    - **iPhone, WireGuard app:** the tunnel → **On-Demand activation** → on
      cellular, and on Wi-Fi except your home network's name.
@@ -148,12 +147,12 @@ sudo bash -c 'set -a; . <path>/jobs.env; bash <clone>/scripts/renovate-notify.sh
 
 Each app: Settings → **Connect** (Prowlarr: **Notifications**) → + → **ntfy**:
 
-| Field        | Value                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------- |
-| Server URL   | `http://ntfy:8080`                                                                            |
-| Access token | `tk_…` (or username/password fields: leave them empty)                                        |
-| Topics       | `media`                                                                                       |
-| Triggers     | Sonarr/Radarr: _On Import_ (or _On Download_), _On Health Issue_; Prowlarr: _On Health Issue_ |
+| Field        | Value                                                                           |
+| ------------ | ------------------------------------------------------------------------------- |
+| Server URL   | `http://ntfy:8080`                                                              |
+| Access token | `tk_…` (or username/password fields: leave them empty)                          |
+| Topics       | `media`                                                                         |
+| Triggers     | Sonarr/Radarr: _On File Import_, _On Health Issue_; Prowlarr: _On Health Issue_ |
 
 **Check:** the **Test** button; a test message arrives.
 
@@ -176,8 +175,7 @@ set an `Authorization` header: the token goes in an `auth` URL parameter.
    ```bash
    printf 'Bearer %s' tk_… | base64 -w0 | tr -d '='
    ```
-2. Control Panel → Notification → **Webhook** (DSM 7.2: Push Service →
-   Application webhooks) → Add → provider **Custom**:
+2. Control Panel → Notification → **Webhook** → Add → provider **Custom**:
    - URL `http://127.0.0.1:2586/?auth=<parameter>`, method **POST**, content
      type `application/json`
    - body, with DSM's `@@TEXT@@` placeholder for the message. Quote every
@@ -185,31 +183,32 @@ set an `Authorization` header: the token goes in an `auth` URL parameter.
      ```json
      { "topic": "nas", "title": "DSM", "message": "@@TEXT@@" }
      ```
-   - If test messages arrive but some real alerts don't, DSM probably sent a
-     message with a quote or line break unescaped, which breaks the JSON. Use
-     plain text instead: URL `http://127.0.0.1:2586/nas?auth=<parameter>&title=DSM`,
+   - If test messages arrive but some real alerts don't, use plain text
+     instead: URL `http://127.0.0.1:2586/nas?auth=<parameter>&title=DSM`,
      content type `text/plain`, body `@@TEXT@@`.
-3. Notification → **Rules**: assign a rule to the webhook. DSM's preset
-   `default_pushservice` (what its mobile app gets) is a good start; check it
-   includes storage, Hyper Backup and Snapshot Replication failures, and make
-   a narrower copy if it is noisy.
+3. Notification → **Rules**: assign the webhook a rule that includes storage,
+   Hyper Backup and Snapshot Replication failures.
 
 **Check:** DSM's **Send test message**.
 
 ### 10. NAS alerts
 
 Every 15 minutes, right after refreshing the dashboard's `status.json`, the
-scheduler runs `scripts/alerts.sh`, which pushes to `homelab` what the
-dashboard would show amber or red, using the same thresholds:
+scheduler runs `scripts/alerts.sh`, which pushes to `homelab` these items
+when the dashboard would show them amber or red, using the same thresholds.
+Stacks or images behind git and a stale storage scan are not pushed:
 
 | Item                                                                | Amber                                                              | Red                                                                                                |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | a scheduled job                                                     |                                                                    | its last run failed                                                                                |
+| a Hyper Backup task                                                 | partial, or last run over 2 days ago                               | failed                                                                                             |
+| a dump (Forgejo, Mealie)                                            |                                                                    | none, or over 2 days old                                                                           |
+| a shared folder's snapshots                                         | newest over 2 days old                                             |                                                                                                    |
 | a container (anything with a restart policy: the stacks, Portainer) | unhealthy, or restarted by docker after a crash in the last 20 min | restart-looping, or exited with an error or out of memory (a stop, exit 0/137/143, is not a crash) |
 | a phone or computer in `uploaders.conf`                             | silent half its max days                                           | silent its max days                                                                                |
 | the volume                                                          | 80 % used                                                          | 90 % used                                                                                          |
 | the scheduler's git clone                                           | cannot update                                                      |                                                                                                    |
-| a day's growth (`storage.json`)                                     | more than `ALERT_GROWTH_GB`                                        |                                                                                                    |
+| growth between the last two daily scans (`storage.json`)            | more than `ALERT_GROWTH_GB`                                        |                                                                                                    |
 
 It pushes on changes only: once when an item turns amber, again if it turns
 red, and a quiet "ok again" when it recovers. Nothing to set up beyond the

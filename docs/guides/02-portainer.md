@@ -16,12 +16,12 @@ button.
 
 ## Before you start
 
-| What                    | Example                          | How                                                                            |
-| ----------------------- | -------------------------------- | ------------------------------------------------------------------------------ |
-| SSH + Docker on the NAS | —                                | [01 Synology prep](01-synology-prep.md), steps 1–2.                            |
-| The `proxy` network     | —                                | [01](01-synology-prep.md), step 5. Portainer joins it so Caddy can reach it.   |
-| A data folder           | `/volume1/docker/portainer-data` | In the `docker` shared folder: `sudo mkdir -p /volume1/docker/portainer-data`. |
-| A hostname (optional)   | `portainer.home.example.com`     | Only if it will be served through Caddy ([03](03-https-letsencrypt.md)).       |
+| What                    | Example                          | How                                                                                                  |
+| ----------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| SSH + Docker on the NAS | —                                | [01 Synology prep](01-synology-prep.md), steps 1–2.                                                  |
+| The `proxy` network     | —                                | [01](01-synology-prep.md), step 5. Portainer joins it for its OIDC login ([05](05-sso-authelia.md)). |
+| A data folder           | `/volume1/docker/portainer-data` | In the `docker` shared folder: `sudo mkdir -p /volume1/docker/portainer-data`.                       |
+| A hostname (optional)   | `portainer.home.example.com`     | Only if it will be served through Caddy ([03](03-https-letsencrypt.md)).                             |
 
 ## Steps
 
@@ -42,10 +42,9 @@ sudo docker network connect proxy portainer
   `--data` points at it. Portainer clones Git stacks into its data folder and
   hands those paths to the Docker daemon for bind mounts; with the usual
   `-v …:/data`, Git stacks fail with `Bind mount failed: ... does not exist`.
-- **`--trusted-origins`:** `scheme://host` since 2.45
+- **`--trusted-origins`:** `scheme://host` since 2.41
   (`https://portainer.home.example.com`); a bare hostname now stops Portainer
-  at start with `invalid trusted origin`. Up to 2.39 it was the opposite: bare
-  hostname only. Omit it if you don't use Caddy.
+  at start. Before 2.41 it was the opposite: bare hostname only. Omit it if you don't use Caddy.
 - **`docker network connect proxy portainer`** again after every re-creation
   of the container (upgrades included).
 - **Upgrade:** `docker rm -f portainer`, the same `docker run` with the new
@@ -112,8 +111,8 @@ commit, and `docker ps` shows its containers recreated (`CREATED` column).
 ### 5. Behind Caddy (optional)
 
 With [03 HTTPS](03-https-letsencrypt.md) in place, Caddy serves Portainer at
-`https://portainer.home.example.com`. Portainer runs outside `proxy`'s compose
-projects, so Caddy reaches it through the `proxy` gateway with TLS
+`https://portainer.home.example.com`. Portainer is a plain `docker run` with
+port 9443 published, so Caddy reaches it through the `proxy` gateway with TLS
 verification off (the hop never leaves the host):
 
 ```
@@ -139,8 +138,8 @@ warning.
 | Symptom                                                        | Cause → fix                                                                                                                                                                                                                                                       |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Bind mount failed: ... does not exist` on a Repository stack  | Portainer's data path differs inside and outside the container. Recreate it with the identical `-v` path and `--data` (step 1).                                                                                                                                   |
-| Portainer restarts in a loop, log `invalid trusted origin`     | 2.45+ wants `https://<host>` in `--trusted-origins`; 2.39 and older wanted the bare hostname. Match the value to the version.                                                                                                                                     |
-| Caddy: `502` for Portainer                                     | Portainer was recreated and left `proxy`: `docker network connect proxy portainer`.                                                                                                                                                                               |
+| Portainer restarts in a loop, log `invalid trusted origin`     | 2.41+ wants `https://<host>` in `--trusted-origins`; older versions wanted the bare hostname. Match the value to the version.                                                                                                                                     |
+| Portainer OIDC login: `No route to host`                       | Portainer was recreated and left `proxy`: `docker network connect proxy portainer`.                                                                                                                                                                               |
 | Redeploy "succeeds" but a built image is old                   | Portainer skipped the build. Keep `pull_policy: build` and no `image:` key; check `docker inspect -f '{{.Created}}' <container>` moved. This repo builds `paperless-tarmed` outside Portainer for that reason ([10](10-backups-and-jobs.md), `build-images` job). |
 | A changed config file is not picked up after Pull and redeploy | A redeploy only recreates a container when its compose definition changed, not when a mounted file did. Mount the folder (a single file can stay pinned to the old one), and make the app reload (Caddy: `--watch`) or restart the container.                     |
 | Repository stack: `authentication required`                    | Private repo: add the git user and token under Authentication.                                                                                                                                                                                                    |

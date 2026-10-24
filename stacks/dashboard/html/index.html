@@ -714,14 +714,6 @@
     .spark-line { fill: none; stroke: var(--accent); stroke-width: 1.4; }
     .spark-end { fill: var(--accent); }
     .faint { color: var(--faint); }
-    .reclaim { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
-    .reclaim li { display: grid; grid-template-columns: 14px minmax(140px, 15em) 6em 1fr; gap: 12px; align-items: baseline;
-        padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
-    .reclaim li:last-child { border-bottom: 0; }
-    .reclaim .what { font-weight: 500; }
-    .reclaim b { font-family: var(--mono); font-weight: 500; font-size: 0.76rem; text-align: right; }
-    .reclaim small { color: var(--muted); font-size: 0.76rem; }
-    @media (max-width: 640px) { .reclaim li { grid-template-columns: 14px 1fr auto; } .reclaim small { grid-column: 2 / -1; } }
 </style>
 </head>
 <body>
@@ -734,7 +726,7 @@
             <span class="lab"><span data-tagline></span><span data-domain></span></span>
         </div>
 
-        <!-- Filled from local/status.json, written daily on the NAS by
+        <!-- Filled from local/status.json, written every 15 minutes on the NAS by
              scripts/dashboard-status.sh. -->
         <section data-gauge hidden>
             <div class="gauge-row">
@@ -917,9 +909,6 @@
         ['Runbook', 'Backup, restore, rebuild order', 'src/branch/main/docs/operations.md', 'doc', 'doc'],
         ['Architecture', 'Why it is built this way', 'src/branch/main/docs/architecture.md', 'doc', 'tree']
     ];
-    // Same repo path .forgejo/workflows/renovate.yaml names.
-    var REPO = 'yves/homelab';
-
     // Hostnames are derived from the address this page is served at, rather
     // than hardcoded, so this tracked file carries no real domain (README's
     // placeholder policy). Served at dashboard.<internal-domain>, `base`
@@ -928,7 +917,10 @@
     var isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
     var parts = host.split('.');
     var base = (!isIp && parts.length > 1) ? parts.slice(1).join('.') : '';
-    var forgejo = base ? 'https://forgejo.' + base + '/' + REPO + '/' : '';
+    // Links into this repo on Forgejo get their href once local/devices.json
+    // says which repo (`repo`, owner/name): the owner stays out of git.
+    var repoLinks = [];
+    function repoLink(a, path) { repoLinks.push([a, path]); return a; }
 
     function el(tag, cls, text) {
         var e = document.createElement(tag);
@@ -998,18 +990,17 @@
                 base ? s[2] + '.' + base : s[2], base ? 'https://' + s[2] + '.' + base : '',
                 icon(ICON[s[2]] || s[2] + '.svg'));
             if (s[4]) { li.firstChild.title = 'Not behind Authelia: its own login only'; }
-            if (forgejo) {
-                var r = el('a', 'readme', 'README');
-                r.href = forgejo + 'src/branch/main/' + (s[3] ? 'stacks/' + s[3] + '/' : '') + 'README.md';
-                r.title = 'Stack notes on Forgejo';
-                li.appendChild(r);
-            }
+            var r = repoLink(el('a', 'readme', 'README'), 'src/branch/main/' + (s[3] ? 'stacks/' + s[3] + '/' : '') + 'README.md');
+            r.title = 'Stack notes on Forgejo';
+            r.hidden = true;
+            li.appendChild(r);
             return li;
         }));
     });
     group('ops', 'Ops', 'on forgejo', OPS.map(function (o) {
-        return unit(o[0], o[1], o[3], false, o[2].split('?')[0].split('/').pop(), forgejo ? forgejo + o[2] : '',
-            icon(null, o[4]));
+        var li = unit(o[0], o[1], o[3], false, o[2].split('?')[0].split('/').pop(), '', icon(null, o[4]));
+        repoLink(li.firstChild, o[2]);
+        return li;
     }));
 
     document.querySelectorAll('[data-show]').forEach(function (b) {
@@ -1160,7 +1151,7 @@
         if (list.children.length) { document.querySelector('[data-devices-section]').hidden = false; }
         if (!dv.configured) {
             document.querySelector('[data-devices-note]').textContent =
-                'No uploaders.conf yet: the devices above were seen uploading. Create it next to jobs.env (dashboard README).';
+                'No uploaders.conf yet: the devices above were seen uploading. Create it as $OPS_HOME/uploaders.conf (dashboard README).';
         }
         return rows;
     }
@@ -1175,7 +1166,8 @@
             hint = built ? 'image ready: redeploy the stack in Portainer' : 'no image yet: wait for the build, then deploy';
         } else if (!built || !built.from_current_code) {
             if (buildJob && buildJob.exit !== 0) {
-                level = 'bad'; state = 'build failed'; hint = buildJob.message;
+                // The job builds every image; its failure may be another image's.
+                level = 'bad'; state = 'build-images job failed'; hint = buildJob.message;
             } else {
                 level = 'warn'; state = 'build pending'; hint = 'new code: the scheduler builds it within 15 min';
             }
@@ -1406,7 +1398,7 @@
                     lvl = 'bad'; what = c.oom ? 'killed: out of memory' : 'crashed (exit ' + c.exit_code + ')';
                 } else if (c.health === 'unhealthy') { lvl = 'warn'; what = 'unhealthy'; }
                 else if (c.state === 'running' && c.restarts > 0 && now - (c.started || 0) < 1200) {
-                    lvl = 'warn'; what = 'restarted by docker after a crash';
+                    lvl = 'warn'; what = 'restarted by docker (' + c.restarts + ' times)';
                 }
                 if (lvl === 'ok') { return; }
                 troubled++;
@@ -1429,27 +1421,28 @@
         if (sch) {
             var stale = age > 2 * HOUR;
             var schLevel = stale ? 'bad' : sch.pull_ok ? 'ok' : 'warn';
-            // Not a fast-forward: the history on Forgejo was rewritten
-            // (force-push). The clone needs a reset by hand; it never heals.
-            var rewritten = /fast-forward|diverg/i.test(sch.pull_error || '');
-            var why = rewritten
-                ? 'git history was rewritten on Forgejo (force-push). Reset the clone as root: git -C <clone> fetch origin && git -C <clone> reset --hard origin/main'
+            // Not a fast-forward: the clone and Forgejo have diverged
+            // (force-push, or a local commit in the clone); a pull alone
+            // cannot fix that, the clone needs a reset by hand.
+            var diverged = /fast-forward|diverg/i.test(sch.pull_error || '');
+            var why = diverged
+                ? 'the clone and Forgejo have diverged (force-push, or a local commit in the clone). Reset the clone as root: git -C <clone> fetch origin && git -C <clone> reset --hard origin/main'
                 : 'cannot update its git clone: ' + sch.pull_error;
             led(sList, schLevel, 'Scheduler', ago(st.generated, now),
-                stale ? 'run-jobs.sh has stopped running'
+                stale ? 'status report not refreshed for ' + ago(st.generated, now).replace(' ago', '')
                     : 'version ' + sch.sha + (sch.pull_ok ? '' : ' · ' + why + '. Jobs and the stack check use this old copy until then.'));
             sLevels.push(schLevel);
             // First in the summary: it explains the other warnings.
             if (schLevel !== 'ok') {
-                notes.unshift([schLevel, stale ? 'scheduler stopped'
-                    : rewritten ? 'scheduler: git history rewritten, reset its clone' : 'scheduler cannot update its clone']);
+                notes.unshift([schLevel, stale ? 'status report not refreshed'
+                    : diverged ? 'scheduler: clone diverged from Forgejo, reset it' : 'scheduler cannot update its clone']);
             }
         } else {
             var rLevel = age > 36 * HOUR ? 'bad' : 'ok';
             led(sList, rLevel, 'Status report', ago(st.generated, now),
-                age > 36 * HOUR ? 'dashboard-status.sh has stopped running' : '');
+                age > 36 * HOUR ? 'status report not refreshed for ' + ago(st.generated, now).replace(' ago', '') : '');
             sLevels.push(rLevel);
-            note(rLevel, 'status report stopped');
+            note(rLevel, 'status report not refreshed');
         }
         // The summary names the worst problem; among equals, the first found.
         var top = notes.filter(function (n) { return n[0] === 'bad'; })[0] || notes[0];
@@ -1529,7 +1522,8 @@
         var pts = daily.map(function (d, i) { return X(i).toFixed(1) + ',' + Y(d[1]).toFixed(1); }).join(' ');
         s.appendChild(svg('polygon', { points: L + ',' + (H - B) + ' ' + pts + ' ' + X(daily.length - 1) + ',' + (H - B), 'class': 'trend-area' }));
         s.appendChild(svg('polyline', { points: pts, 'class': 'trend-line' }));
-        // The two largest one-day drops of 10 GB or more.
+        // The two largest drops of 10 GB or more between two scans in a row
+        // (a day apart, unless a scan is missing: then "since" its date).
         var drops = [];
         for (var i = 1; i < daily.length; i++) {
             var d = daily[i][1] - daily[i - 1][1];
@@ -1539,7 +1533,8 @@
             var x = X(dr[1]);
             s.appendChild(svg('line', { x1: x, x2: x, y1: Y(daily[dr[1] - 1][1]), y2: Y(daily[dr[1]][1]), 'class': 'drop' }));
             s.appendChild(svg('text', { x: x - 6, y: Y(daily[dr[1]][1]) + 14, 'class': 'axis note', 'text-anchor': 'end' },
-                signed(dr[0]) + ' on ' + dmy(daily[dr[1]][0])));
+                signed(dr[0]) + (Date.parse(daily[dr[1]][0]) - Date.parse(daily[dr[1] - 1][0]) > DAY * 1000
+                    ? ' since ' + dmy(daily[dr[1] - 1][0]) : ' on ' + dmy(daily[dr[1]][0]))));
         });
         var last = daily.length - 1;
         daily.forEach(function (d, i) {
@@ -1677,16 +1672,15 @@
                 return { name: d.path.split('/').pop(), title: '/' + p.name + '/' + d.path, raw: d.bytes };
             }), p.bytes, p.bytes / f.measured, ['everything else', p.name + ': everything else']);
         }
-        if (p.kind === 'snapshots') {
-            return fillPart(heldKids(st), p.bytes, 1, ['changed files', 'Snapshots: changed files', 'older versions of files still in the shares']);
-        }
+        // Snapshots: btrfs counts only what one snapshot holds alone. A file
+        // deleted after several snapshots is in all of them, so it is not in
+        // this part but in Other, with the other deleted files.
         if (p.kind === 'other') {
-            var od = st.other_detail || {}, kids = st.exclusive_known ? [] : heldKids(st);
-            if (od.metadata) { kids.push({ name: 'btrfs metadata', title: 'btrfs metadata', raw: od.metadata, note: 'the file system\'s own records, kept twice' }); }
+            var od = st.other_detail || {}, kids = heldKids(st);
+            if (od.metadata) { kids.push({ name: 'btrfs metadata', title: 'btrfs metadata', raw: od.metadata, note: 'the file system\'s own records (both copies when DUP)' }); }
             if (od.system) { kids.push({ name: 'DSM system', title: 'DSM\'s own folders', raw: od.system, note: '@syno and the like' }); }
             (p.members || []).forEach(function (m) { kids.push({ name: m.name, title: m.name, raw: m.bytes }); });
-            return fillPart(kids, p.bytes, 1, ['not explained', 'Other: not explained',
-                'not traced to anything: blocks btrfs keeps for files partly rewritten, or files changed in place since a snapshot']);
+            return fillPart(kids, p.bytes, 1, ['not traced', 'Other: not traced', 'not traced to anything measured here']);
         }
         return [];
     }
@@ -1764,7 +1758,8 @@
     }
 
     function storageLevel(st, now) {
-        var pct = st.volume.used / st.volume.total * 100;
+        // Like df's Use% (status.json's gauge): used / (used + free).
+        var pct = st.volume.used / (st.volume.used + st.volume.free) * 100;
         if (now - st.generated > 36 * HOUR) { return ['warn', 'scan stopped ' + ago(st.generated, now)]; }
         var lvl = pct >= 90 ? 'bad' : pct >= 80 ? 'warn' : 'ok';
         var g = st.growth;
@@ -1814,10 +1809,10 @@
         s1.appendChild(volumeTreemap(shown, st));
         s1.appendChild(legend);
         if (st.counted_twice > 0) {
-            s1.appendChild(el('p', 'legend', bytes(st.counted_twice) + ' is shared between parts (snapshots, Drive history) and counted in each: btrfs does not report what each holds on its own here.'));
+            s1.appendChild(el('p', 'legend', bytes(st.counted_twice) + ' is counted in more than one part: btrfs does not report what each holds on its own here.'));
         }
         if (shown.some(function (p) { return p.kind === 'other'; })) {
-            s1.appendChild(el('p', 'legend', 'Other: ' + OTHER + (st.exclusive_known ? '' : ' btrfs does not report the snapshots\' own space here: what they hold is estimated from the deleted files.') + ' Hover its blocks.'));
+            s1.appendChild(el('p', 'legend', 'Other: ' + OTHER + ' The deleted files are an estimate, from their sizes.' + (st.exclusive_known ? ' Snapshots: what a single snapshot holds alone.' : '') + ' Hover its blocks.'));
         }
 
         // ---- trend and changes
@@ -1896,36 +1891,8 @@
             s4.appendChild(key);
         }
 
-        // ---- what could be freed
-        var r = st.reclaim, s5 = section('What could be freed'), rl = el('ul', 'reclaim');
-        // Without btrfs's own figure for the snapshots, the deleted files they
-        // still hold are the estimate.
-        var held = ((st.other_detail || {}).snapshot_held || []), snap = r.snapshots, snapNote = 'frees itself as old snapshots expire', estimate = {};
-        if (snap == null && held.length) {
-            snap = held.reduce(function (n, h) { return n + h.bytes; }, 0);
-            estimate.Snapshots = true;
-            var big = heldKids(st).sort(function (a, b) { return b.raw - a.raw; })[0];
-            snapNote = 'files deleted but still in the ' + held.map(function (h) { return h.share; }).join(', ') + ' snapshots' +
-                (big ? ', the largest ' + big.title + ' (' + bytes(big.raw) + ')' : '') + '; frees itself as those snapshots expire';
-        } else if (snap == null) { snapNote = 'unknown: btrfs does not report each snapshot\'s own space here'; }
-        [
-            [r.reencode, 50 * GIB, 'Re-encode candidates', 'reencode.sh -n series /mnt/media/media/tv (and film for movies) lists them'],
-            [r.drive, 100 * GIB, 'Drive version history', 'fewer versions in the Synology Drive Admin Console; snapshots and Hyper Backup cover the rest'],
-            [snap, Infinity, 'Snapshots', snapNote],
-            [r.docker, 20 * GIB, 'Unused Docker images', 'removed every night by the docker-prune job'],
-            [r.recycle, 10 * GIB, 'Recycle bins', 'empty them in Control Panel → Shared Folder']
-        ].forEach(function (x) {
-            var lvl = x[0] != null && x[0] >= x[1] ? 'warn' : 'ok';
-            var li = el('li', lvl);
-            li.appendChild(el('i', 'dot ' + lvl));
-            li.appendChild(el('span', 'what', x[2]));
-            li.appendChild(el('b', null, x[0] == null ? '?' : (x[2] === 'Re-encode candidates' || estimate[x[2]] ? '≈ ' : '') + bytes(x[0])));
-            li.appendChild(el('small', null, x[3]));
-            rl.appendChild(li);
-        });
-        s5.appendChild(rl);
         // Used space first, then the two treemaps, then the details.
-        [row, s1, s4, s3, s5].forEach(function (x) { if (x) { box.appendChild(x); } });
+        [row, s1, s4, s3].forEach(function (x) { if (x) { box.appendChild(x); } });
     }
     getJson('local/storage.json').then(function (st) {
         if (st && st.volume) { renderStorage(st); }
@@ -1937,6 +1904,12 @@
     // it the Network tab shows the diagram with generic labels only.
     getJson('local/devices.json').then(function (cfg) {
         if (!cfg) { return; }
+        if (cfg.repo && base) {
+            repoLinks.forEach(function (x) {
+                x[0].href = 'https://forgejo.' + base + '/' + cfg.repo + '/' + x[1];
+                x[0].hidden = false;
+            });
+        }
         if (cfg.tagline) {
             document.querySelector('[data-tagline]').textContent = cfg.tagline + ' · ';
         }

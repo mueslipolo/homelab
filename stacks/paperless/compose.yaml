@@ -83,8 +83,7 @@ services:
       # scans, so paperless-tarmed finds no bill. Costly per page, hence the
       # caps below.
       PAPERLESS_OCR_MODE: redo
-      # One task at a time, OCR on 2 of the DS920+'s 4 cores: an import no
-      # longer takes the whole NAS, it just takes a bit longer.
+      # One task at a time, OCR on 2 of the DS920+'s 4 cores.
       PAPERLESS_TASK_WORKERS: 1
       PAPERLESS_THREADS_PER_WORKER: 2
       # Defaults are hourly training and mail every 10 min; each run reads the
@@ -97,9 +96,8 @@ services:
       # (its own repo and Portainer Stack — see stacks/paperless-tarmed/README.md)
       # calls this API server-to-server over `proxy` as http://webserver:8000, so
       # the Host header it sends is the bare service name. Django rejects any Host
-      # missing from this list with a bodyless 400 (DisallowedHost), so deleting
-      # this breaks custom-field write-back silently, from a different stack, with
-      # nothing logged in paperless.
+      # missing from this list with a 400 (DisallowedHost), so deleting this
+      # breaks custom-field write-back from a different stack.
       PAPERLESS_ALLOWED_HOSTS: paperless.${INTERNAL_DOMAIN},webserver
       PAPERLESS_CONSUMER_RECURSIVE: 1
       PAPERLESS_TIKA_ENABLED: 1
@@ -107,7 +105,7 @@ services:
       PAPERLESS_TIKA_ENDPOINT: http://tika:9998
       PAPERLESS_CONSUMER_ENABLE_BARCODES: 1
       PAPERLESS_CONSUMER_BARCODE_STRING: paperless:separator
-      # Native OIDC login via Authelia — Phase 5 Step 4. Matching client
+      # Native OIDC login via Authelia. Matching client
       # registered in stacks/authelia/config/configuration.yml
       # (identity_providers.oidc.clients, client_id: paperless). The
       # provider_id in this JSON ("authelia") is what determines the OIDC
@@ -135,8 +133,6 @@ services:
     restart: unless-stopped
     networks:
       - paperless_net
-    environment:
-      CHROMIUM_DISABLE_ROUTES: 1
     command:
       - "gotenberg"
       - "--chromium-disable-javascript=true"

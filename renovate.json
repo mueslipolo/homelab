@@ -5,8 +5,8 @@
   "description": [
     "prHourlyLimit is 0 (unlimited), overriding Renovate's default of 2. That default",
     "exists to keep busy public repos from flooding a PR list and burning API quota;",
-    "here it only hides work. This repo runs weekly, so a batch larger than two gets",
-    "trickled out two PRs at a time a week apart, and the remainder sit in the",
+    "here it only hides work. This repo runs daily, so a batch larger than two gets",
+    "trickled out two PRs a day, and the remainder sit in the",
     "Dependency Dashboard's Rate-Limited section — no PR, no error, easy to read as",
     "'Renovate found nothing'. That happened on 2026-09-26: the linuxserver versioning",
     "fix detected all five images, but sonarr/radarr/prowlarr were capped out and never",
@@ -51,8 +51,7 @@
         "  qbittorrent             5.2.3_v2.0.13-ls469    bundled libtorrent",
         "  jellyfin                10.11.11ubu2604-ls43   base-distro tag",
         "  jellyfin 12.x           12.1ubu2604-ls50       two-segment, no patch",
-        "Ordering on the ls counter alone is safe because LinuxServer increments it per",
-        "build and never resets it across upstream version changes.",
+        "Versions order by major.minor.patch first, then by the ls counter.",
         "",
         "Requiring a leading digit and a literal `-ls` is also what keeps `develop`,",
         "`nightly`, `amd64-*`/`arm64v8-*` and the bare rolling `2.6.5` tags out of the",
@@ -66,7 +65,7 @@
       "description": [
         "Minor and patch updates merge themselves: Renovate commits them straight to",
         "main (no PR) once the checks workflow has passed on its branch, on its next",
-        "run (daily). Portainer's GitOps polling then deploys them within 5 minutes."
+        "run (daily). Portainer's GitOps polling then deploys them."
       ],
       "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
       "automerge": true,

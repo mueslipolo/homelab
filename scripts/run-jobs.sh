@@ -93,8 +93,8 @@ sync_repo() {
 
 	ok_at=$(sed -n 's/.*"pull_ok_at": \([0-9]*\).*/\1/p' "$STATE/_scheduler.json" 2>/dev/null)
 	[ "$ok" = 1 ] && ok_at=$(now)
-	printf '{"tick": %s, "sha": %s, "pull_ok": %s, "pull_ok_at": %s, "pull_error": %s}\n' \
-		"$(now)" "$(json_str "$after")" "$([ "$ok" = 1 ] && echo true || echo false)" \
+	printf '{"sha": %s, "pull_ok": %s, "pull_ok_at": %s, "pull_error": %s}\n' \
+		"$(json_str "$after")" "$([ "$ok" = 1 ] && echo true || echo false)" \
 		"${ok_at:-null}" "$(json_str "${err:0:300}")" | write_atomic "$STATE/_scheduler.json"
 
 	# New code arrived: restart once on it, so this tick already uses it.
@@ -123,7 +123,7 @@ is_due() { # <name> <HH:MM | tick>
 }
 
 run_job() { # <name> <HH:MM> <timeout> <script> [args...]
-	local name=$1 at=$2 limit=$3 script=$4 started ended rc log sha
+	local name=$1 limit=$3 script=$4 started ended rc log
 	shift 4
 	started=$(now)
 	mkdir -p "$LOGS/$name"
@@ -143,10 +143,9 @@ run_job() { # <name> <HH:MM> <timeout> <script> [args...]
 		: >"$STATE/$name.failed"
 	fi
 
-	sha=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)
-	printf '{"name": %s, "at": %s, "started": %s, "ended": %s, "exit": %s, "last_ok_day": %s, "sha": %s, "message": %s}\n' \
-		"$(json_str "$name")" "$(json_str "$at")" "$started" "$ended" "$rc" \
-		"$(json_str "$(cat "$STATE/$name.okday" 2>/dev/null)")" "$(json_str "$sha")" \
+	printf '{"name": %s, "ended": %s, "exit": %s, "last_ok_day": %s, "message": %s}\n' \
+		"$(json_str "$name")" "$ended" "$rc" \
+		"$(json_str "$(cat "$STATE/$name.okday" 2>/dev/null)")" \
 		"$(json_str "$(tail -n 1 -- "$log" | cut -c1-200)")" | write_atomic "$STATE/$name.json"
 	hc "$name" "$rc" "$log"
 }

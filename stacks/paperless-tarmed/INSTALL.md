@@ -9,7 +9,7 @@ over SSH on the NAS.
 ## 1. Prerequisites
 
 ```bash
-uname -m                          # x86_64, aarch64 or armv7l; anything else: stop
+uname -m                          # x86_64 is tested; others need wheels for every dependency
 docker network ls | grep proxy    # the shared network Paperless's webserver is on
 mkdir -p <nas-volume-path>/docker/paperless-tarmed/data
 chown -R 1000:1000 <nas-volume-path>/docker/paperless-tarmed/data
@@ -39,8 +39,9 @@ The `chown` is required (the container runs as uid 1000). The scheduler
 
 2. **Document type** `Justificatif de remboursement`, assigned by your own
    matching rule; this service only reads it.
-3. **API token** for a dedicated user that can view and change documents, custom
-   fields and tags (Settings → Users; then that user's profile → API token).
+3. **API token** for a dedicated user that can view and change documents, view
+   custom fields and document types, view and add tags, and add notes
+   (Settings → Users; then that user's profile → API token).
 4. **Webhook secret**: `openssl rand -hex 24`. You need it in steps 3 and 8.
 
 **Check:** the fields and the document type appear in Paperless's settings.

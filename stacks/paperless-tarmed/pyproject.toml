@@ -1,7 +1,7 @@
 [project]
 name = "paperless-tarmed"
 version = "0.1.0"
-description = "Extract Concerne / treatment date / total from Swiss 'Justificatif de remboursement' into Paperless-ngx"
+description = "Read Swiss 'Justificatif de remboursement' forms into Paperless-ngx custom fields"
 requires-python = ">=3.11"
 dependencies = [
     "pypdfium2>=4",
