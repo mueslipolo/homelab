@@ -95,10 +95,23 @@
       "description": [
         "Built on the NAS from this repo (scripts/build-images.sh), never pushed to a",
         "registry: every lookup fails ('no-result') and shows as a warning on the",
-        "Dependency Dashboard. Its tag changes with the code, not with Renovate."
+        "Dependency Dashboard. Their tags change with the code, not with Renovate:",
+        "paperless-tarmed, and homelab-ci (the CI image, from .forgejo/ci)."
       ],
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["paperless-tarmed"],
+      "matchPackageNames": ["paperless-tarmed", "homelab-ci"],
+      "enabled": false
+    },
+    {
+      "description": [
+        "No Postgres majors. A new major does not start on the previous one's data",
+        "folder: it needs a dump and restore (or pg_upgrade), and 18 also moved its",
+        "data path. Merged as a tag bump, Paperless's database would not start.",
+        "Upgrade by hand when wanted; minor and patch updates still come."
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "matchUpdateTypes": ["major"],
       "enabled": false
     }
   ]
