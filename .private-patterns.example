@@ -1,4 +1,4 @@
-# Site-specific patterns for scripts/check-no-real-values.sh.
+# Site-specific patterns for dev/check-no-real-values.sh.
 #
 # Copy to `.private-patterns` (gitignored) and fill in the real values. This
 # example file is tracked and must therefore stay free of them.

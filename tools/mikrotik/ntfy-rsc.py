@@ -113,30 +113,35 @@ INET = r'''# Netwatch up/down for the hosts commented ntfy-inet-*. "Internet dow
 WG = r'''# Every minute: a WireGuard peer whose last handshake is under 3 min old is
 # connected; one with none for 10 min after that has gone quiet. Pushes the
 # transitions only. Named by comment, else name, else start of its key.
+# Peers whose name matches the quiet regex are not reported (deploy.sh sets it
+# from WG_QUIET; WG_QUIET_NONE means report every peer).
 :global ntfyWgUp
 :if ([:typeof $ntfyWgUp] != "array") do={ :set ntfyWgUp [:toarray ""] }
 :local send [:parse [/system script get ntfy-send source]]
+:local quiet "WG_QUIET_NONE"
 :foreach p in=[/interface wireguard peers find] do={
   :local key [:tostr $p]
   :local name [/interface wireguard peers get $p comment]
   :if ([:len $name] = 0) do={ :do { :set name [/interface wireguard peers get $p name] } on-error={} }
   :if ([:len $name] = 0) do={ :set name [:pick [/interface wireguard peers get $p public-key] 0 8] }
-  :local hs [/interface wireguard peers get $p last-handshake]
-  :local recent false
-  :local gone true
-  :if ([:typeof $hs] = "time") do={
-    :if ($hs < 3m) do={ :set recent true }
-    :if ($hs < 10m) do={ :set gone false }
-  }
-  :local was false
-  :if ([:typeof ($ntfyWgUp->$key)] = "bool") do={ :set was ($ntfyWgUp->$key) }
-  :if ($recent && !$was) do={
-    :set ($ntfyWgUp->$key) true
-    $send title=("VPN: " . $name . " connected") message=("WireGuard peer " . $name . " is connected.") tags="key" priority="low"
-  }
-  :if ($gone && $was) do={
-    :set ($ntfyWgUp->$key) false
-    $send title=("VPN: " . $name . " gone quiet") message=("No handshake from " . $name . " for 10 minutes.") tags="zzz" priority="low"
+  :if ($quiet = "WG_QUIET_NONE" || !($name ~ $quiet)) do={
+    :local hs [/interface wireguard peers get $p last-handshake]
+    :local recent false
+    :local gone true
+    :if ([:typeof $hs] = "time") do={
+      :if ($hs < 3m) do={ :set recent true }
+      :if ($hs < 10m) do={ :set gone false }
+    }
+    :local was false
+    :if ([:typeof ($ntfyWgUp->$key)] = "bool") do={ :set was ($ntfyWgUp->$key) }
+    :if ($recent && !$was) do={
+      :set ($ntfyWgUp->$key) true
+      $send title=("VPN: " . $name . " connected") message=("WireGuard peer " . $name . " is connected.") tags="key" priority="low"
+    }
+    :if ($gone && $was) do={
+      :set ($ntfyWgUp->$key) false
+      $send title=("VPN: " . $name . " gone quiet") message=("No handshake from " . $name . " for 10 minutes.") tags="zzz" priority="low"
+    }
   }
 }
 '''

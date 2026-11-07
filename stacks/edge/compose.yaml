@@ -12,31 +12,38 @@ services:
     logging: *logging
     build:
       context: .
+      args:
+        DNS_PROVIDER: ${DNS_PROVIDER:-infomaniak}
     # No `image:` key, so compose names the build with a project-derived tag that
     # never changes. Without this, `compose up` treats the service as up to date
     # and reuses whatever image already carries that tag: a redeploy fetches the
     # new Dockerfile/Caddyfile, starts the old binary, and reports success. Same
     # failure as stacks/paperless-tarmed, which is where it was first diagnosed.
-    # Portainer can still skip the build even with this (guide 02,
-    # Troubleshooting): after a Dockerfile change, check the image's .Created.
+    # A redeploy has still skipped the build before: after a Dockerfile
+    # change, check the image's .Created.
     pull_policy: build
     # --watch: Caddy re-reads its Caddyfile every second and reloads it when it
-    # changes. A Portainer redeploy does not recreate the container for a
+    # changes. A redeploy does not recreate the container for a
     # Caddyfile change alone, so without it the old config keeps running. A
     # Caddyfile that fails to load stops the watching: the last good config
     # keeps serving and later changes are ignored until a restart.
     # CADDYFILE=Caddyfile.minimal for guide 03's one-app start.
     command: ["caddy", "run", "--config", "/etc/caddy/${CADDYFILE:-Caddyfile}", "--adapter", "caddyfile", "--watch"]
-    restart: unless-stopped
+    restart: always
     environment:
       ACME_EMAIL: ${ACME_EMAIL}
       INTERNAL_DOMAIN: ${INTERNAL_DOMAIN}
-      INFOMANIAK_API_TOKEN: ${INFOMANIAK_API_TOKEN}
+      DNS_PROVIDER: ${DNS_PROVIDER:-infomaniak}
+      # INFOMANIAK_API_TOKEN: its name before DNS_PROVIDER existed.
+      DNS_API_TOKEN: ${DNS_API_TOKEN:-${INFOMANIAK_API_TOKEN:?set DNS_API_TOKEN, the DNS provider API token}}
       PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
+      # The dashboard's admin group, as in the authelia stack: everyone else
+      # gets its family page (stacks/dashboard/README.md, "Two pages").
+      ADMIN_GROUP: ${ADMIN_GROUP:-infra-admins}
     mac_address: ${CADDY_LAN_MAC}
     volumes:
       # The folder, not the file: a single-file mount can stay pinned to the
-      # old file after Portainer re-clones the repo.
+      # old file after Dockhand re-clones the repo.
       - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config

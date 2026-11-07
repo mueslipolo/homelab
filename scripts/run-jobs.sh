@@ -26,8 +26,13 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
 REPO=$(cd "$(dirname -- "$0")/.." && pwd)
 readonly REPO
 readonly SCRIPTS="${JOBS_DIR:-$REPO/scripts}"
-readonly CONF="${JOBS_CONF:-$SCRIPTS/jobs.conf}"
 readonly OPS_HOME="${OPS_HOME:?set OPS_HOME in jobs.env (state and logs live there)}"
+# The job list: a local copy in OPS_HOME, if there is one (to drop or move
+# jobs on this NAS), else the repo's.
+CONF="${JOBS_CONF:-$SCRIPTS/jobs.conf}"
+[ -n "${JOBS_CONF:-}" ] || [ ! -f "$OPS_HOME/jobs.conf" ] || CONF="$OPS_HOME/jobs.conf"
+readonly CONF
+export JOBS_CONF="$CONF" # dashboard-status.sh reads the same list
 readonly STATE="$OPS_HOME/state"
 readonly LOGS="$OPS_HOME/logs"
 readonly RETRY_AFTER="${JOBS_RETRY_AFTER:-3600}" # seconds between attempts after a failure
@@ -50,19 +55,25 @@ flock -n 9 || exit 0
 
 now() { echo "${RUN_JOBS_NOW:-$(date +%s)}"; }
 
-# healthchecks.io: one check per job, addressed by slug and created on first
-# ping, so the only secret is the project's ping key. No key, no pings.
+# healthchecks.io: one check per job, addressed by slug and created by its
+# first result, so the only secret is the project's ping key. No key, no
+# pings. A start never creates one: a job that turns out not to be set up
+# here (exit 77) then leaves no check behind.
 hc() { # <slug> <signal: start | 0..255> [body file]
 	[ -n "${HC_PING_KEY:-}" ] || return 0
-	local url="$HC_BASE/$HC_PING_KEY/$HC_PREFIX$1" body=/dev/null reply
-	[ "$2" = start ] && url+="/start" || url+="/$2"
-	url+="?create=1"
+	local url="$HC_BASE/$HC_PING_KEY/$HC_PREFIX$1" body=/dev/null reply ok=2
+	if [ "$2" = start ]; then
+		url+="/start"
+		ok='[24]' # 404: no such check yet
+	else
+		url+="/$2?create=1"
+	fi
 	[ -n "${3:-}" ] && body=$3
 	# Never fatal, but never silent either: say which ping failed and what
 	# healthchecks.io answered, without printing the key.
 	if ! reply=$(tail -c 10000 -- "$body" |
 		curl -sS -m 10 --retry 3 -w ' (HTTP %{http_code})' --data-binary @- "$url" 2>&1) ||
-		[[ $reply != *"(HTTP 2"* ]]; then
+		[[ $reply != *"(HTTP "$ok* ]]; then
 		echo "run-jobs: healthchecks.io ping $HC_PREFIX$1/$2 failed: ${reply//$HC_PING_KEY/<key>}" >&2
 	fi
 }
@@ -135,6 +146,14 @@ run_job() { # <name> <HH:MM> <timeout> <script> [args...]
 	timeout "$limit" bash "$SCRIPTS/$script" "$@" </dev/null >"$log" 2>&1
 	rc=$?
 	[ "$rc" = 124 ] && echo "run-jobs: killed after $limit" >>"$log"
+	if [ "$rc" = 77 ]; then
+		# Not set up here (its app isn't deployed, or its setting is unset):
+		# no state, no result ping, nothing on the dashboard. Asked again
+		# tomorrow (a tick job: next tick).
+		date -d "@$started" +%F >"$STATE/$name.okday"
+		rm -f -- "$STATE/$name.failed" "$STATE/$name.json"
+		return
+	fi
 	ended=$(now)
 	if [ "$rc" = 0 ]; then
 		date -d "@$started" +%F >"$STATE/$name.okday"

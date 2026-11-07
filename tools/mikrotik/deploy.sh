@@ -14,6 +14,8 @@
 #   DHCP_SERVER=defconf            DHCP server to attach the lease script to
 #   GUEST_DHCP_SERVER=dhcp-guest   optional: the AP's guest DHCP server, whose
 #                                  devices alert as "on the guest Wi-Fi"
+#   WG_QUIET='Anna|Ben'            optional: WireGuard peers whose name (comment)
+#                                  matches this regex send no VPN alerts
 #
 # Per device:
 #   router  scripts, internet + WireGuard checks, lease script ("New device on the LAN")
@@ -36,6 +38,13 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 sed -e "s/ntfy\.home\.example\.com/$NTFY_HOST/g" -e "s/tk_REPLACE_ME/$NTFY_TOKEN/g" ntfy.rsc >"$tmp/ntfy.rsc"
 grep -q 'tk_REPLACE_ME\|ntfy\.home\.example\.com' "$tmp/ntfy.rsc" && { echo "Placeholders left in ntfy.rsc" >&2; exit 1; }
+if [ -n "${WG_QUIET:-}" ]; then
+	# It lands inside a RouterOS string: no quote, backslash or $.
+	case $WG_QUIET in *[\"\\\$]*) echo "WG_QUIET: no \", \\ or \$ allowed" >&2; exit 2 ;; esac
+	rsc=$(<"$tmp/ntfy.rsc")
+	# Only the `:local quiet "WG_QUIET_NONE"` line, not the comparison with it.
+	printf '%s\n' "${rsc//':local quiet \"WG_QUIET_NONE'/":local quiet \\\"$WG_QUIET"}" >"$tmp/ntfy.rsc"
+fi
 
 # The line attaching the lease script to a DHCP server. <where> is empty, or
 # ' where=\"Wi-Fi\"' (RouterOS-escaped) for the alert's wording.

@@ -12,6 +12,12 @@ set -euo pipefail
 # shellcheck source=scripts/lib/dump.sh
 . "$(dirname -- "$0")/lib/dump.sh"
 
+# No Mealie container at all, running or not: not deployed here. 77 tells
+# run-jobs.sh the job is not set up, not that it failed. (Docker not
+# answering fails the assignment, and so the job.)
+ids=$(docker ps -aq --filter label=com.docker.compose.service=mealie)
+[ -n "$ids" ] || { echo "No Mealie container: skipped"; exit 77; }
+
 readonly DUMP_DIR="${MEALIE_DUMP_DIR:?set MEALIE_DUMP_DIR to the NAS dumps directory}"
 # Mealie → profile → API Tokens, as an admin user. Kept in jobs.env.
 readonly TOKEN="${MEALIE_API_TOKEN:?set MEALIE_API_TOKEN to a Mealie API token of an admin user}"

@@ -4,12 +4,16 @@
 
 (tls_wildcard) {
 	tls {
-		dns infomaniak {env.INFOMANIAK_API_TOKEN}
+		# The provider from DNS_PROVIDER, its token from DNS_API_TOKEN. A
+		# provider that wants more than one token: its own syntax here
+		# (docs/guides/03-https-letsencrypt.md, "Another DNS provider").
+		dns {$DNS_PROVIDER} {env.DNS_API_TOKEN}
 	}
 }
 
 # Forward-auth gate. Deliberately NOT imported into: jellyfin (Chromecast
-# can't complete a browser SSO redirect), mealie and paperless (native OIDC),
+# can't complete a browser SSO redirect), mealie, paperless and immich (native
+# OIDC; Immich's phone app also calls its API directly),
 # auth itself (a login portal gated behind login is unreachable).
 # For the *arrs: their "Disabled for Local Addresses" only skips their own
 # login for a request with no X-Forwarded-For. With the header, even a LAN
@@ -53,12 +57,26 @@ dashboard.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import errors
 	import authelia
-	# Shows each error page on demand (behind Authelia), to check them.
-	error /__error/404 404
-	error /__error/500 500
-	error /__error/502 502
-	error /__error/504 504
-	reverse_proxy dashboard:8080
+	# Someone logged in but not in the admin group gets the family's page,
+	# whatever the path (forward_auth runs first and replaces any Remote-*
+	# header the client sent). Authelia's rules refuse them the rest too.
+	@family {
+		header Remote-User *
+		not header_regexp Remote-Groups (^|,){$ADMIN_GROUP:infra-admins}(,|$)
+	}
+	handle @family {
+		@page not path /icons/* /fonts/* /gopher/*
+		rewrite @page /welcome.html
+		reverse_proxy dashboard:8080
+	}
+	handle {
+		# Shows each error page on demand (behind Authelia), to check them.
+		error /__error/404 404
+		error /__error/500 500
+		error /__error/502 502
+		error /__error/504 504
+		reverse_proxy dashboard:8080
+	}
 }
 
 mealie.{$INTERNAL_DOMAIN} {
@@ -66,6 +84,18 @@ mealie.{$INTERNAL_DOMAIN} {
 	import errors
 	# No forward_auth: native OIDC (mealie's own OIDC_AUTO_REDIRECT). Was
 	# full-gate; forward_auth plus Mealie's own login meant two logins.
+	# Not logged in yet (no session cookie): straight to Authelia, instead of
+	# Mealie's login page loading for seconds before it redirects itself.
+	# Anything with a query (Authelia's ?code= callback, ?direct=1 after a
+	# logout or failed login, ?redirect= from a share) goes to Mealie as is.
+	# Cookie name from Mealie's mealie/routes/auth/auth.py (v3.29): if a
+	# release renames it, this only stops skipping the page.
+	@mealie_login {
+		path / /login
+		expression `{http.request.uri.query} == ""`
+		not header Cookie *mealie.access_token=*
+	}
+	redir @mealie_login /api/auth/oauth
 	reverse_proxy mealie:9000
 }
 
@@ -73,6 +103,16 @@ paperless.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import errors
 	reverse_proxy webserver:8000
+}
+
+# No forward_auth: Immich logs in by OIDC itself, and its phone app calls the
+# API with its own token, which a gate would refuse. Caddy's defaults suit
+# large video uploads: no body size limit, no limit on a whole upload's time
+# (only a stall of 1 minute aborts it).
+immich.{$INTERNAL_DOMAIN} {
+	import tls_wildcard
+	import errors
+	reverse_proxy immich-server:2283
 }
 
 sonarr.{$INTERNAL_DOMAIN} {
@@ -122,13 +162,6 @@ seerr.{$INTERNAL_DOMAIN} {
 	reverse_proxy seerr:5055
 }
 
-# Old name, kept for bookmarks: Jellyseerr became Seerr.
-jellyseerr.{$INTERNAL_DOMAIN} {
-	import tls_wildcard
-	import errors
-	redir https://seerr.{$INTERNAL_DOMAIN}{uri} permanent
-}
-
 # No Authelia gate: the ntfy apps and the *arrs talk to its API directly. ntfy
 # has its own users and tokens, with anonymous access denied.
 ntfy.{$INTERNAL_DOMAIN} {
@@ -153,33 +186,22 @@ auth.{$INTERNAL_DOMAIN} {
 	reverse_proxy authelia:9091
 }
 
-# Host-level services, not containers on the proxy network — reached via the
-# proxy network's OWN gateway IP, not host.docker.internal and not the NAS's
-# real LAN IP. See the "Host services … via PROXY_GATEWAY_IP" gotcha in this
-# stack's README before changing this: the alternatives did not answer (cause
-# not established).
-portainer.{$INTERNAL_DOMAIN} {
+# Dockhand (stacks/dockhand), which deploys the stacks: a container on
+# `proxy`, reached by name. No `import authelia`: its login is OIDC through
+# Authelia (client `dockhand`, admins_only), and the gate on top would mean two
+# logins. Before this route goes live, Dockhand's own authentication must be on
+# (off on a fresh install: docs/guides/02-dockhand.md).
+dockhand.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import errors
-	# Portainer's 9443 is HTTPS-only (self-signed) — its plain-HTTP port (9000)
-	# was never published to the host, so this is the only reachable port.
-	# tls_insecure_skip_verify is deliberate: this hop never leaves the NAS
-	# (Caddy -> proxy network's gateway -> Portainer, all on one host), so
-	# there's no network to eavesdrop on between them.
-	# No "https://" prefix on the address below — do not add one back. Caddy
-	# rejects a placeholder inside an upstream address when that address also
-	# has a scheme ("placeholders are not allowed when an upstream address
-	# contains a scheme"), which crash-loops the whole container, not just
-	# this route. The transport block alone is sufficient to make this an
-	# HTTPS connection; the scheme prefix is only ever a shorthand, never
-	# required.
-	reverse_proxy {env.PROXY_GATEWAY_IP}:9443 {
-		transport http {
-			tls_insecure_skip_verify
-		}
-	}
+	reverse_proxy dockhand:3000
 }
 
+# Forgejo through its published port 3000, like a host-level service — reached
+# via the proxy network's OWN gateway IP, not host.docker.internal and not the
+# NAS's real LAN IP. See the "Host services … via PROXY_GATEWAY_IP" gotcha in
+# this stack's README before changing this: the alternatives did not answer
+# (cause not established).
 forgejo.{$INTERNAL_DOMAIN} {
 	import tls_wildcard
 	import errors

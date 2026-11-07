@@ -3,7 +3,7 @@
 # alerts.sh (crashes, restart loops, failed healthchecks). Sourced by
 # dashboard-status.sh (needs scripts/lib/json.sh).
 #
-# Long-running = has a restart policy: every stack's services and Portainer,
+# Long-running = has a restart policy: every stack's services and Dockhand,
 # not one-off `docker run --rm` helpers (the jq image, CI jobs).
 
 # [{"name", "project", "state", "health", "exit_code", "oom", "restarts",

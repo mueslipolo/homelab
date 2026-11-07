@@ -1,5 +1,5 @@
-# Local env files — real values live in Portainer's per-stack Environment
-# Variables, never in a file. .env here is only ever a local testing convenience
+# Local env files — real values live in Dockhand's per-stack environment
+# variables, never in a file. .env here is only ever a local testing convenience
 # (e.g. for `docker compose config`), never committed.
 .env
 *.env
@@ -25,12 +25,16 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+.scrubber/
 
 # Deployment-specific content that is NOT publishable: real hostnames, NAS
 # paths, household and device names, LDAP UIDs. Kept in the working tree so
-# it stays to hand, deliberately never tracked. scripts/check-no-real-values.sh
+# it stays to hand, deliberately never tracked. dev/check-no-real-values.sh
 # is the backstop if something from here is ever staged by mistake.
 /PRIVATE-real-values-do-not-publish/
 .private-patterns
 CLAUDE.local.md
 __pycache__/
+
+# Rust build output (tools/immich-verify/build.sh)
+/tools/immich-verify/target/

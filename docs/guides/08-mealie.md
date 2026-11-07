@@ -1,6 +1,6 @@
 # Mealie: recipes and meal plans
 
-> **Needs:** [03 HTTPS](03-https-letsencrypt.md), [05 Authelia](05-sso-authelia.md) (the only login) · **Optional:** [02 Portainer](02-portainer.md) (or plain `docker compose`), [10 Backups and jobs](10-backups-and-jobs.md) (daily backup) · **Used by:** —
+> **Needs:** [03 HTTPS](03-https-letsencrypt.md), [05 Authelia](05-sso-authelia.md) (the only login) · **Optional:** [02 Dockhand](02-dockhand.md) (or plain `docker compose`), [10 Backups and jobs](10-backups-and-jobs.md) (daily backup) · **Used by:** —
 > **Reference:** [`stacks/mealie/README.md`](../../stacks/mealie/README.md)
 
 ## What you get
@@ -51,12 +51,13 @@ Variables, from [`stacks/mealie/.env.example`](../../stacks/mealie/.env.example)
 
 ```bash
 INTERNAL_DOMAIN=home.example.com
+TZ=Europe/Berlin                    # your time zone (tz database name)
 MEALIE_DATA_PATH=/volume1/mealie/data
 MEALIE_OIDC_CLIENT_SECRET=<Random Password from step 2>
 ```
 
-**With Portainer:** Stacks → Add stack → Repository, compose path
-`stacks/mealie/compose.yaml` → Deploy ([02 Portainer](02-portainer.md)).
+**With Dockhand:** Stacks → from Git, name `mealie`, compose path
+`stacks/mealie/compose.yaml`, the variables → Deploy ([02 Dockhand](02-dockhand.md#4-deploy-a-git-stack)).
 **With docker compose:** `.env` from `.env.example` (`chmod 600`), `sudo docker compose up -d`.
 
 **Check:** `mealie` turns healthy; its log shows no errors.

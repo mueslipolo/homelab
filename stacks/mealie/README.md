@@ -27,6 +27,11 @@ This page is the reference.
   wildcards).
 - **OIDC, not the Caddy gate:** the gate plus Mealie's own login meant two
   logins. `OIDC_AUTO_REDIRECT=true` + `ALLOW_PASSWORD_LOGIN=false` give real SSO.
+- **Caddy skips the login page:** `/` or `/login` with no query and no
+  `mealie.access_token` cookie is redirected to `/api/auth/oauth` at once,
+  instead of Mealie's page loading for seconds and then redirecting itself.
+  With a query (`?code=`, `?direct=1`, `?redirect=`) it goes to Mealie as is.
+  Should a release rename the cookie, the page only shows again.
 - **Redirect to `http://`?** Not seen (`BASE_URL` suffices).
 - **`/api` is protected by Mealie alone** (OIDC-backed session or token), not
   Caddy: the mobile app calls it directly.

@@ -8,7 +8,10 @@
 
 (tls_wildcard) {
 	tls {
-		dns infomaniak {env.INFOMANIAK_API_TOKEN}
+		# The provider from DNS_PROVIDER, its token from DNS_API_TOKEN. A
+		# provider that wants more than one token: its own syntax here
+		# (docs/guides/03-https-letsencrypt.md, "Another DNS provider").
+		dns {$DNS_PROVIDER} {env.DNS_API_TOKEN}
 	}
 }
 

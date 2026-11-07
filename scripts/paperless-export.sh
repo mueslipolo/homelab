@@ -14,6 +14,12 @@ set -euo pipefail
 readonly EXPORT="/usr/src/paperless/export" # inside the container
 readonly TIMEOUT="${PAPERLESS_EXPORT_TIMEOUT:-25m}" # done before the 20:40 S3 backup
 
+# No Paperless container at all, running or not: not deployed here. 77 tells
+# run-jobs.sh the job is not set up, not that it failed. (Docker not
+# answering fails the assignment, and so the job.)
+images=$(docker ps -a --format '{{.Image}}')
+[[ $images == *paperless-ngx* ]] || { echo "No Paperless container: skipped"; exit 77; }
+
 # Found by image, whatever the container is called: only Paperless's own
 # webserver runs paperless-ngx.
 container=$(docker ps --format '{{.Names}} {{.Image}}' | awk '$2 ~ /paperless-ngx/ { print $1; exit }')

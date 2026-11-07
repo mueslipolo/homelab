@@ -1,6 +1,6 @@
 # Slow disk writes and "database is locked"
 
-> **Tool:** [`tools/disk-diag.sh`](../tools/disk-diag.sh) · **Related:** [operations, "Container logs"](operations.md#container-logs), [authelia](../stacks/authelia/README.md)
+> **Tool:** [`scripts/disk-diag.sh`](../../scripts/disk-diag.sh) · **Related:** [operations, "Container logs"](../operations.md#container-logs), [authelia](../../stacks/authelia/README.md)
 
 On 2026-10-24, Authelia on SQLite failed with `database is locked` while one
 person was using it. The cause was not SQLite and not load: Container
@@ -33,7 +33,7 @@ address. Whether they are related was not established.
 
 ## What was measured
 
-Each step ran on the NAS; [`tools/disk-diag.sh`](../tools/disk-diag.sh) now
+Each step ran on the NAS; [`scripts/disk-diag.sh`](../../scripts/disk-diag.sh) now
 does all of them in one pass.
 
 | Step | Result                                                                                                                                             | Conclusion                                      |
@@ -70,12 +70,14 @@ services:
     logging: *logging
 ```
 
-Portainer, started with `docker run`, gets the same through
-`--log-driver local --log-opt max-size=10m --log-opt max-file=3`
-([guide 02](guides/02-portainer.md)).
+Dockhand, started by hand, has the same in its own compose file
+([guide 02](../guides/02-dockhand.md)). A container started with `docker run`
+gets it through
+`--log-driver local --log-opt max-size=10m --log-opt max-file=3`.
 
 The setting only applies to a container created after it, so every stack
-had to be redeployed and Portainer recreated. Check that nothing is left on
+had to be redeployed, and Portainer, the deployer at the time, recreated.
+Check that nothing is left on
 `db`:
 
 ```bash
@@ -85,7 +87,7 @@ done
 ```
 
 The trade-off: DSM's Container Manager no longer shows these containers'
-logs. `docker logs` and Portainer do.
+logs. `docker logs` and Dockhand do.
 
 ## The result
 
@@ -119,7 +121,7 @@ the same day.
 On the NAS, from the scheduler's clone:
 
 ```bash
-sudo bash <clone>/tools/disk-diag.sh /volume1 /volume1/docker/authelia/data
+sudo bash <clone>/scripts/disk-diag.sh /volume1 /volume1/docker/authelia/data
 ```
 
 - **Forced writes over 0.3 s, or growing:** look at the volume's writes/s
@@ -129,5 +131,5 @@ sudo bash <clone>/tools/disk-diag.sh /volume1 /volume1/docker/authelia/data
   0.01–0.02 s; subtract it from the disk line.
 - **`database is locked` again:** note its time, run the tool, and compare
   with the tables above. If the disk can't be made quiet, Authelia can go back
-  to Postgres ([authelia README](../stacks/authelia/README.md), "Postgres
+  to Postgres ([authelia README](../../stacks/authelia/README.md), "Postgres
   instead of SQLite"), which waits instead of failing a request.

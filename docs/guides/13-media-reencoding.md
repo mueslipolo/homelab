@@ -1,6 +1,6 @@
 # Media re-encoding (saves disk space)
 
-> **Needs:** [06 mediarr](06-mediarr.md) (the library), a desktop with an Intel GPU · **Reference:** the scripts in [`stacks/mediarr/`](../../stacks/mediarr/): `reencode.sh`, `reencode-compare.sh`, `reencode-presets.sh`
+> **Needs:** [06 mediarr](06-mediarr.md) (the library), a desktop with an Intel GPU · **Reference:** the scripts in [`tools/reencode/`](../../tools/reencode/): `reencode.sh`, `reencode-compare.sh`, `reencode-presets.sh`
 
 ## What you get
 

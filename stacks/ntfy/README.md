@@ -31,5 +31,5 @@ This page is the reference.
   parameter, raw base64 of `Bearer <token>` (no trailing `=`).
 - **Users and tokens are made with the CLI** (`ntfy user`, `ntfy access`,
   `ntfy token` in the container), kept in `auth.db`. ntfy's declarative
-  `NTFY_AUTH_USERS` would put password hashes in Portainer's variables, and
+  `NTFY_AUTH_USERS` would put password hashes in Dockhand's variables, and
   deletes users removed from it.

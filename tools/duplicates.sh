@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Find identical files inside ONE folder and delete the extra copies, keeping
 # one of each. Runs on the laptop, over the cifs mount of the NAS share (see
-# docs/guides/media-reencoding.md for the mount).
+# docs/guides/13-media-reencoding.md for the mount).
 #
 #   duplicates.sh [-a] [-k PATTERN]... [-m SIZE] DIR
 #

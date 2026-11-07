@@ -11,7 +11,7 @@ services:
   db:
     logging: *logging
     image: postgres:17
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB: paperless
       POSTGRES_USER: paperless
@@ -43,7 +43,7 @@ services:
   broker:
     logging: *logging
     image: redis:8
-    restart: unless-stopped
+    restart: always
     user: "${PAPERLESS_UID}:${PAPERLESS_GID}"
     volumes:
       - ${PAPERLESS_DOCKER_ROOT}/redis:/data
@@ -65,8 +65,8 @@ services:
 
   webserver:
     logging: *logging
-    image: ghcr.io/paperless-ngx/paperless-ngx:3.3.2
-    restart: unless-stopped
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
+    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -88,8 +88,8 @@ services:
       USERMAP_UID: ${PAPERLESS_UID}
       USERMAP_GID: ${PAPERLESS_GID}
       PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
-      PAPERLESS_TIME_ZONE: Europe/Zurich
-      PAPERLESS_OCR_LANGUAGE: fra+eng
+      PAPERLESS_TIME_ZONE: ${TZ:-Europe/Zurich}
+      PAPERLESS_OCR_LANGUAGE: ${PAPERLESS_OCR_LANGUAGE:-fra+eng}
       # redo, not the default auto: auto judges a merged PDF (a digital cover
       # letter + scanned pages) as already having text and never OCRs the
       # scans, so paperless-tarmed finds no bill. Costly per page, hence the
@@ -105,7 +105,7 @@ services:
       PAPERLESS_FILENAME_FORMAT: "{{document_type}}/{{correspondent}}_{{title}}_{{created}}"
       PAPERLESS_URL: https://paperless.${INTERNAL_DOMAIN}
       # `webserver` is NOT redundant with the hostname above. paperless-tarmed
-      # (its own repo and Portainer Stack — see stacks/paperless-tarmed/README.md)
+      # (its own Dockhand stack — see stacks/paperless-tarmed/README.md)
       # calls this API server-to-server over `proxy` as http://webserver:8000, so
       # the Host header it sends is the bare service name. Django rejects any Host
       # missing from this list with a 400 (DisallowedHost), so deleting this
@@ -142,8 +142,8 @@ services:
 
   gotenberg:
     logging: *logging
-    image: gotenberg/gotenberg:8.38.1
-    restart: unless-stopped
+    image: gotenberg/gotenberg:8.39.0
+    restart: always
     networks:
       - paperless_net
     command:
@@ -161,8 +161,8 @@ services:
 
   tika:
     logging: *logging
-    image: apache/tika@sha256:06bcdbd09aca073293e5a171ad161418cc93c91d58d9e4e205064eade84889d4
-    restart: unless-stopped
+    image: apache/tika@sha256:b99f19c4fd76237dafe7d22f719b9bddfa9a449da687c597a41e2f6d9a595418
+    restart: always
     networks:
       - paperless_net
     security_opt:

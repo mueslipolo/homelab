@@ -1,9 +1,8 @@
 name: renovate
 
 on:
-  # Daily: automerged updates land the day after their checks pass. If
-  # Forgejo's cron runs in Europe/Zurich, the 07:00 renovate-notify job sees
-  # new approvals the same morning.
+  # Daily: new updates open PRs. If Forgejo's cron runs in the NAS's local
+  # time, the 07:00 renovate-notify job sees the new PRs the same morning.
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
@@ -15,7 +14,7 @@ jobs:
     # needed a docker CLI that the runner's default job image (node:22-bookworm)
     # doesn't ship — `docker: command not found`. Nothing here needs the daemon.
     container:
-      image: renovate/renovate:44.167.5
+      image: renovate/renovate:44.198.3
     steps:
       - name: Run Renovate
         run: renovate

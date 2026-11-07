@@ -2,7 +2,7 @@
 
 > **Needs:** [07 Paperless-ngx](../../docs/guides/07-paperless.md), [10 Backups and jobs](../../docs/guides/10-backups-and-jobs.md) (the scheduler builds the image) · **Reference:** [README.md](README.md)
 
-First-time setup on a NAS with Paperless-ngx, Portainer and this repository on
+First-time setup on a NAS with Paperless-ngx, Dockhand and this repository on
 Forgejo. Reference, CLI and troubleshooting: [README.md](README.md). Run commands
 over SSH on the NAS.
 
@@ -46,17 +46,16 @@ The `chown` is required (the container runs as uid 1000). The scheduler
 
 **Check:** the fields and the document type appear in Paperless's settings.
 
-## 3. Deploy the stack in Portainer
+## 3. Deploy the stack in Dockhand
 
-Stacks → Add stack → Repository:
+Stacks → from Git ([guide 02, step 4](../../docs/guides/02-dockhand.md#4-deploy-a-git-stack)):
 
-| Field          | Value                                                               |
-| -------------- | ------------------------------------------------------------------- |
-| Name           | `paperless-tarmed`                                                  |
-| Repository URL | `http://<nas-ip>:3000/<owner>/homelab.git` (raw IP, not a hostname) |
-| Reference      | `refs/heads/main`                                                   |
-| Compose path   | `stacks/paperless-tarmed/compose.yaml`                              |
-| Authentication | Forgejo user + token                                                |
+| Field          | Value                                                                       |
+| -------------- | --------------------------------------------------------------------------- |
+| Name           | `paperless-tarmed` (not the pre-filled repository name)                     |
+| Repository     | the Forgejo repository (`http://<nas-ip>:3000/<owner>/homelab.git`, raw IP) |
+| Compose path   | `stacks/paperless-tarmed/compose.yaml`                                      |
+| Re-pull images | **off**: `pull_policy: never`, no registry has this image                   |
 
 Environment variables (all of them, with comments, in [.env.example](.env.example)):
 

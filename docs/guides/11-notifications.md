@@ -1,6 +1,6 @@
 # Notifications with ntfy
 
-> **Needs:** [01 Synology prep](01-synology-prep.md), [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [02 Portainer](02-portainer.md) (or plain `docker compose`), a VPN to your LAN (WireGuard) for phones away from home · **Used by:** [04 Forgejo](04-forgejo-gitops.md) (updates waiting for approval), [06 mediarr](06-mediarr.md), [10 Backups and jobs](10-backups-and-jobs.md)
+> **Needs:** [01 Synology prep](01-synology-prep.md), [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [02 Dockhand](02-dockhand.md) (or plain `docker compose`), a VPN to your LAN (WireGuard) for phones away from home, a MikroTik router (step 12) · **Used by:** [04 Forgejo](04-forgejo-gitops.md) (updates waiting for approval), [06 mediarr](06-mediarr.md), [10 Backups and jobs](10-backups-and-jobs.md)
 > **Reference:** [`stacks/ntfy/README.md`](../../stacks/ntfy/README.md)
 
 ## What you get
@@ -53,8 +53,8 @@ sudo chown <uid>:<gid> /volume1/docker/ntfy
 Variables from [`stacks/ntfy/.env.example`](../../stacks/ntfy/.env.example):
 `INTERNAL_DOMAIN`, `PUID`, `PGID`, `NTFY_DATA_ROOT`.
 
-- **Portainer:** Stacks → Add stack → Repository, compose path
-  `stacks/ntfy/compose.yaml` → Deploy.
+- **Dockhand:** Stacks → from Git, name `ntfy`, compose path
+  `stacks/ntfy/compose.yaml`, the variables → Deploy.
 - **docker compose:** `cd stacks/ntfy && sudo docker compose up -d`.
 
 **Check:** `curl -s http://127.0.0.1:2586/v1/health` on the NAS →
@@ -122,11 +122,12 @@ It arrives on the phone; then once more on mobile data, Wi-Fi off.
 
 ### 6. Updates waiting for approval
 
-Renovate merges minor updates itself; majors, and Forgejo and Portainer
-updates, wait on its Dependency Dashboard issue
+Every Renovate update is a PR that waits for you to merge it
 ([04](04-forgejo-gitops.md#5-ci-runner-checks-renovate-optional)). The
-`renovate-notify` job (07:00, after Renovate's 06:00 run) pushes each new one
-to `homelab`, once; tapping the notification opens the dashboard issue.
+`renovate-notify` job (07:00, after Renovate's 06:00 run) reads the open PRs
+(and anything pending approval) from Renovate's Dependency Dashboard issue and
+pushes each new one to `homelab`, once; tapping the notification opens the
+dashboard issue.
 
 1. Forgejo → Settings → Applications → a token with **read** access to
    repositories and issues.
@@ -147,12 +148,18 @@ sudo bash -c 'set -a; . <path>/jobs.env; bash <clone>/scripts/renovate-notify.sh
 
 Each app: Settings → **Connect** (Prowlarr: **Notifications**) → + → **ntfy**:
 
-| Field        | Value                                                                           |
-| ------------ | ------------------------------------------------------------------------------- |
-| Server URL   | `http://ntfy:8080`                                                              |
-| Access token | `tk_…` (or username/password fields: leave them empty)                          |
-| Topics       | `media`                                                                         |
-| Triggers     | Sonarr/Radarr: _On File Import_, _On Health Issue_; Prowlarr: _On Health Issue_ |
+| Field        | Value                                                                                |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Server URL   | `http://ntfy:8080`                                                                   |
+| Access token | `tk_…` (or username/password fields: leave them empty)                               |
+| Topics       | `media`                                                                              |
+| Triggers     | Sonarr: _On Import Complete_; Radarr: _On File Import_; all three: _On Health Issue_ |
+
+Nothing else, so that one episode is one notification. Each other trigger
+repeats the same episode: Prowlarr's and Sonarr's _On Grab_ ("Release
+Grabbed", "Episode Grabbed"), Sonarr's _On File Import_ ("Episode Downloaded",
+followed seconds later by "Import Complete"), and _On Series Add_ (Seerr already
+says the request went through).
 
 **Check:** the **Test** button; a test message arrives.
 
@@ -160,7 +167,8 @@ Each app: Settings → **Connect** (Prowlarr: **Notifications**) → + → **ntf
 
 Settings → Notifications → **Ntfy**: enable, Server URL `http://ntfy:8080`,
 topic `media`, authentication **token** `tk_…`. Choose the types, e.g.
-_Request Pending Approval_, _Request Available_, _Request Failed_. Set
+_Request Pending Approval_, _Request Available_, _Request Failed_; not
+_Request Automatically Approved_, which only echoes your own request. Set
 Settings → General → **Application URL** to `https://seerr.home.example.com`,
 so tapping a notification opens the title.
 
@@ -198,17 +206,17 @@ scheduler runs `scripts/alerts.sh`, which pushes to `homelab` these items
 when the dashboard would show them amber or red, using the same thresholds.
 Stacks or images behind git and a stale storage scan are not pushed:
 
-| Item                                                                | Amber                                                              | Red                                                                                                |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| a scheduled job                                                     |                                                                    | its last run failed                                                                                |
-| a Hyper Backup task                                                 | partial, or last run over 2 days ago                               | failed                                                                                             |
-| a dump (Forgejo, Mealie)                                            |                                                                    | none, or over 2 days old                                                                           |
-| a shared folder's snapshots                                         | newest over 2 days old                                             |                                                                                                    |
-| a container (anything with a restart policy: the stacks, Portainer) | unhealthy, or restarted by docker after a crash in the last 20 min | restart-looping, or exited with an error or out of memory (a stop, exit 0/137/143, is not a crash) |
-| a phone or computer in `uploaders.conf`                             | silent half its max days                                           | silent its max days                                                                                |
-| the volume                                                          | 80 % used                                                          | 90 % used                                                                                          |
-| the scheduler's git clone                                           | cannot update                                                      |                                                                                                    |
-| growth between the last two daily scans (`storage.json`)            | more than `ALERT_GROWTH_GB`                                        |                                                                                                    |
+| Item                                                               | Amber                                                              | Red                                                                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| a scheduled job                                                    |                                                                    | its last run failed                                                                                |
+| a Hyper Backup task                                                | partial, or last run over 2 days ago                               | failed                                                                                             |
+| a dump (Forgejo, Mealie, Immich's database)                        |                                                                    | none, or over 2 days old                                                                           |
+| a shared folder's snapshots                                        | newest over 2 days old                                             |                                                                                                    |
+| a container (anything with a restart policy: the stacks, Dockhand) | unhealthy, or restarted by docker after a crash in the last 20 min | restart-looping, or exited with an error or out of memory (a stop, exit 0/137/143, is not a crash) |
+| a phone or computer in `uploaders.conf`                            | silent half its max days                                           | silent its max days                                                                                |
+| the volume                                                         | 80 % used                                                          | 90 % used                                                                                          |
+| the scheduler's git clone                                          | cannot update                                                      |                                                                                                    |
+| growth between the last two daily scans (`storage.json`)           | more than `ALERT_GROWTH_GB`                                        |                                                                                                    |
 
 It pushes on changes only: once when an item turns amber, again if it turns
 red, and a quiet "ok again" when it recovers.
@@ -235,7 +243,7 @@ mute it. The patient's name stays off the lock screen unless you ask for it.
 
 1. Allow the token on the topic:
    `sudo docker exec $C ntfy access homelab paperless write-only`
-2. The paperless-tarmed stack's variables in Portainer:
+2. The paperless-tarmed stack's variables in Dockhand:
    `PAPERLESS_TARMED_NTFY_URL=http://ntfy:8080`,
    `PAPERLESS_TARMED_NTFY_TOKEN=tk_…`, and
    `PAPERLESS_TARMED_PUBLIC_URL=https://paperless.home.example.com` for the
@@ -246,7 +254,7 @@ mute it. The patient's name stays off the lock screen unless you ask for it.
 stack, [`INSTALL.md`](../../stacks/paperless-tarmed/INSTALL.md)); the push
 arrives and opens the document.
 
-### 12. MikroTik
+### 12. MikroTik (optional)
 
 [`tools/mikrotik/ntfy.rsc`](../../tools/mikrotik/ntfy.rsc) (RouterOS 7)
 pushes to `homelab`: a device on the LAN without a static lease (once per
@@ -258,6 +266,8 @@ Steps 1, 3, 4 and 5 below are what `tools/mikrotik/deploy.sh` does for you once 
 certificates (step 2) are in place and `ssh router` / `ssh ap` work with a key:
 put `NTFY_HOST` and `NTFY_TOKEN` in `tools/mikrotik/mikrotik.env` (gitignored),
 then `tools/mikrotik/deploy.sh -t` deploys both and sends a test from each.
+Phones on an always-on VPN connect and go quiet all day: `WG_QUIET='Anna|Ben'`
+in the same file mutes the peers whose name (comment) matches that regex.
 
 1. Replace `ntfy.home.example.com` and `tk_REPLACE_ME` in the file, upload it
    (Files, or `scp ntfy.rsc admin@192.0.2.1:`), then `/import ntfy.rsc`.

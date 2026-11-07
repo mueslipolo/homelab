@@ -1,6 +1,6 @@
 # Dashboard: one page for every service and its health
 
-> **Needs:** [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [05 Authelia](05-sso-authelia.md) (login gate), [10 Backups and jobs](10-backups-and-jobs.md) (everything beyond the links), [02 Portainer](02-portainer.md) (or plain `docker compose`) · **Used by:** —
+> **Needs:** [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [05 Authelia](05-sso-authelia.md) (login gate), [10 Backups and jobs](10-backups-and-jobs.md) (everything beyond the links), [02 Dockhand](02-dockhand.md) (or plain `docker compose`) · **Used by:** —
 > **Reference:** [`stacks/dashboard/README.md`](../../stacks/dashboard/README.md)
 
 ## What you get
@@ -26,7 +26,7 @@ from git.
 - **Real hostnames stay out of git:** they live in `devices.json`, next to the
   generated files.
 
-The tabs, with made-up data (`tools/dashboard-demo/screenshots.sh` regenerates
+The tabs, with made-up data (`dev/dashboard-demo/screenshots.sh` regenerates
 them):
 
 | Tab      | Shows                                                                                                                                         |
@@ -34,7 +34,7 @@ them):
 | Services | a card per app, with its stack's README; the left panel sums up every tab                                                                     |
 | Storage  | where the space goes (treemap by share and folder), 90 days of used space, per-folder trends, the media library (treemap by title and season) |
 | Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading                                      |
-| System   | each Portainer stack against git, with its deploy date, containers and built image; jobs; the scheduler                                       |
+| System   | each Dockhand stack against git, with its deploy date, containers and built image; jobs; the scheduler                                        |
 | Network  | the LAN diagram and device cards, from `devices.json`                                                                                         |
 
 ![Services tab](../images/dashboard-services.png)
@@ -83,8 +83,8 @@ in `ICON`.
 The only variable is `DASHBOARD_LOCAL_DIR=/volume1/docker/dashboard-local`;
 the deploy fails without it.
 
-**With Portainer:** Stacks → Add stack → Repository, compose path
-`stacks/dashboard/compose.yaml` → Deploy ([02 Portainer](02-portainer.md)).
+**With Dockhand:** Stacks → from Git, name `dashboard`, compose path
+`stacks/dashboard/compose.yaml`, the variable → Deploy ([02 Dockhand](02-dockhand.md#4-deploy-a-git-stack)).
 **With docker compose:** in a copy of `stacks/dashboard/`,
 `echo DASHBOARD_LOCAL_DIR=/volume1/docker/dashboard-local > .env && sudo docker compose up -d`.
 
@@ -101,8 +101,15 @@ dashboard.{$INTERNAL_DOMAIN} {
 Drop `import authelia` without [05 Authelia](05-sso-authelia.md); with it, the
 host also needs an `access_control` rule in Authelia.
 
+**With Authelia, two pages.** The repo's Caddyfile and Authelia rules show the
+whole dashboard to the admin group (`infra-admins`) only. Everyone else gets
+the family page, `welcome.html`: big cards for photos, films, recipes and
+documents, in plain words, with the gophers
+([reference](../../stacks/dashboard/README.md#two-pages)).
+
 **Check:** `https://dashboard.home.example.com` shows the cards; the left
-panel says "No status report".
+panel says "No status report". Logged in as someone outside `infra-admins`,
+the same address shows the family page.
 
 ### 5. Health, backups, storage
 
@@ -110,7 +117,8 @@ Set up the scheduler with the same `DASHBOARD_LOCAL_DIR` in its `jobs.env`
 ([10 Backups and jobs](10-backups-and-jobs.md)). Each tick ends with
 `scripts/dashboard-status.sh` writing `status.json`; the nightly
 `storage-scan` job writes `storage.json`. Optional in `jobs.env`:
-`PORTAINER_TOKEN` (System tab: stacks and their deployed commit) and
+`DOCKHAND_TOKEN` (System tab: stacks and their deployed
+commit; also lets the `redeploy-images` job start new images) and
 `uploaders.conf` (Backups tab: phones and computers that must keep uploading).
 
 **Check:** within 15 minutes "No status report" turns into status lights;
@@ -124,7 +132,7 @@ the Storage tab fills after the first night.
 | Deploy fails: mount source missing      | `DASHBOARD_LOCAL_DIR` unset, or the folder does not exist.                                                            |
 | Still "No status report" after 15 min   | The scheduler does not write here: compare `DASHBOARD_LOCAL_DIR` in `jobs.env`, read `$OPS_HOME/logs/`.               |
 | Every Hyper Backup task looks old       | DSM's log stopped updating here (2024-11): set `HYPERBACKUP_LOG` in `jobs.env` (reference, `status.json`).            |
-| Stacks all "unknown"                    | Their deployed commit is not in the scheduler's clone (history rewritten?): Pull and redeploy each.                   |
+| Stacks all "unknown"                    | Their deployed commit is not in the scheduler's clone (history rewritten?): Deploy each in Dockhand.                  |
 | Container restarts after a compose edit | `read_only: true` needs its tmpfs mounts (`/tmp`, `/var/cache/nginx`, `/var/run`), and nginx listens on 8080, not 80. |
 
 ## Next

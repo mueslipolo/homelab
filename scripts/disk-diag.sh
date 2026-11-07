@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Why are forced writes slow on a volume? One read-only pass over what
-# explains it, from the investigation in docs/slow-disk-writes.md: drives and
+# explains it, from the investigation in docs/notes/slow-disk-writes.md: drives and
 # their write cache, RAID and btrfs state, what is writing right now (disks,
 # processes, containers), how long a 4 KB forced write takes, and which
 # containers still use Container Manager's `db` log driver.
 #
-#   sudo bash tools/disk-diag.sh <volume> [test folder]
-#   sudo bash tools/disk-diag.sh /volume1 /volume1/docker/authelia/data
+#   sudo bash scripts/disk-diag.sh <volume> [test folder]
+#   sudo bash scripts/disk-diag.sh /volume1 /volume1/docker/authelia/data
 #
 # Writes nothing but a 4 KB test file in the test folder (default: the
 # volume), deleted after each timing. Takes about 40 seconds.

@@ -1,39 +1,60 @@
 # shellcheck shell=bash
-# Is each Portainer stack running the latest code? Portainer records the commit
-# it last deployed for a Git stack; git says the last commit that changed the
-# stack's code (lib/code.sh: anything but Markdown). Sourced by
-# dashboard-status.sh (needs scripts/lib/json.sh and scripts/lib/code.sh).
+# The stacks, as Dockhand deploys them (docs/guides/02-dockhand.md): it records
+# the commit it last deployed for each git stack; git says the last commit that
+# changed the stack's code (lib/code.sh: anything but Markdown). Sourced by
+# dashboard-status.sh (needs scripts/lib/json.sh and scripts/lib/code.sh) and
+# by redeploy-images.sh (needs scripts/lib/json.sh).
 #
-# Needs PORTAINER_TOKEN (Portainer -> My account -> Access tokens) in jobs.env;
-# without it the dashboard shows no stack list. PORTAINER_URL defaults to the
-# NAS's own Portainer (self-signed certificate, hence -k on localhost only).
+# Dockhand is asked only when its token is in jobs.env; without it, the
+# dashboard shows no stack list:
+#   DOCKHAND_TOKEN   Dockhand -> Profile -> API tokens (dh_...)
+#
+# DOCKHAND_URL defaults to Dockhand's port on the NAS's loopback
+# (stacks/dockhand/compose.yaml), plain HTTP that never leaves the host.
 
-PORTAINER_URL="${PORTAINER_URL:-https://127.0.0.1:9443}"
+DOCKHAND_URL="${DOCKHAND_URL:-http://127.0.0.1:3010}"
 
-# One line per stack: name, status (1 active, 2 stopped), compose path,
-# deployed commit, update time; \x1f-separated (a tab would collapse empty
-# fields). Only these fields leave the API response: it also holds every
-# stack's environment, passwords included.
-_portainer_stacks() {
-	local body insecure=()
-	case $PORTAINER_URL in https://127.0.0.1:* | https://localhost:*) insecure=(-k) ;; esac
+# Dockhand's API: prints the response body; fails on an HTTP error. With
+# `Accept: application/json` a deploy answers once it is over, with
+# {"success", "error"}, instead of a job id to poll (createJobResponse in
+# Dockhand's src/lib/server/sse.ts).
+dockhand_api() { # <method> <path> [max seconds]
 	# The token goes in on stdin, never on the command line.
-	body=$(printf 'header = "X-API-Key: %s"\n' "$PORTAINER_TOKEN" |
-		curl -sS -m 20 --fail "${insecure[@]}" -K - "$PORTAINER_URL/api/stacks") || return 1
-	_jq -r '.[] | [.Name, (.Status | tostring),
-		(.GitConfig.ConfigFilePath // ""), (.GitConfig.ConfigHash // ""),
-		((.UpdateDate // .CreationDate // 0) | tostring)] | join("\u001f")' <<<"$body"
+	printf 'header = "Authorization: Bearer %s"\n' "$DOCKHAND_TOKEN" |
+		curl -sS -m "${3:-30}" --fail -K - -H "Accept: application/json" -X "$1" "$DOCKHAND_URL$2"
 }
 
-# [{"name", "status", "git", "deployed": {"commit", "at"}, "code": {"commit", "at"},
-#   "current": true|false|null}], or null when Portainer cannot be asked.
+# Whether Dockhand can be asked (its token is set).
+dockhand_ready() { [ -n "${DOCKHAND_TOKEN:-}" ]; }
+
+# One line per git stack, \x1f-separated (a tab would collapse empty fields):
+#   id, status, name, compose path, deployed commit, deploy time (epoch)
+# Status: 1 active, 4 its last deploy failed (its sync error is a failed
+# deploy). Fails if Dockhand does not answer. Only these fields leave the
+# response: it also holds each stack's webhook secret.
+stacks_list() {
+	local body
+	body=$(dockhand_api GET /api/git/stacks) || return 1
+	# lastCommit is the commit of its last sync: a sync deploys whenever the
+	# stack's folder changed, so its folder is that commit's, unless the
+	# deploy failed (status 4). lastSync is ISO 8601 with milliseconds.
+	_jq -r '.[] | [(.id | tostring),
+		(if .syncStatus == "error" and ((.syncError // "") | startswith("Deploy failed: ")) then "4" else "1" end),
+		.stackName, (.composePath // ""), (.lastCommit // ""),
+		((.lastSync // "") | try (sub("\\.[0-9]+"; "") | fromdateiso8601 | tostring) catch "")]
+		| join("\u001f")' <<<"$body"
+}
+
+# [{"name", "failed", "git", "deployed": {"commit", "at"},
+#   "code": {"commit", "at"}, "current": true|false|null}], or null when
+#   Dockhand cannot be asked or does not answer.
 #   current = the stack folder's last commit is part of what was deployed.
 stacks_json() { # <repo>
-	local repo=$1 lines name status path hash at dir code first=1 current
-	[ -n "${PORTAINER_TOKEN:-}" ] || { printf 'null'; return; }
-	lines=$(_portainer_stacks 2>/dev/null) || { printf 'null'; return; }
+	local repo=$1 lines status name path hash at dir code first=1 current
+	dockhand_ready || { printf 'null'; return; }
+	lines=$(stacks_list 2>/dev/null) || { printf 'null'; return; }
 	printf '['
-	while IFS=$'\x1f' read -r name status path hash at; do
+	while IFS=$'\x1f' read -r _ status name path hash at; do
 		[ -n "$name" ] || continue
 		code=null current=null
 		if [ -n "$path" ]; then
@@ -46,8 +67,9 @@ stacks_json() { # <repo>
 		fi
 		[ "$first" -eq 1 ] || printf ', '
 		first=0
-		printf '{"name": %s, "active": %s, "git": %s, "deployed": %s, "code": %s, "current": %s}' \
-			"$(json_str "$name")" "$([ "$status" = 1 ] && echo true || echo false)" \
+		printf '{"name": %s, "failed": %s, "git": %s, "deployed": %s, "code": %s, "current": %s}' \
+			"$(json_str "$name")" \
+			"$([ "$status" = 4 ] && echo true || echo false)" \
 			"$([ -n "$path" ] && echo true || echo false)" \
 			"$([ -n "$hash" ] && printf '{"commit": %s, "at": %s}' "$(json_str "${hash:0:7}")" "$(_num "$at")" || echo null)" \
 			"$code" "$current"

@@ -1,6 +1,6 @@
-# HTTPS with Let's Encrypt and Infomaniak DNS
+# HTTPS with Let's Encrypt
 
-> **Needs:** [01 Synology prep](01-synology-prep.md) · **Optional:** [02 Portainer](02-portainer.md) (or plain `docker compose`) · **Used by:** [05 Authelia](05-sso-authelia.md), [06 mediarr](06-mediarr.md), every app with a hostname
+> **Needs:** [01 Synology prep](01-synology-prep.md) · **Optional:** [02 Dockhand](02-dockhand.md) (or plain `docker compose`) · **Used by:** [05 Authelia](05-sso-authelia.md), [06 mediarr](06-mediarr.md), every app with a hostname
 > **Reference:** [`stacks/edge/README.md`](../../stacks/edge/README.md) · **Why it is built this way:** [architecture](../architecture.md#network-and-certificates)
 
 ## What you get
@@ -8,9 +8,10 @@
 Every app on the NAS at `https://<app>.home.example.com` with a trusted
 certificate, on the LAN only: nothing is port-forwarded.
 
-**Written for Infomaniak DNS.** Any DNS provider with a Caddy DNS plugin
-(Cloudflare, OVH, Gandi, deSEC, Route 53, …) works the same way: only the
-token and two lines change, see [Another DNS provider](#another-dns-provider).
+**The examples use Infomaniak DNS.** Any DNS provider with a Caddy DNS module
+(Cloudflare, OVH, Gandi, deSEC, Route 53, …) works the same way: `DNS_PROVIDER`
+names it, `DNS_API_TOKEN` holds its token, see
+[Another DNS provider](#another-dns-provider).
 
 ![Each request: the LAN DNS sends the browser to Caddy, which proxies to the app by container name. At issue and renewal: Caddy orders a certificate, sets a TXT record through the Infomaniak API, Let's Encrypt checks it, Caddy fetches the certificate.](../images/https-letsencrypt.excalidraw.svg)
 
@@ -21,21 +22,21 @@ token and two lines change, see [Another DNS provider](#another-dns-provider).
   which are public, show `*.home.example.com` and not the names of your apps.
 - **Caddy gets its own LAN IP** (macvlan): DSM's nginx holds ports 80 and 443
   on the NAS's IP.
-- **Caddy is built with the Infomaniak plugin** (`stacks/edge/Dockerfile`,
-  `xcaddy`): the official image has no DNS providers.
+- **Caddy is built with your provider's module** (`stacks/edge/Dockerfile`,
+  `xcaddy`, from `DNS_PROVIDER`): the official image has no DNS providers.
 
 ## Before you start
 
-| What                                | Example                     | How                                                                                                                                                                                                                                      |
-| ----------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A domain whose DNS is at Infomaniak | `home.example.com`          | A subdomain of a domain you own is fine and keeps apps away from your public site. No DNS record to create: Caddy writes and removes the TXT records itself.                                                                             |
-| An Infomaniak API token             | —                           | Manager → [API tokens](https://manager.infomaniak.com/v3/infomaniak-api) → create, scopes `domain:read`, `dns:read`, `dns:write`. It controls your DNS: treat it like a root password.                                                   |
-| A free LAN IP for Caddy             | `192.0.2.20`                | In the LAN subnet, **outside the DHCP range** (or reserved on the router).                                                                                                                                                               |
-| A MAC address for that IP           | `02:42:c0:00:02:14`         | Any locally administered unicast MAC (first byte `02`): `printf '02:%02x:%02x:%02x:%02x:%02x\n' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))`. Fixed so the router's ARP and DHCP tables stay stable. |
-| The NAS's LAN interface             | `eth0`                      | `ip -br addr \| grep <nas-ip>` on the NAS. `ovs_eth0` once Open vSwitch is on (Virtual Machine Manager turns it on), `bond0` with link aggregation.                                                                                      |
-| The LAN subnet and gateway          | `192.0.2.0/24`, `192.0.2.1` | `ip route` on the NAS.                                                                                                                                                                                                                   |
-| Control of the LAN's DNS            | router, Pi-hole…            | To answer `*.home.example.com` with Caddy's IP (step 4).                                                                                                                                                                                 |
-| The `proxy` Docker network          | —                           | `sudo docker network create proxy` (or `scripts/bootstrap.sh`). Every app Caddy serves joins it.                                                                                                                                         |
+| What                                   | Example                     | How                                                                                                                                                                                                                                      |
+| -------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A domain at a DNS provider with an API | `home.example.com`          | A subdomain of a domain you own is fine and keeps apps away from your public site. No DNS record to create: Caddy writes and removes the TXT records itself.                                                                             |
+| Its API token (here Infomaniak)        | —                           | Manager → [API tokens](https://manager.infomaniak.com/v3/infomaniak-api) → create, scopes `domain:read`, `dns:read`, `dns:write`. It controls your DNS: treat it like a root password.                                                   |
+| A free LAN IP for Caddy                | `192.0.2.20`                | In the LAN subnet, **outside the DHCP range** (or reserved on the router).                                                                                                                                                               |
+| A MAC address for that IP              | `02:42:c0:00:02:14`         | Any locally administered unicast MAC (first byte `02`): `printf '02:%02x:%02x:%02x:%02x:%02x\n' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))`. Fixed so the router's ARP and DHCP tables stay stable. |
+| The NAS's LAN interface                | `eth0`                      | `ip -br addr \| grep <nas-ip>` on the NAS. `ovs_eth0` once Open vSwitch is on (Virtual Machine Manager turns it on), `bond0` with link aggregation.                                                                                      |
+| The LAN subnet and gateway             | `192.0.2.0/24`, `192.0.2.1` | `ip route` on the NAS.                                                                                                                                                                                                                   |
+| Control of the LAN's DNS               | router, Pi-hole…            | To answer `*.home.example.com` with Caddy's IP (step 4).                                                                                                                                                                                 |
+| The `proxy` Docker network             | —                           | `sudo docker network create proxy` (or `scripts/bootstrap.sh`). Every app Caddy serves joins it.                                                                                                                                         |
 
 ## Steps
 
@@ -44,7 +45,7 @@ token and two lines change, see [Another DNS provider](#another-dns-provider).
 You need `stacks/edge/`: `compose.yaml`, `Dockerfile`, and the Caddyfiles in
 `caddy/`.
 
-- **Portainer:** fork this repo (Git stacks need a repository you can push
+- **Dockhand:** fork this repo (git stacks need a repository you can push
   your Caddyfile to), then deploy from your fork in step 3.
 - **docker compose:** copy the folder, e.g. `scp -r stacks/edge <admin>@<nas-ip>:~/edge`.
 
@@ -56,7 +57,7 @@ and needs [05 Authelia](05-sso-authelia.md).
 ### 2. Start a test app
 
 ```bash
-sudo docker run -d --name whoami --network proxy --restart unless-stopped traefik/whoami:v1.11.0
+sudo docker run -d --name whoami --network proxy --restart always traefik/whoami:v1.11.0
 ```
 
 Caddy reaches it as `whoami:80`, by container name over `proxy`. No port is
@@ -70,18 +71,20 @@ The variables, all from [`stacks/edge/.env.example`](../../stacks/edge/.env.exam
 INTERNAL_DOMAIN=home.example.com
 CADDYFILE=Caddyfile.minimal
 ACME_EMAIL=you@example.com            # Let's Encrypt expiry notices
-INFOMANIAK_API_TOKEN=<token>
+DNS_PROVIDER=infomaniak               # the caddy-dns module: cloudflare, hetzner, desec…
+DNS_API_TOKEN=<token>
 LAN_SUBNET=192.0.2.0/24
 LAN_GATEWAY=192.0.2.1
 LAN_PARENT_INTERFACE=eth0
 CADDY_LAN_IP=192.0.2.20
 CADDY_LAN_MAC=02:42:c0:00:02:14
-PROXY_GATEWAY_IP=                     # only for host services (Portainer, LDAP): see the reference
+PROXY_GATEWAY_IP=                     # only for host services (Forgejo, LDAP): see the reference
 ```
 
-**With Portainer:** Stacks → Add stack → Repository, your fork's URL,
-compose path `stacks/edge/compose.yaml`, the variables above → Deploy. Not the
-Web editor: it cannot build the image. Details: [02 Portainer](02-portainer.md).
+**With Dockhand:** Stacks → from Git, name `edge`, your fork as the
+repository, compose path `stacks/edge/compose.yaml`, the variables above
+(`DNS_API_TOKEN` secret) → Deploy. Not a pasted stack: it has no folder for
+the build and the Caddyfiles. Details: [02 Dockhand](02-dockhand.md#4-deploy-a-git-stack).
 
 **With docker compose:**
 
@@ -141,7 +144,7 @@ Then remove the test app: its block in your Caddyfile and `sudo docker rm -f who
    }
    ```
 3. Nothing to restart: Caddy runs with `--watch` and reloads within seconds
-   of the file changing, whether you edit it on the NAS or Portainer pulls it
+   of the file changing, whether you edit it on the NAS or Dockhand pulls it
    from git. Its log says `config file changed; reloading`. The wildcard
    covers the new name: no new certificate, and no DNS change unless your DNS
    needs one entry per host.
@@ -153,7 +156,7 @@ To put a login in front of it, see [05 Authelia](05-sso-authelia.md).
 | Symptom                                                     | Cause → fix                                                                                                                                                                                                               |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `curl` from the NAS to `192.0.2.20` times out               | Expected: the host cannot reach its own macvlan IP. Test from another machine. Containers on `proxy` reach Caddy through a network alias (reference: "Reaching Caddy itself").                                            |
-| `module not registered: dns.providers.infomaniak`           | Caddy runs the stock image: the build did not happen. Rebuild (`up -d --build`, or Portainer with `pull_policy: build`) and check `docker inspect -f '{{.Created}}'` moved.                                               |
+| `module not registered: dns.providers.<provider>`           | Caddy runs the stock image: the build did not happen. Rebuild (`up -d --build`, or a Dockhand deploy with `pull_policy: build`) and check `docker inspect -f '{{.Created}}'` moved.                                       |
 | Log: `401`/`403` from `api.infomaniak.com`                  | Token wrong or missing a scope (`domain:read`, `dns:read`, `dns:write`). A token change needs a redeploy: Caddy reads it at start.                                                                                        |
 | Log: `rateLimited`                                          | Too many failed or repeated orders. Switch to staging (the `acme_ca` line in the Caddyfile) until it works, then remove the line: Caddy then gets a real certificate.                                                     |
 | Certificate obtained, browser says `NXDOMAIN` or another IP | LAN DNS (step 4), or the client uses DNS-over-HTTPS.                                                                                                                                                                      |
@@ -164,17 +167,17 @@ To put a login in front of it, see [05 Authelia](05-sso-authelia.md).
 
 ## Another DNS provider
 
-Everything above stays the same except the provider's plugin and token. Find
-your provider among the [caddy-dns modules](https://github.com/caddy-dns) (each
-wraps a [libdns](https://github.com/libdns) package; its README says which
-token and permissions it needs), then:
+Everything above stays the same except two variables. Find your provider
+among the [caddy-dns modules](https://github.com/caddy-dns) (each wraps a
+[libdns](https://github.com/libdns) package; its README says which token and
+permissions it needs), then set `DNS_PROVIDER` to the module's name (e.g.
+`cloudflare`) and `DNS_API_TOKEN` to its token. The build fetches that module,
+and the `tls_wildcard` snippet becomes `dns cloudflare <token>`.
 
-1. `stacks/edge/Dockerfile`: `xcaddy build --with github.com/caddy-dns/<provider>`
-   instead of `…/infomaniak`.
-2. The `tls_wildcard` snippet in your Caddyfile: the module's syntax instead of
-   `dns infomaniak {env.INFOMANIAK_API_TOKEN}`, e.g. for Cloudflare
-   `dns cloudflare {env.CF_API_TOKEN}`.
-3. `compose.yaml`: pass the new variable(s) instead of `INFOMANIAK_API_TOKEN`.
+A provider that wants more than one value (a key and a secret, a region): give
+`compose.yaml` the extra variables and write the module's own syntax in the
+`tls_wildcard` snippet of your Caddyfile instead of
+`dns {$DNS_PROVIDER} {env.DNS_API_TOKEN}`.
 
 No plugin for your provider? Delegate only the challenge: a `CNAME` from
 `_acme-challenge.home.example.com` to a zone at a supported provider, and
@@ -186,4 +189,4 @@ Caddy's [`tls` directive](https://caddyserver.com/docs/caddyfile/directives/tls)
 - [05 Authelia](05-sso-authelia.md): one login in front of the apps.
 - [06 mediarr](06-mediarr.md) and the other apps: each adds its block to the Caddyfile.
 - Back up nothing here: Caddy gets a new certificate on its own after a loss.
-  The token lives in Portainer or `.env`, not in git.
+  The token lives in Dockhand or `.env`, not in git.

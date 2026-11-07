@@ -29,7 +29,8 @@ DSM 7.2+
 | What                   | Example       | How                                                                                                                        |
 | ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | A Synology on DSM 7.2+ | DS920+        | Container Manager must be offered for your model: check Synology's package list for it.                                    |
-| The NAS's fixed LAN IP | `192.0.2.10`  | DHCP reservation or static IP: Portainer and Caddy refer to it.                                                            |
+| An x86_64 CPU          | Intel, AMD    | Two images are built on the NAS and only tested on x86_64; the others are multi-arch.                                      |
+| The NAS's fixed LAN IP | `192.0.2.10`  | DHCP reservation or static IP: Dockhand's git source and Caddy refer to it.                                                |
 | A local admin account  | `admin-local` | Member of `administrators`. Used for SSH and `sudo`; day-to-day users can come from LDAP later ([05](05-sso-authelia.md)). |
 | The volume path        | `/volume1`    | Control Panel → Shared Folder shows which volume each share is on.                                                         |
 
@@ -68,13 +69,13 @@ sudo docker ps
 Control Panel → Shared Folder → Create. Create them as shared folders, not
 `mkdir`: only shared folders can be backed up and snapshotted.
 
-| Shared folder | Holds                                                   | Used by                               |
-| ------------- | ------------------------------------------------------- | ------------------------------------- |
-| `docker`      | per-stack config (`docker/<stack>/…`), Portainer's data | [02](02-portainer.md) and every stack |
-| `forgejo`     | git repositories, dumps                                 | [04 Forgejo](04-forgejo-gitops.md)    |
-| `media`       | downloads and the media library, one tree (hardlinks)   | [06 mediarr](06-mediarr.md)           |
-| `paperless`   | documents                                               | [07 Paperless](07-paperless.md)       |
-| `mealie`      | recipes, dumps                                          | [08 Mealie](08-mealie.md)             |
+| Shared folder | Holds                                                  | Used by                              |
+| ------------- | ------------------------------------------------------ | ------------------------------------ |
+| `docker`      | per-stack config (`docker/<stack>/…`), Dockhand's data | [02](02-dockhand.md) and every stack |
+| `forgejo`     | git repositories, dumps                                | [04 Forgejo](04-forgejo-gitops.md)   |
+| `media`       | downloads and the media library, one tree (hardlinks)  | [06 mediarr](06-mediarr.md)          |
+| `paperless`   | documents                                              | [07 Paperless](07-paperless.md)      |
+| `mealie`      | recipes, dumps                                         | [08 Mealie](08-mealie.md)            |
 
 Create only those for the stacks you deploy. Exact sub-paths: each stack's
 `.env.example`.
@@ -119,7 +120,7 @@ the edge stack.
 
 ## Next
 
-- [02 Portainer](02-portainer.md): deploy stacks from a UI, or from git.
+- [02 Dockhand](02-dockhand.md): deploy stacks from git, or pasted, from a UI.
 - [03 HTTPS](03-https-letsencrypt.md): `https://<app>.home.example.com` with a real certificate.
 - [05 Authelia](05-sso-authelia.md): LDAP Server and one login for everything (accounts: moving a local
   user to LDAP means _renaming_ the local account, never delete-then-create).

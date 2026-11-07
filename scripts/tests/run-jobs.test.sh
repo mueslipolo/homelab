@@ -67,7 +67,7 @@ tick "2026-10-12 23:30"
 check "missed window catches up on the next tick" [ "$(runs)" = 2 ]
 check "state records exit 0" grep -q '"exit": 0' "$T/ops/state/okjob.json"
 check "state records the success day" grep -q '"last_ok_day": "2026-10-12"' "$T/ops/state/okjob.json"
-check "pings start" pinged "https://hc.test/testkey/homelab-okjob/start?create=1"
+check "pings start, without creating a check" pinged "https://hc.test/testkey/homelab-okjob/start$"
 check "pings success" pinged "https://hc.test/testkey/homelab-okjob/0?create=1"
 check "pings heartbeat" pinged "https://hc.test/testkey/homelab-run-jobs/0?create=1"
 check "writes a log per run" [ "$(find "$T/ops/logs/okjob" -name '*.log' | wc -l)" = 2 ]
@@ -85,6 +85,24 @@ tick "2026-10-11 06:30"
 check "no retry within the hour" not_pinged "homelab-bad/start"
 tick "2026-10-11 07:00"
 check "retried after an hour" pinged "homelab-bad/start"
+rm -rf "$T"
+
+echo "jobs not set up here"
+setup
+printf 'echo "No app container: skipped"; exit 77\n' >"$T/jobs/skip.sh"
+echo 'nope 20:00 1m skip.sh' >"$T/jobs.conf"
+tick "2026-10-11 20:00"
+check "exit 77 leaves no state" [ ! -e "$T/ops/state/nope.json" ]
+check "and no failure" [ ! -e "$T/ops/state/nope.failed" ]
+check "and no result ping" not_pinged "homelab-nope/77"
+: >"$CURL_LOG"
+tick "2026-10-11 20:15"
+check "asked again only the next day" not_pinged "homelab-nope/start"
+tick "2026-10-12 20:00"
+check "the next day it is asked again" pinged "homelab-nope/start"
+echo 'okjob 20:00 1m ok.sh' >"$T/ops/jobs.conf"
+(unset JOBS_CONF && tick "2026-10-12 20:15")
+check "a jobs.conf in OPS_HOME replaces the repo's" [ "$(runs)" = 1 ]
 rm -rf "$T"
 
 echo "tick jobs"
@@ -132,7 +150,9 @@ check "rebuilds when the stack's code changed" [ "$(builds)" = 2 ]
 echo '# app' >"$B/repo/stacks/app/README.md" && git_q add -A && git_q commit -qm docs
 bi app=app:1
 check "a README change alone does not rebuild" [ "$(builds)" = 2 ]
-check "rejects a stack without a Dockerfile" bi_fails nope=nope:1
+check "skips a stack not in this clone" bi nope=nope:1 app=app:1
+mkdir -p "$B/repo/stacks/empty"
+check "rejects a folder without a Dockerfile" bi_fails empty=empty:1
 rm -rf "$B"
 
 echo "lib/dump.sh"
@@ -216,6 +236,39 @@ check "status.json lists the job" grep -q '"name": "okjob"' "$T/dash/status.json
 check "status.json carries the scheduler state" grep -q '"pull_error": "pull disabled"' "$T/dash/status.json"
 rm -rf "$T"
 
+echo "status.json: a release image (built by an app's own CI), a dump"
+setup
+echo 'redeploy-images tick 10m redeploy-images.sh photos=photos:latest' >"$T/jobs.conf"
+mkdir -p "$T/dash" "$T/dumps"
+cp "$ROOT/scripts/dashboard-status.sh" "$T/jobs/"
+mkdir -p "$T/jobs/lib" && cp "$ROOT/scripts/lib/"*.sh "$T/jobs/lib/"
+touch "$T/dumps/mealie_2026.10.31_20.05.00.zip"
+# Fake Docker: photos runs 0.1.2 while 0.1.3 waits under photos:latest.
+# Anything else fails, as if not deployed.
+cat >"$T/bin/docker" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+"inspect photos") ;;
+"image inspect --format {{ .Id }} photos:latest") echo sha256:new ;;
+"image inspect --format "*"org.opencontainers.image.version"*"photos:latest") echo '0.1.3|2026-10-31T14:00:00Z' ;;
+"inspect --format "*homelab.commit*" photos") echo '||' ;;
+"inspect --format "*"org.opencontainers.image.version"*" photos") echo 0.1.2 ;;
+"inspect --format {{ .State.StartedAt }} photos") echo 2026-10-31T09:00:00Z ;;
+"inspect --format {{ .State.Status }} photos") echo running ;;
+"inspect --format {{ .Image }} photos") echo sha256:old ;;
+*) exit 1 ;;
+esac
+EOF
+chmod +x "$T/bin/docker"
+printf 'DASHBOARD_LOCAL_DIR=%s\nSTATUS_VOLUME=/\nHYPERBACKUP_LOG=/nonexistent\nMEALIE_DUMP_DIR=%s\n' "$T/dash" "$T/dumps" >>"$T/jobs.env"
+tick "2026-10-31 21:00"
+kj() { python3 -c "import json,sys; d=json.load(open('$T/dash/status.json')); sys.exit(0 if ($1) else 1)"; }
+check "status.json is valid JSON" valid_json "$T/dash/status.json"
+check "the dump is listed, its newest file" kj "d['dumps'][0]['name'] == 'Mealie dump' and d['dumps'][0]['file'] == 'mealie_2026.10.31_20.05.00.zip'"
+check "the image is a release, with its version" kj "d['images'][0]['stack'] == 'photos' and d['images'][0]['release']['version'] == '0.1.3'"
+check "and the version running" kj "d['images'][0]['running']['version'] == '0.1.2' and d['images'][0]['running']['same_image'] is False"
+rm -rf "$T"
+
 echo "paperless-export"
 P=$(mktemp -d)
 mkdir -p "$P/bin"
@@ -242,7 +295,7 @@ unset NO_MANIFEST
 check "and says why" grep -q "has no manifest.json" "$P/out"
 rm -rf "$P"
 
-echo "Portainer stacks (lib/stacks.sh)"
+echo "Dockhand stacks (lib/stacks.sh)"
 K=$(mktemp -d)
 mkdir -p "$K/bin" "$K/repo/stacks/app" "$K/repo/stacks/web"
 gk() { git -C "$K/repo" -c user.email=t@example.com -c user.name=t "$@" >/dev/null; }
@@ -250,51 +303,62 @@ gk init -q
 echo 1 >"$K/repo/stacks/app/compose.yaml"
 echo 1 >"$K/repo/stacks/web/compose.yaml"
 gk add -A && gk commit -qm one
-first=$(git -C "$K/repo" rev-parse HEAD)
+first=$(git -C "$K/repo" rev-parse --short=7 HEAD)
 echo 2 >"$K/repo/stacks/web/compose.yaml"
 gk commit -qam two
 two=$(git -C "$K/repo" rev-parse --short=7 HEAD)
 echo '# docs' >"$K/repo/stacks/app/README.md"
 gk add -A && gk commit -qm docs
-# Fake Portainer: app and web deployed at the first commit, a Web editor
-# stack, and one deployed from a commit this clone does not have.
-cat >"$K/stacks.json" <<EOF
-[{"Id": 3, "Name": "app", "Status": 1, "UpdateDate": 1791700000,
-  "Env": [{"name": "DB_PASSWORD", "value": "hunter2"}],
-  "GitConfig": {"ConfigFilePath": "stacks/app/compose.yaml", "ConfigHash": "$first"}},
- {"Id": 4, "Name": "web", "Status": 1, "CreationDate": 1791600000,
-  "GitConfig": {"ConfigFilePath": "stacks/web/compose.yaml", "ConfigHash": "$first"}},
- {"Id": 5, "Name": "forgejo", "Status": 2, "GitConfig": null},
- {"Id": 6, "Name": "lost", "Status": 1,
-  "GitConfig": {"ConfigFilePath": "stacks/app/compose.yaml", "ConfigHash": "0123456789abcdef0123456789abcdef01234567"}}]
+# Fake Dockhand (its git stacks; commits are 7 characters, as Dockhand stores
+# them): app synced at commit two, web at the first commit, db failed to
+# deploy, one synced at a commit this clone does not have, and one without a
+# compose path.
+cat >"$K/dockhand.json" <<EOF
+[{"id": 12, "stackName": "app", "environmentId": 1, "composePath": "stacks/app/compose.yaml",
+  "lastCommit": "$two", "lastSync": "2026-10-31T12:00:00.123Z", "syncStatus": "synced", "syncError": null,
+  "webhookSecret": "whsec_hunter3"},
+ {"id": 13, "stackName": "web", "environmentId": 1, "composePath": "stacks/web/compose.yaml",
+  "lastCommit": "$first", "lastSync": "2026-10-30T08:00:00Z", "syncStatus": "synced", "syncError": null},
+ {"id": 14, "stackName": "db", "environmentId": 1, "composePath": "stacks/web/compose.yaml",
+  "lastCommit": "$two", "lastSync": "2026-10-31T12:05:00.000Z", "syncStatus": "error",
+  "syncError": "Deploy failed: No such image: db:1", "webhookSecret": null},
+ {"id": 15, "stackName": "lost", "environmentId": 1, "composePath": "stacks/app/compose.yaml",
+  "lastCommit": "0123456", "lastSync": null, "syncStatus": "error", "syncError": "Git fetch failed"},
+ {"id": 16, "stackName": "nopath", "environmentId": 1, "composePath": null, "lastCommit": null}]
 EOF
 cat >"$K/bin/curl" <<'EOF'
 #!/usr/bin/env bash
 echo "$*" >>"$K_DIR/curl.args"
 cat >>"$K_DIR/curl.stdin"
-[ -z "${CURL_FAIL:-}" ] || exit 22
-cat "$K_DIR/stacks.json"
+[ -z "${DH_FAIL:-}" ] || exit 22
+cat "$K_DIR/dockhand.json"
 EOF
 chmod +x "$K/bin/curl"
-stacks() {
-	K_DIR=$K PATH="$K/bin:$PATH" PORTAINER_TOKEN=${1-ptr_secret} bash -c \
+stacks() { # [dockhand token]
+	K_DIR=$K PATH="$K/bin:$PATH" DOCKHAND_TOKEN=${1-dh_secret} bash -c \
 		". '$ROOT/scripts/lib/json.sh'; . '$ROOT/scripts/lib/code.sh'; . '$ROOT/scripts/lib/stacks.sh'; stacks_json '$K/repo'"
 }
 stacks >"$K/out.json"
 sj() { python3 -c "import json,sys; d={s['name']: s for s in json.load(open('$K/out.json'))}; sys.exit(0 if ($1) else 1)"; }
 check "stacks are valid JSON" valid_json "$K/out.json"
-check "a stack deployed at its folder's last commit is current" sj "d['app']['current'] is True and d['app']['deployed']['at'] == 1791700000"
+check "every git stack is listed" sj "sorted(d) == ['app', 'db', 'lost', 'nopath', 'web']"
+check "a stack synced at its folder's last commit is current" sj "d['app']['current'] is True and d['app']['deployed']['commit'] == '$two'"
+check "its sync time, in epoch seconds" sj "d['app']['deployed']['at'] == $(date -d 2026-10-31T12:00:00Z +%s)"
+check "without milliseconds too" sj "d['web']['deployed']['at'] == $(date -d 2026-10-30T08:00:00Z +%s)"
 check "a stack whose folder changed since needs a redeploy" sj "d['web']['current'] is False and d['web']['code']['commit'] == '$two'"
-check "a README change alone does not need a redeploy" sj "d['app']['current'] is True"
-check "the creation date stands in for a never-updated stack" sj "d['web']['deployed']['at'] == 1791600000"
-check "a Web editor stack is not from git" sj "d['forgejo']['git'] is False and d['forgejo']['current'] is None and not d['forgejo']['active']"
+check "a README change alone does not need a redeploy" sj "d['app']['current'] is True and not d['app']['failed']"
+check "a failed deploy says so" sj "d['db']['failed'] is True"
+check "another sync error is not a failed deploy" sj "d['lost']['failed'] is False"
 check "a commit the clone lacks is unknown, not current" sj "d['lost']['current'] is None"
-check "stack environments are not copied" not_in_file hunter2 "$K/out.json"
-check "the token goes in on stdin" grep -q 'X-API-Key: ptr_secret' "$K/curl.stdin"
-check "never on the command line" not_in_file ptr_secret "$K/curl.args"
-check "only the local Portainer skips certificate checks" grep -q -- '-k ' "$K/curl.args"
+check "no compose path: no code to compare" sj "d['nopath']['code'] is None and d['nopath']['current'] is None and d['nopath']['deployed'] is None"
+check "the token goes in on stdin, as a Bearer token" grep -q 'Authorization: Bearer dh_secret' "$K/curl.stdin"
+check "never on the command line" not_in_file dh_secret "$K/curl.args"
+check "Dockhand on the loopback, plain HTTP" grep -q 'http://127.0.0.1:3010/api/git/stacks' "$K/curl.args"
+check "webhook secrets are not copied" not_in_file whsec_hunter3 "$K/out.json"
+rm -f "$K/curl.args"
 check "no token: no stack list" [ "$(stacks '')" = null ]
-check "Portainer unreachable: no stack list" [ "$(CURL_FAIL=1 stacks)" = null ]
+check "and Dockhand is not asked" [ ! -f "$K/curl.args" ]
+check "Dockhand unreachable: no stack list" [ "$(DH_FAIL=1 stacks)" = null ]
 rm -rf "$K"
 
 echo "renovate-notify.sh"
@@ -314,7 +378,7 @@ chmod +x "$N/bin/curl"
 dash() { # <pending lines...>: an issue list with a Dependency Dashboard holding them
 	local body='This issue lists Renovate updates.\n\n## Pending Approval\n\nThe following branches are pending approval.\n\n' l
 	for l in "$@"; do body+=" - [ ] <!-- approve-branch=renovate/x -->$l\n"; done
-	body+=' - [ ] <!-- approve-all-pending-prs -->Create all pending approval PRs at once\n\n## Open\n\n - [ ] <!-- rebase-branch=renovate/y -->chore(deps): update y to v1.2\n'
+	body+=' - [ ] <!-- approve-all-pending-prs -->Create all pending approval PRs at once\n\n## Open\n\n - [ ] <!-- rebase-branch=renovate/y -->[chore(deps): update y to v1.2](../pulls/78)\n - [ ] <!-- rebase-all-open-prs -->Click on this checkbox to rebase all open PRs at once\n\n## Rate-Limited\n\n - [ ] <!-- unlimit-branch=renovate/z -->chore(deps): update z to v3\n'
 	printf '[{"number": 7, "title": "Other"}, {"number": 1, "title": "Dependency Dashboard", "html_url": "https://forgejo.example.com/admin/homelab/issues/1", "body": "%s"}]' "$body" >"$N/issues.json"
 }
 notify() {
@@ -326,9 +390,12 @@ dash 'chore(deps): update jellyfin to v13' 'chore(deps): update forgejo to v17.1
 notify
 check "new approvals are pushed" [ "$(posts)" = 1 ]
 check "with each update named" grep -q 'update jellyfin to v13' "$N/posts"
-check "and a count in the title" grep -q 'Title: 2 updates waiting for your approval' "$N/posts"
+check "and a count in the title" grep -q 'Title: 3 updates waiting for your approval' "$N/posts"
 check "tapping opens the Dependency Dashboard" grep -q 'Click: https://forgejo.example.com/admin/homelab/issues/1' "$N/posts"
-check "open PRs and the approve-all line are not updates" not_in_file 'update y to' "$N/posts"
+check "open PRs are updates too" grep -qF 'update y to v1.2' "$N/posts"
+check "by their title, not the link" not_in_file 'pulls/78' "$N/posts"
+check "the approve-all and rebase-all lines are not" not_in_file 'at once' "$N/posts"
+check "nor rate-limited branches, which have no PR yet" not_in_file 'update z to' "$N/posts"
 check "to the homelab topic on the loopback port" grep -q 'http://127.0.0.1:2586/homelab' "$N/posts"
 check "tokens go in on stdin" grep -q 'Bearer tk_secret' "$N/curl.stdin"
 check "never on the command line" not_in_file _secret "$N/curl.args"
@@ -337,7 +404,7 @@ check "the same updates are not pushed again" [ "$(posts)" = 1 ]
 dash 'chore(deps): update jellyfin to v13' 'chore(deps): update forgejo to v17.1' 'chore(deps): update postgres to v18'
 notify
 check "only the new one is pushed" grep -q 'Title: 1 update waiting for your approval' "$N/posts"
-check "with the total" grep -q '(3 waiting in all)' "$N/posts"
+check "with the total" grep -q '(4 waiting in all)' "$N/posts"
 dash
 notify
 check "nothing waiting: no push" [ "$(posts)" = 2 ]
@@ -496,7 +563,7 @@ case \$1 in
 ps) printf 'a1\nb2\nc3\n' ;;
 inspect) printf '%s\n' \
 	"/mediarr-sonarr-1${S}unless-stopped${S}restarting${S}${S}3${S}false${S}9${S}2026-10-19T09:59:30.123456789Z${S}mediarr${S}lscr.io/linuxserver/sonarr:4.0.16${S}sha256:aaa${S}4.0.16.2944-ls300" \
-	"/portainer${S}always${S}running${S}healthy${S}0${S}false${S}0${S}2026-10-19T08:00:00Z${S}${S}portainer/portainer-ce:2.41.0${S}sha256:bbb${S}" \
+	"/standalone${S}always${S}running${S}healthy${S}0${S}false${S}0${S}2026-10-19T08:00:00Z${S}${S}example/standalone:2.41.0${S}sha256:bbb${S}" \
 	"/jq-helper${S}no${S}running${S}${S}0${S}false${S}0${S}2026-10-19T09:00:00Z${S}" ;;
 esac
 EOF
@@ -507,10 +574,10 @@ check "containers are valid JSON" valid_json "$D/c.json"
 check "a compose container, with its stack and restart count" cj "d['mediarr-sonarr-1']['state'] == 'restarting' and d['mediarr-sonarr-1']['restarts'] == 9 and d['mediarr-sonarr-1']['project'] == 'mediarr'"
 check "an empty health field keeps the columns in place" cj "d['mediarr-sonarr-1']['health'] is None and d['mediarr-sonarr-1']['exit_code'] == 3"
 check "start time as epoch" cj "d['mediarr-sonarr-1']['started'] == $(date -d '2026-10-19T09:59:30Z' +%s)"
-check "Portainer (docker run, restart always) is watched" cj "d['portainer']['health'] == 'healthy'"
+check "a docker run container (restart always) is watched" cj "d['standalone']['health'] == 'healthy'"
 check "one-off containers (no restart policy) are not" cj "'jq-helper' not in d"
 check "image, its id and version label" cj "d['mediarr-sonarr-1']['image'] == 'lscr.io/linuxserver/sonarr:4.0.16' and d['mediarr-sonarr-1']['image_id'] == 'sha256:aaa' and d['mediarr-sonarr-1']['version'] == '4.0.16.2944-ls300'"
-check "no version label: null" cj "d['portainer']['version'] is None"
+check "no version label: null" cj "d['standalone']['version'] is None"
 rm -rf "$D"
 
 echo "docker-prune"
@@ -831,6 +898,174 @@ check "no secret leaks" not_in_file s3cr3t "$T/prot.json"
 prot /usr/bin:/bin /nonexistent >"$T/none.json"
 check "off DSM: empty, still valid" grep -qx '{"shares": \[\], "tasks": \[\]}' "$T/none.json"
 rm -rf "$T"
+
+echo "redeploy-images.sh"
+D=$(mktemp -d)
+mkdir -p "$D/bin" "$D/img" "$D/ctr"
+# Fake Docker: images and containers are files. img/<image> holds its id;
+# ctr/<name>/{image,tag} what `docker inspect` reports, ctr/<name>/top what `docker top`
+# lists (pid, parent, state; the main process is 100, started from outside, parent 1).
+cat >"$D/bin/docker" <<'EOF'
+#!/usr/bin/env bash
+key() { printf '%s' "$1" | tr '/:' '__'; }
+case "$1 $2" in
+"image inspect") f="$D_DIR/img/$(key "$5")"; [ -f "$f" ] && cat "$f" || exit 1 ;;
+top*) c="$D_DIR/ctr/$2"; [ -d "$c" ] || exit 1; cat "$c/top" ;;
+"inspect --format")
+	c="$D_DIR/ctr/$4"; [ -d "$c" ] || exit 1
+	case $3 in
+	*'.Config.Image'*) cat "$c/tag" ;;
+	*'.State.Pid'*) echo 100 ;;
+	*'.Image'*) cat "$c/image" ;;
+	esac ;;
+*) exit 1 ;;
+esac
+EOF
+# Fake Dockhand: its git stacks (gone: no container; failed: its last deploy
+# failed), and a deploy that (unless told not to) runs the stack's container
+# on the image under its tag, creating it if need be, as Dockhand would, and
+# answers when it is over. stacks.tsv: id, name, tag in compose.
+printf '21 app app:1\n22 other other:1\n23 gone app:1\n24 failed app:1\n' >"$D/stacks.tsv"
+cat >"$D/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >>"$D_DIR/curl.args"
+cat >>"$D_DIR/curl.stdin"
+case "$*" in
+*"-X POST"*/api/git/stacks/*/deploy*)
+	echo "$*" >>"$D_DIR/redeploys"
+	[ -z "${POST_FAIL:-}" ] || exit 22
+	[ -z "${DEPLOY_FAIL:-}" ] || { echo '{"success": false, "error": "boom"}'; exit 0; }
+	id=$(sed -n 's|.*/api/git/stacks/\([0-9]*\)/deploy.*|\1|p' <<<"$*")
+	if [ -z "${NO_EFFECT:-}" ]; then
+		read -r _ name tag < <(awk -v i="$id" '$1 == i' "$D_DIR/stacks.tsv")
+		mkdir -p "$D_DIR/ctr/$name"
+		cp "$D_DIR/img/$(printf '%s' "$tag" | tr '/:' '__')" "$D_DIR/ctr/$name/image"
+		echo "$tag" >"$D_DIR/ctr/$name/tag"
+		printf 'PID PPID STAT\n100 1 Ssl\n' >"$D_DIR/ctr/$name/top"
+	fi
+	echo '{"success": true}'
+	;;
+*/api/git/stacks*)
+	[ -z "${GET_FAIL:-}" ] || exit 22
+	echo GET >>"$D_DIR/gets"
+	printf '%s\n' '[{"id": 21, "stackName": "app", "environmentId": 1, "syncStatus": "synced", "syncError": null, "webhookSecret": "whsec_hunter3"},' \
+		' {"id": 22, "stackName": "other", "environmentId": 1, "syncStatus": "synced", "syncError": null},' \
+		' {"id": 23, "stackName": "gone", "environmentId": 1, "syncStatus": "synced", "syncError": null},' \
+		' {"id": 24, "stackName": "failed", "environmentId": 1, "syncStatus": "error", "syncError": "Deploy failed: No such image: app:1"}]'
+	;;
+*) exit 22 ;;
+esac
+EOF
+chmod +x "$D/bin/docker" "$D/bin/curl"
+ctr() { # <name> <running image id> <tag> [extra `docker top` lines]
+	mkdir -p "$D/ctr/$1"
+	echo "$2" >"$D/ctr/$1/image"
+	echo "$3" >"$D/ctr/$1/tag"
+	printf 'PID PPID STAT\n100 1 Ssl\n%s' "${4:+$4\n}" >"$D/ctr/$1/top"
+}
+img() { echo "$2" >"$D/img/$(printf '%s' "$1" | tr '/:' '__')"; } # <image> <id>
+redeploy() { # <spec>...
+	rm -f "$D/redeploys" "$D/gets"
+	D_DIR=$D PATH="$D/bin:$PATH" DOCKHAND_TOKEN=${TOKEN-dh_secret} REDEPLOY_WAIT=2 REDEPLOY_STEP=1 \
+		bash "$ROOT/scripts/redeploy-images.sh" "$@" >"$D/out" 2>&1
+}
+redeploys() { if [ -f "$D/redeploys" ]; then wc -l <"$D/redeploys" | tr -d ' '; else echo 0; fi; }
+
+img app:1 sha256:new
+ctr app sha256:new app:1
+redeploy app=app:1
+check "a container on its tag's image is left alone" [ "$? $(redeploys)" = "0 0" ]
+
+ctr app sha256:old app:1
+redeploy app=app:1
+check "a new image under the tag: redeployed" [ "$? $(redeploys)" = "0 1" ]
+check "through Dockhand's git stack deploy, with its id" grep -q -- '-X POST http://127.0.0.1:3010/api/git/stacks/21/deploy' "$D/redeploys"
+check "asking for the answer once it is over" grep -q -- '-H Accept: application/json' "$D/redeploys"
+check "it waits until the container runs it" grep -q 'app: redeployed, runs app:1' "$D/out"
+check "the token goes in on stdin, as a Bearer token" grep -q 'Authorization: Bearer dh_secret' "$D/curl.stdin"
+check "never on the command line" not_in_file dh_secret "$D/curl.args"
+check "webhook secrets are not printed" not_in_file whsec_hunter3 "$D/out"
+
+ctr app sha256:old app:1
+NO_EFFECT=1 redeploy app=app:1
+check "a redeploy that does not take effect fails the job" [ "$? $(redeploys)" = "1 1" ]
+check "and says so, pointing at Dockhand" grep -q 'still not running the new app:1 after 2s: see the stack in Dockhand' "$D/out"
+
+ctr app sha256:old app:1
+DEPLOY_FAIL=1 redeploy app=app:1
+check "a deploy that fails fails the job" [ "$? $(redeploys)" = "1 1" ]
+check "with Dockhand's reason" grep -q "app: Dockhand's deploy failed: boom" "$D/out"
+
+ctr app sha256:old app:1
+POST_FAIL=1 redeploy app=app:1
+check "Dockhand refusing the deploy fails the job" [ "$?" = 1 ]
+check "and says so" grep -q 'app: Dockhand refused the deploy' "$D/out"
+
+ctr app sha256:old app:1 "200 1 Ss"
+redeploy app=app:1
+check "a container running a docker exec waits for a later tick" [ "$? $(redeploys)" = "0 0" ]
+
+# The NAS case: a stopped pass left a zombie that Docker still listed as an exec.
+ctr app sha256:old app:1 "300 100 Z"
+redeploy app=app:1
+check "a zombie left by a stopped pass does not hold a release back" [ "$? $(redeploys)" = "0 1" ]
+ctr app sha256:old app:1 "200 1 Z"
+redeploy app=app:1
+check "nor does a dead exec" [ "$? $(redeploys)" = "0 1" ]
+ctr app sha256:old app:1 "200 1 Ss
+201 200 Rl"
+redeploy app=app:1
+check "an exec with its children at work does" [ "$? $(redeploys)" = "0 0" ]
+
+ctr app sha256:old app:0.9
+redeploy app=app:1
+check "a container pinned to another tag is left alone" [ "$? $(redeploys)" = "0 0" ]
+
+redeploy app=nosuch:1 .forgejo/ci=app:1
+check "no image yet, or a tool image: nothing to do" [ "$? $(redeploys)" = "0 0" ]
+check "and Dockhand is not even asked" [ ! -f "$D/gets" ]
+
+redeploy ghost=app:1
+check "no container and no Dockhand stack: not deployed here" [ "$? $(redeploys)" = "0 0" ]
+
+redeploy gone=app:1
+check "a Dockhand stack without a container (a failed deploy): deployed" [ "$? $(redeploys)" = "0 1" ]
+check "it then runs the image" grep -qx sha256:new "$D/ctr/gone/image"
+check "and says why" grep -q 'gone: a Dockhand stack without a container' "$D/out"
+rm -rf "$D/ctr/gone"
+
+# The NAS case: compose switched to app:1 before it was built, so the deploy
+# failed and the old container kept running under its old tag.
+ctr failed sha256:old app:0.1.1
+redeploy failed=app:1
+check "a failed last deploy is redeployed once its image exists, whatever the old tag" [ "$? $(redeploys)" = "0 1" ]
+check "it then runs the image" grep -qx sha256:new "$D/ctr/failed/image"
+ctr failed sha256:old app:0.1.1 "200 1 Ss"
+redeploy failed=app:1
+check "but not while a command runs in it" [ "$? $(redeploys)" = "0 0" ]
+rm -rf "$D/ctr/failed"
+
+ctr loose sha256:old app:1
+redeploy loose=app:1
+check "a container that is not a Dockhand stack fails the job" [ "$? $(redeploys)" = "1 0" ]
+rm -rf "$D/ctr/loose"
+
+ctr app sha256:old app:1
+ctr other sha256:old other:1
+img other:1 sha256:new2
+NO_EFFECT=1 redeploy app=app:1 other=other:1
+check "Dockhand's stack list is read once per run" [ "$(wc -l <"$D/gets" | tr -d ' ')" = 1 ]
+rm -rf "$D/ctr/other"
+
+ctr app sha256:old app:1
+GET_FAIL=1 redeploy app=app:1
+check "Dockhand not answering fails the job" [ "$? $(redeploys)" = "1 0" ]
+check "and says so" grep -q 'app: Dockhand did not answer' "$D/out"
+
+ctr app sha256:old app:1
+TOKEN='' redeploy app=app:1
+check "no DOCKHAND_TOKEN: not set up (77)" [ "$? $(redeploys)" = "77 0" ]
+rm -rf "$D"
 
 echo
 if [ "$fails" -gt 0 ]; then

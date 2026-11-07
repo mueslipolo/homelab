@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Writes status.json for the dashboard: volume usage, the age of the newest
-# app dump (Forgejo, Mealie), each Hyper Backup task's last result, what
-# protects which shared folder (lib/protection.sh), jobs, deployments, and
-# whether each Portainer stack runs the latest code (lib/stacks.sh). The
+# app dump (Forgejo, Mealie, Immich), each Hyper Backup task's last
+# result, what protects which shared folder (lib/protection.sh), jobs,
+# deployments, and whether each Dockhand stack runs the latest code
+# (lib/stacks.sh). The
 # dashboard is static nginx with no backend, so the NAS pushes the facts into
 # the folder the dashboard already mounts (DASHBOARD_LOCAL_DIR, see
 # stacks/dashboard/README.md) and the page only reads them.
@@ -17,6 +18,8 @@ readonly OUT_DIR="${DASHBOARD_LOCAL_DIR:?set DASHBOARD_LOCAL_DIR to the dashboar
 readonly VOLUME="${STATUS_VOLUME:?set STATUS_VOLUME to the volume to report, e.g. /volume1}"
 readonly FORGEJO_DUMPS="${FORGEJO_DUMP_DIR:-}"
 readonly MEALIE_DUMPS="${MEALIE_DUMP_DIR:-}"
+# Immich dumps its own database (IMMICH_UPLOAD_LOCATION/backups); nothing to run.
+readonly IMMICH_DUMPS="${IMMICH_DUMP_DIR:-}"
 # Hyper Backup's log. Current packages write inside their own package dir; the
 # DSM-wide /var/log/synolog/synobackup.log is a leftover that stopped updating
 # (here: 2024-11), so reading it would show every task as stale. The first
@@ -73,7 +76,9 @@ dump_json() { # <label> <dir>
 # Last finished/failed line per task. Expected shape (tab-separated):
 #   info  2026/10/10 21:02:11  SYSTEM:  [Network][Task name] Backup task finished successfully. [...]
 backups_json() {
-	[ -n "$BACKUP_LOG" ] || { printf '[]'; return; }
+	# No log at all: no Hyper Backup here (not a Synology, or not installed);
+	# null hides it on the page. An empty list means it ran nothing yet.
+	[ -n "$BACKUP_LOG" ] || { printf 'null'; return; }
 	local line task when result epoch first=1
 	local -A last_at=() last_result=() last_msg=()
 	local re_time='([0-9]{4})/([0-9]{2})/([0-9]{2})[[:space:]]+([0-9]{2}:[0-9]{2}:[0-9]{2})'
@@ -133,16 +138,22 @@ jobs_json() {
 #              and whether it runs the image now under the tag
 # Labels come from build-images.sh; a container keeps its image's labels even
 # once that image has been replaced under the tag.
+#
+# An image the redeploy-images job starts but this repo does not build (an
+# app's own CI builds each release here) has no code or build stage; instead
+#   release -- the image under the tag: its version label (OCI), build time
 images_json() {
-	local repo conf specs=() spec stack image first=1
+	local repo conf built_specs=() deploy_specs=() spec stack image first=1
 	repo="$(cd "$(dirname -- "$0")/.." && pwd)"
-	conf="$(dirname -- "$0")/jobs.conf"
+	conf="${JOBS_CONF:-$(dirname -- "$0")/jobs.conf}" # run-jobs.sh sets it
 	if [ -f "$conf" ] && command -v docker >/dev/null; then
 		# shellcheck disable=SC2207 # specs are simple tokens
-		specs=($(awk '$4 == "build-images.sh" { for (i = 5; i <= NF; i++) print $i }' "$conf"))
+		built_specs=($(awk '$4 == "build-images.sh" { for (i = 5; i <= NF; i++) print $i }' "$conf"))
+		# shellcheck disable=SC2207
+		deploy_specs=($(awk '$4 == "redeploy-images.sh" { for (i = 5; i <= NF; i++) print $i }' "$conf"))
 	fi
 	printf '['
-	for spec in "${specs[@]}"; do
+	for spec in "${built_specs[@]}"; do
 		stack=${spec%%=*}
 		image=${spec#*=}
 		# A path (.forgejo/ci) is a tool image, not a stack: nothing runs it.
@@ -154,7 +165,31 @@ images_json() {
 			"$(code_json "$repo" "$stack")" "$(built_json "$repo" "$stack" "$image")" \
 			"$(running_json "$stack" "$image")"
 	done
+	for spec in "${deploy_specs[@]}"; do
+		stack=${spec%%=*}
+		image=${spec#*=}
+		case $stack in */*) continue ;; esac
+		# Built here: already listed above.
+		case " ${built_specs[*]} " in *" $stack="*) continue ;; esac
+		# Not deployed on this NAS: nothing to show.
+		docker inspect "$stack" >/dev/null 2>&1 || docker image inspect "$image" >/dev/null 2>&1 || continue
+		[ "$first" -eq 1 ] || printf ', '
+		first=0
+		printf '{"stack": %s, "release": %s, "running": %s}' \
+			"$(json_str "$stack")" "$(release_json "$image")" "$(running_json "$stack" "$image")"
+	done
 	printf ']'
+}
+
+# Version (OCI label) and build time of an image, or null.
+release_json() { # <image>
+	local info version created
+	info=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}|{{ .Created }}' "$1" 2>/dev/null) ||
+		{ printf 'null'; return; }
+	IFS='|' read -r version created <<<"$info"
+	[ "$version" != "<no value>" ] || version="" # built by hand, without labels
+	printf '{"version": %s, "at": %s}' "$(json_str "${version:-?}")" \
+		"$(_num "$(date -d "$created" +%s 2>/dev/null)")"
 }
 
 code_json() { # <repo> <stack>
@@ -180,15 +215,17 @@ built_json() { # <repo> <stack> <image>
 }
 
 running_json() { # <container> <image>
-	local info commit started id latest
+	local info commit started id latest version
 	info=$(_labels "$1") || { printf 'null'; return; }
 	commit=${info%%|*}
+	version=$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$1" 2>/dev/null)
+	[ "$version" != "<no value>" ] || version=""
 	started=$(docker inspect --format '{{ .State.StartedAt }}' "$1" 2>/dev/null)
 	started=$(date -d "$started" +%s 2>/dev/null || echo null)
 	id=$(docker inspect --format '{{ .Image }}' "$1" 2>/dev/null)
 	latest=$(docker image inspect --format '{{ .Id }}' "$2" 2>/dev/null || true)
-	printf '{"commit": %s, "started": %s, "state": %s, "same_image": %s}' \
-		"$(json_str "${commit:-?}")" "$started" \
+	printf '{"commit": %s, "version": %s, "started": %s, "state": %s, "same_image": %s}' \
+		"$(json_str "${commit:-?}")" "$(json_str "${version:-}")" "$started" \
 		"$(json_str "$(docker inspect --format '{{ .State.Status }}' "$1" 2>/dev/null)")" \
 		"$([ -n "$id" ] && [ "$id" = "$latest" ] && echo true || echo false)"
 }
@@ -202,6 +239,7 @@ main() {
 	local dumps=()
 	[ -n "$FORGEJO_DUMPS" ] && dumps+=("$(dump_json "Forgejo dump" "$FORGEJO_DUMPS")")
 	[ -n "$MEALIE_DUMPS" ] && dumps+=("$(dump_json "Mealie dump" "$MEALIE_DUMPS")")
+	[ -n "$IMMICH_DUMPS" ] && dumps+=("$(dump_json "Immich database dump" "$IMMICH_DUMPS")")
 
 	# Written atomically, so the page never reads a half-written file.
 	{

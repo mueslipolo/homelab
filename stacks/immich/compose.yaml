@@ -1,0 +1,173 @@
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+# Immich's official compose file of the release (v3.3.5, docker/docker-compose.yml
+# in github.com/immich-app/immich), adapted: no .env file (the stack's variables in Dockhand),
+# no published port (Caddy reaches immich-server over `proxy`), a private network
+# for the rest, this repo's hardening and memory limits (README, "Memory").
+# Server and machine learning must run the same version: Renovate bumps them
+# together (renovate.json, group "immich").
+
+services:
+  immich-server:
+    logging: *logging
+    image: ghcr.io/immich-app/immich-server:v3.3.5
+    restart: always
+    depends_on:
+      immich-database:
+        condition: service_healthy
+      immich-redis:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Europe/Zurich}
+      DB_HOSTNAME: immich-database
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: immich-redis
+    volumes:
+      # Originals (upload/, library/), avatars (profile/), Immich's own database
+      # dumps (backups/), and what it can make again (thumbs/, encoded-video/).
+      # Never touch the files in here by hand: Immich only knows them through
+      # its database (README, "Backups").
+      - ${IMMICH_UPLOAD_LOCATION:?set IMMICH_UPLOAD_LOCATION}:/data
+      - /etc/localtime:/etc/localtime:ro
+    # Optional: Intel Quick Sync for video transcoding (guide 12, "Video on the
+    # iGPU"). Same devices as Jellyfin's in the mediarr stack; then pick Quick
+    # Sync in Administration > Settings > Video Transcoding.
+    # devices:
+    #   - /dev/dri/renderD128:/dev/dri/renderD128
+    #   - /dev/dri/card0:/dev/dri/card0
+    # Deliberately no `ports:` -- Caddy reaches it over the `proxy` network.
+    networks:
+      - immich_net
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # Runs as root and writes into a DSM shared folder, whose ACLs need not
+      # grant root anything: without it, root in a container gets EACCES there.
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          # Measured up to ~3 GB while importing (proof of concept, 579 photos);
+          # a phone's first backup is a bigger import (README, "Memory").
+          memory: 4G
+
+  # The name is fixed: Immich's default machine-learning URL is
+  # http://immich-machine-learning:3003.
+  immich-machine-learning:
+    logging: *logging
+    image: ghcr.io/immich-app/immich-machine-learning:v3.3.5
+    restart: always
+    environment:
+      TZ: ${TZ:-Europe/Zurich}
+      # Requests served at once (default: one per core). Each uses 2 threads
+      # (MACHINE_LEARNING_MODEL_INTRA_OP_THREADS), so 2 keeps ML on about half
+      # of the J4125's 4 cores, next to Paperless's OCR (README, "CPU").
+      MACHINE_LEARNING_REQUEST_THREADS: ${MACHINE_LEARNING_REQUEST_THREADS:-2}
+      # Unloads a model after 5 idle minutes (Immich's default, made visible):
+      # memory goes back to DSM between jobs.
+      MACHINE_LEARNING_MODEL_TTL: 300
+    volumes:
+      # Downloaded models: disposable, fetched again when missing.
+      - model-cache:/cache
+    networks:
+      # Also reaches Hugging Face to download its models: immich_net is a
+      # normal bridge network, with internet access.
+      - immich_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          # ~0.5 GB idle; the CLIP, face and OCR models loaded together take
+          # more during a job (README, "Memory").
+          memory: 2G
+
+  immich-redis:
+    logging: *logging
+    # Pinned by digest, as in Immich's compose file of the release.
+    image: docker.io/valkey/valkey:9@sha256:c123e3715db63d06d4ad6964884037aa0d5d4d703939b9929954112889708e1d
+    restart: always
+    networks:
+      - immich_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # The entrypoint chowns /data and drops from root to the valkey user.
+      - CHOWN
+      - SETUID
+      - SETGID
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  immich-database:
+    logging: *logging
+    # Immich's own Postgres with the vector extensions, pinned by digest as in
+    # its compose file of the release. Renovate leaves it alone: change it only
+    # when an Immich release's compose file does (README, "Updating").
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      # HDD: the NAS's volume is spinning disks. SSD only if
+      # IMMICH_DOCKER_ROOT is on an SSD volume.
+      DB_STORAGE_TYPE: ${DB_STORAGE_TYPE:-HDD}
+    volumes:
+      - ${IMMICH_DOCKER_ROOT:?set IMMICH_DOCKER_ROOT}/postgres:/var/lib/postgresql/data
+    shm_size: 128mb
+    networks:
+      - immich_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # Root-then-drop entrypoint, as Paperless's postgres.
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    # The image's own healthcheck, kept (Immich's compose: `disable: false`).
+    healthcheck:
+      disable: false
+    deploy:
+      resources:
+        limits:
+          # Immich's requirements: "if Docker resource limits are used, the
+          # Postgres database requires at least 2GB of RAM". Measured ~0.4 GB.
+          memory: 2G
+
+volumes:
+  model-cache:
+
+networks:
+  immich_net:
+    driver: bridge
+  proxy:
+    external: true

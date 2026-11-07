@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<style>
+    /* The family's page: what the dashboard shows people outside the admin
+       group (Caddy picks it, Authelia keeps them out of the rest; README,
+       "Two pages"). Only links, nothing from local/. Same fonts as
+       index.html, served from html/fonts/. */
+    @font-face {
+        font-family: "Archivo";
+        src: url("fonts/Archivo-latin.woff2") format("woff2");
+        font-weight: 400 700;
+        font-display: swap;
+    }
+
+    :root {
+        --bg: #fff8ef;
+        --card: #ffffff;
+        --ink: #2b2420;
+        --muted: #776b62;
+        --line: #f0e2d0;
+        --shadow: 0 2px 0 #f0e2d0, 0 10px 24px rgba(120, 80, 40, 0.08);
+        --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root {
+            color-scheme: dark;
+            --bg: #1d1a17;
+            --card: #29241f;
+            --ink: #f3ece4;
+            --muted: #b3a79c;
+            --line: #3a332c;
+            --shadow: 0 2px 0 #14110f, 0 10px 24px rgba(0, 0, 0, 0.3);
+        }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 17px;
+        line-height: 1.45;
+    }
+    main { max-width: 880px; margin: 0 auto; padding: 24px 16px 40px; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    header img { width: 120px; height: 120px; flex: none; animation: wave 3s ease-in-out infinite; transform-origin: 50% 90%; }
+    header h1 { margin: 0; font-size: clamp(28px, 6vw, 40px); line-height: 1.1; }
+    header p { margin: 6px 0 0; color: var(--muted); }
+    @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-4deg); } }
+    @media (prefers-reduced-motion: reduce) { header img { animation: none; } }
+
+    /* Every card as tall as the tallest: a longer line must not make one stand out. */
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); grid-auto-rows: 1fr; }
+    .app {
+        display: flex; align-items: center; gap: 16px; height: 100%;
+        padding: 18px; border-radius: 20px;
+        background: var(--card); border: 2px solid var(--line); box-shadow: var(--shadow);
+        color: inherit; text-decoration: none;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .app:hover, .app:focus-visible { transform: translateY(-3px); border-color: var(--tint); outline: none; }
+    .app .ico {
+        width: 64px; height: 64px; flex: none; border-radius: 18px;
+        display: grid; place-items: center; background: var(--soft);
+    }
+    .app .ico img { width: 40px; height: 40px; }
+    .app b { display: block; font-size: 20px; }
+    .app span { display: block; color: var(--muted); font-size: 15px; }
+
+    .tips { margin-top: 28px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .tip { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 20px; border: 2px dashed var(--line); color: var(--muted); }
+    .tip img { width: 72px; height: 72px; flex: none; }
+    .tip b { color: var(--ink); }
+
+    footer { margin-top: 28px; text-align: center; font-size: 14px; color: var(--muted); }
+    footer a { color: inherit; }
+    .credit { margin-top: 6px; font-size: 12px; }
+
+    /* Dark logos (Paperless's leaf) and the gophers' black lines vanish on a
+       dark card: a light backing keeps them visible. */
+    @media (prefers-color-scheme: dark) {
+        .app .ico { background: #f6efe6; }
+        .tip img { background: #f6efe6; border-radius: 50%; padding: 4px; }
+    }
+
+    @media (max-width: 480px) {
+        header img { width: 88px; height: 88px; }
+        .app .ico { width: 52px; height: 52px; }
+    }
+</style>
+</head>
+<body>
+<main>
+    <header>
+        <img src="gopher/services.png" alt="">
+        <div>
+            <h1 data-hello>Hello!</h1>
+            <p>Everything at home, one tap away.</p>
+        </div>
+    </header>
+
+    <ul data-apps></ul>
+
+    <div class="tips">
+        <p class="tip"><img src="gopher/network.png" alt=""><span><b>Only at home.</b> These work on the home Wi-Fi, or away with the VPN switched on.</span></p>
+        <p class="tip"><img src="gopher/system.png" alt=""><span><b>Something broken?</b> Tell whoever looks after the server: the gopher with the wrench is on it.</span></p>
+    </div>
+
+    <footer>
+        <a data-logout hidden>Log out</a>
+        <p class="credit">Go gopher by Renee French (CC BY 4.0) · drawings by Maria Letta</p>
+    </footer>
+</main>
+
+<noscript><p style="text-align:center">The links are built from this page's address: enable JavaScript to see them.</p></noscript>
+
+<script>
+(function () {
+    // [what it is for, one line, subdomain, logo in icons/, card colour]
+    // In plain words on purpose: this page is for people who never open the
+    // admin one. The apps are the ones every family account can use.
+    var APPS = [
+        ['Photos', 'Our photos and videos, saved from your phone', 'immich', 'immich.svg', '#f4a23c'],
+        ['Films and series', 'Watch on the TV, the laptop or the phone', 'jellyfin', 'jellyfin.svg', '#8e6bdc'],
+        ['Ask for a film', 'Want to watch something we don’t have? Ask here', 'seerr', 'seerr.svg', '#5b7cf0'],
+        ['Recipes', 'Our recipes and the week’s meals', 'mealie', 'mealie.svg', '#e2604b'],
+        ['Documents', 'Letters and bills, scanned and searchable', 'paperless', 'paperless-ngx.svg', '#3aa676']
+    ];
+
+    // Same as index.html: hostnames come from this page's own address
+    // (dashboard.<internal-domain>), so this file holds no real domain.
+    var parts = location.hostname.split('.');
+    var isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(location.hostname);
+    var base = (!isIp && parts.length > 1) ? parts.slice(1).join('.') : '';
+
+    var h = new Date().getHours();
+    document.querySelector('[data-hello]').textContent =
+        h < 5 ? 'Still up?' : h < 12 ? 'Good morning!' : h < 18 ? 'Hello!' : 'Good evening!';
+
+    var list = document.querySelector('[data-apps]');
+    APPS.forEach(function (a) {
+        var link = document.createElement('a');
+        link.className = 'app';
+        if (base) { link.href = 'https://' + a[2] + '.' + base; }
+        link.style.setProperty('--tint', a[4]);
+        link.style.setProperty('--soft', a[4] + '22');
+        var ico = document.createElement('span');
+        ico.className = 'ico';
+        var img = document.createElement('img');
+        img.src = 'icons/' + a[3];
+        img.alt = '';
+        ico.appendChild(img);
+        var text = document.createElement('div');
+        var b = document.createElement('b');
+        b.textContent = a[0];
+        var s = document.createElement('span');
+        s.textContent = a[1];
+        text.appendChild(b);
+        text.appendChild(s);
+        link.appendChild(ico);
+        link.appendChild(text);
+        var li = document.createElement('li');
+        li.appendChild(link);
+        list.appendChild(li);
+    });
+
+    // Log out of Authelia, then back here (as on index.html).
+    var logout = document.querySelector('[data-logout]');
+    if (base) {
+        logout.href = 'https://auth.' + base + '/logout?rd=' + encodeURIComponent(location.origin + '/');
+        logout.hidden = false;
+    }
+})();
+</script>
+</body>
+</html>

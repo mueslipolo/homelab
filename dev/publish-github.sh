@@ -7,12 +7,12 @@
 # message listing your changes since the previous publish (Renovate's only
 # counted). Nothing is ever force-pushed to GitHub.
 #
-#   tools/publish-github.sh        show what would be published, ask, push
-#   tools/publish-github.sh -n     only show it
-#   tools/publish-github.sh -y     no question
+#   dev/publish-github.sh        show what would be published, ask, push
+#   dev/publish-github.sh -n     only show it
+#   dev/publish-github.sh -y     no question
 #
 # Before pushing, the snapshot must pass the same checks as a commit:
-# scripts/check-no-real-values.sh (with your .private-patterns) and gitleaks.
+# dev/check-no-real-values.sh (with your .private-patterns) and gitleaks.
 #
 # Settings (environment): SOURCE_REMOTE (origin: Forgejo), PUBLIC_REMOTE (github),
 # BRANCH (main), PUBLIC_NAME, PUBLIC_EMAIL (default: this repo's git user).
@@ -80,7 +80,7 @@ patterns=$PWD/.private-patterns
 (
 	cd "$tmp"
 	[ -f "$patterns" ] && cp "$patterns" .private-patterns
-	find . -type f ! -path './.private-patterns' -print0 | xargs -0 "$OLDPWD/scripts/check-no-real-values.sh"
+	find . -type f ! -path './.private-patterns' -print0 | xargs -0 "$OLDPWD/dev/check-no-real-values.sh"
 ) || { echo "Not published: real values in the snapshot (above)." >&2; exit 1; }
 rm -f "$tmp/.private-patterns"
 # gitleaks exits 3 for a finding (--exit-code), anything else non-zero means it

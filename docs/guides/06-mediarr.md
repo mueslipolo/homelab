@@ -1,6 +1,6 @@
 # Media: Jellyfin, Sonarr, Radarr, Prowlarr, qBittorrent
 
-> **Needs:** [01 Synology prep](01-synology-prep.md), [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [02 Portainer](02-portainer.md) (or plain `docker compose`), [05 Authelia](05-sso-authelia.md) (one login in front of the admin apps) · **Used by:** [09 dashboard](09-dashboard.md) (storage tab), [media re-encoding](media-reencoding.md)
+> **Needs:** [01 Synology prep](01-synology-prep.md), [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [02 Dockhand](02-dockhand.md) (or plain `docker compose`), [05 Authelia](05-sso-authelia.md) (one login in front of the admin apps) · **Used by:** [09 dashboard](09-dashboard.md) (storage tab), [media re-encoding](13-media-reencoding.md)
 > **Reference:** [`stacks/mediarr/README.md`](../../stacks/mediarr/README.md)
 
 ## What you get
@@ -43,7 +43,7 @@ The apps talk to each other by service name on the stack's `mediarr_net`
 # jellyseerr/ holds Seerr's config: the folder kept Jellyseerr's name
 sudo mkdir -p /volume1/docker/mediarr-config/{sonarr,radarr,prowlarr,qbittorrent,jellyfin,jellyseerr,maintainerr}
 sudo mkdir -p /volume1/media/{torrents,media/tv,media/movies}
-sudo chown -R 1000:1000 /volume1/docker/mediarr-config /volume1/media
+sudo chown -R <uid>:<gid> /volume1/docker/mediarr-config /volume1/media   # PUID:PGID below (id <user>)
 ```
 
 Why one root: Sonarr and Radarr see the whole of `MEDIA_ROOT` as `/data`, and
@@ -66,18 +66,19 @@ Variables, from [`stacks/mediarr/.env.example`](../../stacks/mediarr/.env.exampl
 
 ```bash
 INTERNAL_DOMAIN=home.example.com
+TZ=Europe/Berlin                    # your time zone (tz database name)
 PUID=1000
 PGID=1000
 MEDIARR_CONFIG_ROOT=/volume1/docker/mediarr-config
 MEDIA_ROOT=/volume1/media
 ```
 
-The time zone is set in `compose.yaml` (`TZ=Europe/Zurich`); change it there
-if needed.
+`TZ` is the time zone every app runs in (a tz database name such as
+`Europe/Berlin`; default `Europe/Zurich`).
 
-**With Portainer:** Stacks → Add stack → Repository, compose path
+**With Dockhand:** Stacks → from Git, name `mediarr`, compose path
 `stacks/mediarr/compose.yaml`, the variables → Deploy
-([02 Portainer](02-portainer.md)).
+([02 Dockhand](02-dockhand.md#4-deploy-a-git-stack)).
 
 **With docker compose:** copy `stacks/mediarr/`, `cp .env.example .env`, fill
 it in, `sudo docker compose up -d`.
@@ -132,8 +133,9 @@ C=/volume1/docker/mediarr-config
 for a in sonarr radarr prowlarr; do
   sudo sed -i 's|<AuthenticationRequired>Enabled</AuthenticationRequired>|<AuthenticationRequired>DisabledForLocalAddresses</AuthenticationRequired>|' $C/$a/config.xml
 done
-# qBittorrent: no login from the proxy network's subnet (docker network inspect proxy), not the LAN
-sudo sed -i '/^WebUI\\Address=\*$/a WebUI\\AuthSubnetWhitelistEnabled=true\nWebUI\\AuthSubnetWhitelist=172.20.0.0/16' $C/qbittorrent/qBittorrent.conf
+# qBittorrent: no login from the proxy network's subnet, not the LAN
+SUBNET=$(sudo docker network inspect proxy --format '{{(index .IPAM.Config 0).Subnet}}')
+sudo sed -i "/^WebUI\\\\Address=\\*\$/a WebUI\\\\AuthSubnetWhitelistEnabled=true\nWebUI\\\\AuthSubnetWhitelist=$SUBNET" $C/qbittorrent/qBittorrent.conf
 ```
 
 Never set `AuthenticationMethod` to `None`: recent versions reject it and
@@ -246,7 +248,7 @@ what it selects, then enable the action.
 | qBittorrent asks for a login behind Authelia                 | Its whitelist is not the `proxy` subnet, or `proxy` was recreated with another subnet (step 4).                                                                            |
 | Indexer fails with a Cloudflare challenge                    | Tag it `flaresolverr`. Some challenges FlareSolverr cannot solve; disable those indexers. Its 1G memory limit came after OOMs at 256M.                                     |
 | Jellyfin transcodes on the CPU                               | `/dev/dri` not mapped, or `PUID` cannot open it: `ls -l /dev/dri`, check the group (`video`/`render`) and that the user is in it.                                          |
-| A `.mkv` in AV1 stutters                                     | The NAS's GPU cannot decode AV1: CPU transcode. Prefer HEVC ([media re-encoding](media-reencoding.md)).                                                                    |
+| A `.mkv` in AV1 stutters                                     | The NAS's GPU cannot decode AV1: CPU transcode. Prefer HEVC ([media re-encoding](13-media-reencoding.md)).                                                                 |
 | 3D files show two pictures side by side                      | `3D`/`SBS`/`HOU` releases. Block them with a custom format scored -10000 in Sonarr/Radarr.                                                                                 |
 
 ## Next
@@ -254,6 +256,6 @@ what it selects, then enable the action.
 - [11 Notifications](11-notifications.md): Sonarr, Radarr, Prowlarr and Seerr
   push downloads, failures and requests to your phone.
 - [09 dashboard](09-dashboard.md): storage per folder, including the media library.
-- [Media re-encoding](media-reencoding.md): shrink large H.264 files to HEVC from a desktop.
+- [13 Media re-encoding](13-media-reencoding.md): shrink large H.264 files to HEVC from a desktop.
 - [10 backups](10-backups-and-jobs.md): back up `MEDIARR_CONFIG_ROOT` if you
   want to keep settings and history; media is re-downloadable.

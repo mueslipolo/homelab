@@ -12,13 +12,16 @@ services:
     logging: *logging
     image: codeberg.org/forgejo/forgejo:17.0-rootless
     container_name: forgejo
-    restart: unless-stopped
+    restart: always
     user: "1000:1000"
     environment:
       - USER_UID=1000
       - USER_GID=1000
       - FORGEJO__service__DISABLE_REGISTRATION=true
       - FORGEJO__service__REQUIRE_SIGNIN_VIEW=true
+      # Webhooks may call Dockhand on `proxy` (docs/guides/02-dockhand.md,
+      # step 5); Forgejo refuses LAN addresses by default.
+      - FORGEJO__webhook__ALLOWED_HOST_LIST=dockhand
       - GITEA_WORK_DIR=/var/lib/gitea
       - GITEA_CUSTOM=/var/lib/gitea/custom
       - GITEA_TEMP=/tmp/gitea

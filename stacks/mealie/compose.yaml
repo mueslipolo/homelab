@@ -11,9 +11,9 @@ services:
   mealie:
     logging: *logging
     image: ghcr.io/mealie-recipes/mealie:v3.29.0
-    restart: unless-stopped
+    restart: always
     environment:
-      TZ: Europe/Zurich
+      TZ: ${TZ:-Europe/Zurich}
       ALLOW_SIGNUP: "false"
       BASE_URL: https://mealie.${INTERNAL_DOMAIN}
       DEFAULT_GROUP: Home
@@ -30,7 +30,7 @@ services:
       ALLOW_PASSWORD_LOGIN: "false"
       # Members of this Authelia group are Mealie admins (checked at every
       # login); everyone else is a regular user.
-      OIDC_ADMIN_GROUP: infra-admins
+      OIDC_ADMIN_GROUP: ${ADMIN_GROUP:-infra-admins}
       # No DB_ENGINE: SQLite, /app/data/mealie.db (README, "Postgres instead").
     volumes:
       - ${MEALIE_DATA_PATH}:/app/data/

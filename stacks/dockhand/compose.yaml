@@ -1,0 +1,65 @@
+# Docker's own log format, rotated, instead of Container Manager's `db` driver,
+# which wrote every log line to a SQLite file and kept the RAID busy with
+# small forced writes (docs/operations.md, "Container logs").
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+# Dockhand deploys every other stack, so nothing deploys it: started by hand
+# with `docker compose` from the scheduler's clone (docs/guides/02-dockhand.md).
+# Never as a Dockhand stack of its own.
+services:
+  dockhand:
+    logging: *logging
+    # -baseline: the build for x86 CPUs without AVX2, such as the DS920+'s
+    # Celeron J4125 (Dockhand's Dockerfile.baseline). The default image needs
+    # AVX2 (`grep -c avx2 /proc/cpuinfo` on the NAS: 0 = keep -baseline).
+    image: fnsys/dockhand:v1.0.56-baseline
+    # A host command uses it: `docker logs dockhand`, the guide's checks.
+    container_name: dockhand
+    restart: always
+    environment:
+      # The data folder at the same path inside and outside the container:
+      # Dockhand runs `docker compose` itself and hands the daemon paths under
+      # it (each git stack's files, `./caddy`, `./config`), which the daemon
+      # resolves on the host.
+      DATA_DIR: ${DOCKHAND_DATA_ROOT:?set DOCKHAND_DATA_ROOT to Dockhand's data folder}
+      TZ: ${TZ:-Europe/Zurich}
+      # Caddy is the only proxy in front: trust its X-Forwarded-For for the
+      # client address in Dockhand's audit log and login rate limiting.
+      TRUST_FORWARDED_HEADERS: "true"
+    volumes:
+      # Dockhand manages Docker: full access to the daemon, root-equivalent on
+      # the NAS (as the CI runner has).
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKHAND_DATA_ROOT}:${DOCKHAND_DATA_ROOT}
+    ports:
+      # Loopback only: for the scheduler on the host (lib/stacks.sh,
+      # redeploy-images), which cannot reach Caddy's macvlan IP. Not on the
+      # LAN; people come through Caddy. 3000 inside, 3010 outside: Forgejo
+      # holds 3000. DOCKHAND_HOST_IP=0.0.0.0 publishes it on the LAN for a
+      # fresh install's first setup, before Caddy serves it (guide 02).
+      - "${DOCKHAND_HOST_IP:-127.0.0.1}:3010:3000"
+    networks:
+      # Caddy reaches it as dockhand:3000, and it reaches Authelia's OIDC
+      # issuer through the auth.<internal-domain> alias (architecture.md).
+      - proxy
+    # No cap_drop, like forgejo-runner: with docker.sock it can start any
+    # container, so dropping its own capabilities protects nothing, and its
+    # entrypoint needs root to join the socket's group, chown its folders and
+    # drop to its own user (su-exec).
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          # Not measured yet: Bun server plus the `docker compose` and `git`
+          # it runs per deploy. Check `docker stats dockhand` after a week and
+          # lower it.
+          memory: 1G
+
+networks:
+  proxy:
+    external: true

@@ -10,7 +10,7 @@
 # threshold is about 1.5x the expected output below, so a file already near
 # that size is left alone. Expected output, rough and not measured (HEVC
 # video, 1080p): sitcom ~1.5-3 Mbit/s, series ~3-5, film ~5-8; see
-# docs/guides/media-reencoding.md.
+# docs/guides/13-media-reencoding.md.
 
 # shellcheck disable=SC2034 # used by the scripts that source this file
 PRESETS="sitcom series film"

@@ -14,6 +14,12 @@ set -euo pipefail
 readonly CONTAINER="forgejo"
 readonly APP_INI="/var/lib/gitea/custom/conf/app.ini"
 readonly CONTAINER_TMP="/tmp/gitea"
+
+# No such container at all, running or not: Forgejo isn't deployed here.
+# 77 tells run-jobs.sh the job is not set up, not that it failed. (Docker
+# not answering fails the assignment, and so the job.)
+ids=$(docker ps -aq --filter "name=^${CONTAINER}\$")
+[ -n "$ids" ] || { echo "No $CONTAINER container: skipped"; exit 77; }
 # Host path the dump is copied to. No default: a placeholder here would
 # surface as a confusing `docker cp` failure, and a real path would put
 # deployment-specific state in a tracked file.

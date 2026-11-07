@@ -11,23 +11,29 @@ services:
   authelia:
     logging: *logging
     image: authelia/authelia:4.39.28
-    restart: unless-stopped
+    restart: always
     environment:
-      TZ: Europe/Zurich
+      TZ: ${TZ:-Europe/Zurich}
       INTERNAL_DOMAIN: ${INTERNAL_DOMAIN}
       # Reaches the NAS's own LDAP Server package (a host-level DSM service,
-      # not a container) — same mechanism as stacks/edge's Portainer/Forgejo
+      # not a container) — same mechanism as stacks/edge's Forgejo
       # reverse_proxy blocks, needed here because Authelia's own LDAP client
       # runs inside this container, not on the host. See stacks/edge/README.md's
       # "Host services … via PROXY_GATEWAY_IP" gotcha before changing this.
-      PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP}
-      LDAP_BASE_DN: ${LDAP_BASE_DN}
+      PROXY_GATEWAY_IP: ${PROXY_GATEWAY_IP:-}
+      # Users: ldap (default) or file; the LDAP_* only for ldap. Which apps
+      # log in by OIDC, and the group allowed into the admin-only ones:
+      # config/configuration.yml.
+      AUTH_BACKEND: ${AUTH_BACKEND:-ldap}
+      LDAP_BASE_DN: ${LDAP_BASE_DN:-}
+      LDAP_ADDRESS: ${LDAP_ADDRESS:-}
+      LDAP_BIND_DN: ${LDAP_BIND_DN:-}
+      OIDC_CLIENTS: ${OIDC_CLIENTS-paperless,mealie,forgejo,dockhand}
+      ADMIN_GROUP: ${ADMIN_GROUP:-infra-admins}
       X_AUTHELIA_CONFIG_FILTERS: template
       AUTHELIA_SESSION_SECRET_FILE: /secrets/session_secret
       AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/storage_encryption_key
       AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
-      AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE: /secrets/oidc_hmac_secret
-      AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE: /secrets/ldap_bind_password
     volumes:
       # The folder, not the file: a single-file bind mount keeps the file it
       # first opened, and a Git redeploy replaces the file, so Authelia went on

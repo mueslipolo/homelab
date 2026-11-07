@@ -198,7 +198,7 @@ while IFS=$'\x1f' read -r name id image version project state; do
 		continue
 	fi
 	images_state+="$name"$'\x1f'"$id"$'\x1f'"$image"$'\x1f'"$version"$'\n'
-	[ -n "${old_id[$name]:-}" ] && [ "${old_id[$name]}" != "$id" ] || continue
+	[[ -n ${old_id[$name]:-} && ${old_id[$name]} != "$id" ]] || continue
 	short=${name#"$project"-}
 	short=${short%-[0-9]*}
 	from=$(label "${old_image[$name]}" "${old_version[$name]}")

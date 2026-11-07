@@ -1,12 +1,12 @@
 # Paperless-ngx: the document archive
 
-> **Needs:** [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [05 Authelia](05-sso-authelia.md) (single sign-on), [02 Portainer](02-portainer.md) (or plain `docker compose`), [10 Backups and jobs](10-backups-and-jobs.md) (the nightly export) · **Used by:** paperless-tarmed (below)
+> **Needs:** [03 HTTPS](03-https-letsencrypt.md) · **Optional:** [05 Authelia](05-sso-authelia.md) (single sign-on), [02 Dockhand](02-dockhand.md) (or plain `docker compose`), [10 Backups and jobs](10-backups-and-jobs.md) (the nightly export) · **Used by:** paperless-tarmed (below)
 > **Reference:** [`stacks/paperless/README.md`](../../stacks/paperless/README.md)
 
 ## What you get
 
 Paperless-ngx at `https://paperless.home.example.com`: scanned or dropped
-documents are OCR'd (French + English), classified and searchable. Office files
+documents are OCR'd (in the languages you set), classified and searchable. Office files
 and emails are converted by Tika and Gotenberg.
 
 - **Two roots on purpose:** `PAPERLESS_DOCKER_ROOT` holds the disposable
@@ -58,6 +58,8 @@ Variables, from [`stacks/paperless/.env.example`](../../stacks/paperless/.env.ex
 
 ```bash
 INTERNAL_DOMAIN=home.example.com
+TZ=Europe/Berlin                    # your time zone (tz database name)
+PAPERLESS_OCR_LANGUAGE=eng          # e.g. deu+eng (eng, deu, fra, ita, spa are in the image)
 PAPERLESS_DOCKER_ROOT=/volume1/docker/paperless
 PAPERLESS_DATA_ROOT=/volume1/paperless
 PAPERLESS_INBOX_PATH=/volume1/paperless-inbox
@@ -68,17 +70,18 @@ PAPERLESS_SECRET_KEY=<secret>
 PAPERLESS_OIDC_CLIENT_SECRET=<Random Password from step 2>
 ```
 
-**With Portainer:** Stacks → Add stack → Repository, compose path
-`stacks/paperless/compose.yaml`, the variables above → Deploy
-([02 Portainer](02-portainer.md)).
+**With Dockhand:** Stacks → from Git, name `paperless`, compose path
+`stacks/paperless/compose.yaml`, the variables above (the passwords and keys
+marked secret) → Deploy ([02 Dockhand](02-dockhand.md#4-deploy-a-git-stack)).
 
 **With docker compose:** in a copy of `stacks/paperless/`,
 `cp .env.example .env && chmod 600 .env`, fill it in, `sudo docker compose up -d`.
 
-Time zone (`Europe/Zurich`), OCR languages (`fra+eng`) and the file name
-format are fixed in `compose.yaml`: change them there.
+`TZ` (time zone, default `Europe/Zurich`) and `PAPERLESS_OCR_LANGUAGE` (e.g.
+`eng`, `deu+eng`; default `fra+eng`) are variables. The file name format is fixed in `compose.yaml`: change it
+there.
 
-**Check:** `sudo docker compose ps` (or Portainer) shows all five containers
+**Check:** `sudo docker compose ps` (or Dockhand) shows all five containers
 healthy or running; `webserver` starts only after `db` and `broker` are healthy.
 
 ### 4. Route it through Caddy

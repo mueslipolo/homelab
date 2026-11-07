@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Re-encode large H.264 (or older) videos to HEVC on an Intel GPU, in place.
 # Meant for a desktop with the NAS's media share mounted (SMB); see
-# docs/guides/media-reencoding.md. Not run on the NAS.
+# docs/guides/13-media-reencoding.md. Not run on the NAS.
 #
 #   reencode.sh [-n] PRESET DIR...
 #

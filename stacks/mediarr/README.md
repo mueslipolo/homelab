@@ -4,7 +4,7 @@ Media automation and streaming: sonarr, radarr, prowlarr, qbittorrent,
 flaresolverr, jellyfin, seerr, maintainerr.
 
 **Setting it up: [guide 06, media](../../docs/guides/06-mediarr.md).** Shrinking
-files with `reencode*.sh`: [media re-encoding](../../docs/guides/media-reencoding.md).
+files with `tools/reencode/`: [media re-encoding](../../docs/guides/13-media-reencoding.md).
 This page is the reference.
 
 |            |                                                                                                                                   |
@@ -35,7 +35,7 @@ This page is the reference.
   ([migration guide](https://docs.seerr.dev/migration-guide)). Seerr migrated its config in place on
   first start, so the config folder is still `MEDIARR_CONFIG_ROOT/jellyseerr`,
   and the service keeps a `jellyseerr` network alias for integrations set up
-  with that host. `jellyseerr.<internal-domain>` redirects to `seerr.`.
+  with that host.
 - **Seerr needs `init: true`**: the image has no init process of its own.
 - **Keep linuxserver tags as `…-lsNNN`.** `renovate.json`'s regex rule for
   `linuxserver/**` needs it; a bare tag silently stops getting updates.

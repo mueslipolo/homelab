@@ -65,6 +65,7 @@ def status():
             {"name": "docker-prune", "exit": 0, "ended": evening(0, 4, 31), "message": ""},
             {"name": "storage-scan", "exit": 0, "ended": evening(0, 5, 22), "message": ""},
             {"name": "build-images", "exit": 0, "ended": at(minutes=6), "message": ""},
+            {"name": "redeploy-images", "exit": 0, "ended": at(minutes=6), "message": ""},
         ],
         "devices": {
             "configured": True,
@@ -97,12 +98,11 @@ def status():
             ],
         },
         "stacks": [
-            {"name": n, "active": True, "git": g, "current": True if g else None,
-             "deployed": {"commit": commit, "at": at(days=1, hours=3)} if g else None,
-             "code": {"commit": commit, "at": at(days=1, hours=3)} if g else None}
-            for n, g in [("authelia", True), ("dashboard", True), ("edge", True), ("forgejo", False),
-                                        ("forgejo-runner", True), ("mealie", True), ("mediarr", True),
-                                        ("paperless", True), ("paperless-tarmed", True)]
+            {"name": n, "failed": False, "current": True,
+             "deployed": {"commit": commit, "at": at(days=1, hours=3)},
+             "code": {"commit": commit, "at": at(days=1, hours=3)}}
+            for n in ["authelia", "dashboard", "edge", "forgejo-runner", "mealie", "mediarr",
+                      "paperless", "paperless-tarmed"]
         ],
         "images": [
             {"stack": "paperless-tarmed",
@@ -124,7 +124,7 @@ def status():
                             ("paperless-webserver-1", "paperless", "healthy"), ("paperless-db-1", "paperless", None),
                             ("paperless-broker-1", "paperless", None), ("paperless-tika-1", "paperless", None),
                             ("paperless-gotenberg-1", "paperless", None), ("paperless-tarmed", "paperless-tarmed", None),
-                            ("ntfy-ntfy-1", "ntfy", "healthy"), ("portainer", "", None)]
+                            ("ntfy-ntfy-1", "ntfy", "healthy"), ("dockhand", "dockhand", None)]
         ],
         "scheduler": {"sha": commit, "pull_ok": True, "pull_error": ""},
     }
@@ -137,7 +137,7 @@ FOLDERS = {
               ("@LH-EXAMPLE.LAN/61/kids-1000103", 96)],
     "paperless": [("media", 71), ("data", 17), ("export", 5), ("consume", 0.4)],
     "docker": [("jellyfin", 31), ("forgejo", 12), ("sonarr", 7), ("radarr", 6), ("seerr", 3), ("mealie", 2.5),
-               ("portainer", 1.2), ("caddy", 0.3)],
+               ("dockhand", 0.4), ("caddy", 0.3)],
     "forgejo": [("dumps", 2.1), ("data", 1.0)],
     "mealie": [("dumps", 0.9), ("data", 0.4)],
 }

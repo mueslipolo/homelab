@@ -10,9 +10,9 @@ x-logging: &logging
 services:
   runner:
     logging: *logging
-    image: code.forgejo.org/forgejo/runner:13.2.0
+    image: code.forgejo.org/forgejo/runner:13.2.1
     container_name: forgejo-runner
-    restart: unless-stopped
+    restart: always
     network_mode: host
     volumes:
       - ${RUNNER_DATA_ROOT}:/data

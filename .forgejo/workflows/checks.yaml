@@ -41,7 +41,7 @@ jobs:
           PRIVATE_PATTERNS: ${{ secrets.PRIVATE_PATTERNS }}
         run: |
           if [ -n "$PRIVATE_PATTERNS" ]; then printf '%s\n' "$PRIVATE_PATTERNS" > .private-patterns; fi
-          git ls-files -z | xargs -0 scripts/check-no-real-values.sh
+          git ls-files -z | xargs -0 dev/check-no-real-values.sh
 
       - name: shellcheck
         run: git ls-files -z '*.sh' | xargs -0 shellcheck -x

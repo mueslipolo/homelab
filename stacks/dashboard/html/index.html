@@ -119,6 +119,8 @@
         flex-direction: column;
         gap: 2px;
     }
+    .plate-id .logout { margin-top: 4px; color: var(--plate-muted); text-decoration: none; }
+    .plate-id .logout:hover { color: var(--accent); text-decoration: underline; }
 
     .plate .credit {
         margin: auto 0 0;
@@ -397,7 +399,7 @@
         height: 34px;
         display: grid;
         place-items: center;
-        /* Light in both themes: several logos (Portainer, Radarr) are
+        /* Light in both themes: several logos (Radarr) are
            black line art that vanishes on a dark ground. */
         background: var(--bezel);
         border: 1px solid var(--line);
@@ -473,7 +475,6 @@
     .diagram .tier-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; fill: var(--faint); text-transform: uppercase; }
     .diagram .edge { stroke: var(--line); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
     .diagram .node { fill: var(--bg); stroke: var(--line); stroke-width: 1; }
-    .diagram .node.accent { fill: var(--surface); stroke: var(--accent); }
 
     /* ------------------------------------------------- status and tabs */
 
@@ -747,6 +748,8 @@
         <div class="plate-id">
             <h1>Homelab</h1>
             <span class="lab"><span data-tagline></span><span data-domain></span></span>
+            <a class="lab logout" data-logout hidden>Log out</a>
+            <a class="lab logout" href="welcome.html">Family page</a>
         </div>
 
         <!-- Filled from local/status.json, written every 15 minutes on the NAS by
@@ -833,7 +836,7 @@
             <section>
                 <h3 class="view-title">Stacks <span>what runs, against git</span></h3>
                 <div class="leds" data-leds-stacks></div>
-                <p class="empty-bay" data-no-stacks>No stack list: set <code>PORTAINER_TOKEN</code> in <code>jobs.env</code> (dashboard README), or Portainer did not answer.</p>
+                <p class="empty-bay" data-no-stacks>No stack list: set <code>DOCKHAND_TOKEN</code> in <code>jobs.env</code> (dashboard README), or Dockhand did not answer.</p>
             </section>
             <section>
                 <h3 class="view-title">Containers, jobs and scheduler</h3>
@@ -868,7 +871,7 @@
                 <text x="450" y="67" class="node-sub" text-anchor="middle" data-node-sub="isp"></text>
 
                 <!-- Router -->
-                <rect class="node accent" x="325" y="125" width="250" height="50" rx="10" />
+                <rect class="node" x="325" y="125" width="250" height="50" rx="10" />
                 <text x="450" y="146" class="node-label" text-anchor="middle" data-node-label="router">Router</text>
                 <text x="450" y="162" class="node-sub" text-anchor="middle" data-node-sub="router"></text>
 
@@ -878,7 +881,7 @@
                 <text x="250" y="262" class="node-sub" text-anchor="middle" data-node-sub="ap"></text>
 
                 <!-- NAS -->
-                <rect class="node accent" x="540" y="225" width="220" height="50" rx="10" />
+                <rect class="node" x="540" y="225" width="220" height="50" rx="10" />
                 <text x="650" y="246" class="node-label" text-anchor="middle" data-node-label="nas">NAS</text>
                 <text x="650" y="262" class="node-sub" text-anchor="middle" data-node-sub="nas"></text>
 
@@ -888,7 +891,7 @@
                 <text x="565" y="350" class="node-sub" text-anchor="middle" data-node-sub="host"></text>
 
                 <!-- Caddy macvlan -->
-                <rect class="node accent" x="660" y="310" width="150" height="58" rx="10" />
+                <rect class="node" x="660" y="310" width="150" height="58" rx="10" />
                 <text x="735" y="333" class="node-label" text-anchor="middle" data-node-label="caddy">Caddy (macvlan)</text>
                 <text x="735" y="350" class="node-sub" text-anchor="middle" data-node-sub="caddy"></text>
             </svg>
@@ -915,6 +918,7 @@
             ['Seerr', 'Media requests', 'seerr', 'mediarr'],
             ['Paperless', 'Documents', 'paperless', 'paperless'],
             ['Mealie', 'Recipes', 'mealie', 'mealie'],
+            ['Immich', 'Photos and videos', 'immich', 'immich'],
             ['qBittorrent', 'Torrent client', 'qbittorrent', 'mediarr']
         ]},
         { id: 'admin', name: 'Admin', items: [
@@ -923,7 +927,7 @@
             ['Prowlarr', 'Indexers', 'prowlarr', 'mediarr'],
             ['Maintainerr', 'Library cleanup', 'maintainerr', 'mediarr'],
             ['ntfy', 'Push notifications', 'ntfy', 'ntfy', true],
-            ['Portainer', 'Deploys every stack', 'portainer', ''],
+            ['Dockhand', 'Deploys every stack', 'dockhand', 'dockhand'],
             ['Forgejo', 'Git, source of truth', 'forgejo', 'forgejo']
         ]}
     ];
@@ -961,6 +965,15 @@
     }
 
     document.querySelectorAll('[data-domain]').forEach(function (e) { e.textContent = base || host; });
+
+    // Log out of Authelia (every app behind it, and the OIDC logins' next
+    // sign-in), then back here. Authelia's /logout takes `rd` and only follows
+    // it within its cookie domain. Hidden when served at an IP (no Authelia).
+    var logout = document.querySelector('[data-logout]');
+    if (logout && base) {
+        logout.href = 'https://auth.' + base + '/logout?rd=' + encodeURIComponent(location.origin + '/');
+        logout.hidden = false;
+    }
 
     // ---------------------------------------------------------- services
     var groupsEl = document.querySelector('[data-groups]');
@@ -1014,6 +1027,7 @@
             var li = unit(s[0], s[1], s[4] ? 'no sso' : (s[3] || 'host'), s[4],
                 base ? s[2] + '.' + base : s[2], base ? 'https://' + s[2] + '.' + base : '',
                 icon(ICON[s[2]] || s[2] + '.svg'));
+            li.setAttribute('data-app', s[2]);
             if (s[4]) { li.firstChild.title = 'Not behind Authelia: its own login only'; }
             var r = repoLink(el('a', 'readme', 'README'), 'src/branch/main/' + (s[3] ? 'stacks/' + s[3] + '/' : '') + 'README.md');
             r.title = 'Stack notes on Forgejo';
@@ -1027,6 +1041,34 @@
         repoLink(li.firstChild, o[2]);
         return li;
     }));
+    // Shown once local/devices.json names the repo: without it, nothing to link.
+    var opsGroup = document.querySelector('[data-grp="ops"]'), opsButton = document.getElementById('show-ops');
+    opsGroup.hidden = opsButton.hidden = true;
+
+    // local/devices.json can drop apps you don't run ("hide": subdomains) and
+    // add your own ("add": [{group, name, desc, sub, sso}]); counts follow.
+    function customize(cfg) {
+        (cfg.hide || []).forEach(function (sub) {
+            document.querySelectorAll('[data-app="' + sub + '"]').forEach(function (li) { li.remove(); });
+        });
+        (cfg.add || []).forEach(function (a) {
+            var sec = document.querySelector('[data-grp="' + (a.group || 'apps') + '"] .units');
+            if (!sec || !a.sub) { return; }
+            var ico = icon(a.icon || a.sub + '.svg');
+            // No logo for it in icons/: the generic box instead of a broken image.
+            ico.firstChild.onerror = function () { ico.replaceWith(icon(null, 'box')); };
+            var li = unit(a.name || a.sub, a.desc || '', a.sso === false ? 'no sso' : 'added', a.sso === false,
+                base ? a.sub + '.' + base : a.sub, base ? 'https://' + a.sub + '.' + base : '', ico);
+            li.setAttribute('data-app', a.sub);
+            sec.appendChild(li);
+        });
+        document.querySelectorAll('.grp').forEach(function (g) {
+            if (g.getAttribute('data-grp') === 'ops') { return; }
+            var n = g.querySelectorAll('[data-app]').length;
+            g.querySelector('.lab').textContent = n + ' services';
+            if (!n) { g.remove(); }
+        });
+    }
 
     document.querySelectorAll('[data-show]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -1035,7 +1077,7 @@
                 x.setAttribute('aria-pressed', String(x === b));
             });
             document.querySelectorAll('.grp').forEach(function (g) {
-                g.hidden = !(show === 'all' || g.getAttribute('data-grp') === show);
+                g.hidden = !(show === 'all' || g.getAttribute('data-grp') === show) || (g === opsGroup && opsButton.hidden);
             });
         });
     });
@@ -1131,15 +1173,17 @@
                  at: j.ended, detail: failed ? j.message : '' };
     }
 
-    // A Portainer stack against git: Portainer's deployed commit vs the last
-    // commit that touched the stack's folder (scripts/lib/stacks.sh).
+    // A stack against git: the commit Dockhand deployed vs the last commit
+    // that touched the stack's folder (scripts/lib/stacks.sh).
     // cloneStuck: the scheduler's clone can't pull, so "code" is old and a
     // stack running a newer commit would look behind. Say so instead.
     function stackRow(k, cloneStuck) {
         var dep = k.deployed, code = k.code;
         function at(c) { return c ? c.commit + ' · ' + when(c.at) : '-'; }
-        if (!k.active) { return { level: 'warn', value: 'stopped', detail: '' }; }
-        if (!k.git) { return { level: 'ok', value: 'Web editor', detail: 'deployed by hand, not from git' }; }
+        if (k.failed) {
+            return { level: 'warn', value: 'deploy failed',
+                     detail: 'its last deploy failed: see the stack in Dockhand' };
+        }
         if (k.current === true) {
             return { level: 'ok', value: 'up to date', detail: dep ? 'deployed ' + dep.commit + ' on ' + when(dep.at) : '' };
         }
@@ -1149,9 +1193,9 @@
         }
         var both = 'running ' + at(dep) + ', code ' + at(code);
         if (k.current === false) {
-            return { level: 'warn', value: 'redeploy needed', detail: 'Pull and redeploy in Portainer: ' + both };
+            return { level: 'warn', value: 'redeploy needed', detail: 'Deploy it in Dockhand: ' + both };
         }
-        return { level: 'warn', value: 'unknown', detail: 'Deployed commit not found in the NAS clone: ' + both };
+        return { level: 'warn', value: 'unknown', detail: 'Deployed commit or the stack\'s folder not found in the NAS clone: ' + both };
     }
 
     // Phones and computers uploading to the NAS (scripts/lib/devices.sh,
@@ -1191,11 +1235,12 @@
     // A stack whose image the NAS builds itself (build-images job): its code,
     // the image built from it, and the container running it must agree.
     // Shown in that stack's own row, as its state and detail line.
-    function imageState(im, buildJob) {
+    function imageState(im, buildJob, redeployJob) {
+        if (im.release !== undefined) { return releaseState(im, redeployJob); }
         var built = im.built, run = im.running, level, state, hint;
         if (!run || run.state !== 'running') {
             level = 'bad'; state = 'not running';
-            hint = built ? 'image ready: redeploy the stack in Portainer' : 'no image yet: wait for the build, then deploy';
+            hint = built ? 'image ready: redeploy the stack in Dockhand' : 'no image yet: wait for the build, then deploy';
         } else if (!built || !built.from_current_code) {
             if (buildJob && buildJob.exit !== 0) {
                 // The job builds every image; its failure may be another image's.
@@ -1204,7 +1249,12 @@
                 level = 'warn'; state = 'build pending'; hint = 'new code: the scheduler builds it within 15 min';
             }
         } else if (!run.same_image) {
-            level = 'warn'; state = 'redeploy needed'; hint = 'new image ready: Pull and redeploy in Portainer';
+            if (redeployJob && redeployJob.exit !== 0) {
+                // The job redeploys every image; its failure may be another stack's.
+                level = 'bad'; state = 'redeploy-images job failed'; hint = redeployJob.message;
+            } else {
+                level = 'warn'; state = 'redeploy needed'; hint = 'new image ready: the scheduler redeploys it within 15 min';
+            }
         } else {
             level = 'ok'; state = 'up to date'; hint = '';
         }
@@ -1216,6 +1266,29 @@
         // All in step: one short fact. Otherwise the whole chain, to see where it stopped.
         if (level === 'ok') { return { level: level, value: state, detail: 'image built here ' + when(built.at) }; }
         return { level: level, value: state, detail: 'image: ' + steps + (hint ? ' · ' + hint : '') };
+    }
+
+    // A stack whose image an app's own CI builds on the NAS, per release,
+    // and the redeploy-images job starts: which version runs, and
+    // whether a newer one waits under the tag.
+    function releaseState(im, redeployJob) {
+        var rel = im.release, run = im.running;
+        var version = function (v) { return v ? 'version ' + v : 'an image without version'; };
+        if (!rel) {
+            return { level: 'bad', value: 'no image', detail: 'no release built yet: tag one in its repository' };
+        }
+        if (!run || run.state !== 'running') {
+            return { level: 'bad', value: 'not running', detail: version(rel.version) + ' ready, built ' + when(rel.at) };
+        }
+        if (!run.same_image) {
+            if (redeployJob && redeployJob.exit !== 0) {
+                return { level: 'bad', value: 'redeploy-images job failed', detail: redeployJob.message };
+            }
+            return { level: 'warn', value: 'redeploy needed',
+                     detail: version(rel.version) + ' ready, ' + version(run.version) + ' running · the scheduler redeploys it within 15 min' };
+        }
+        // In step, the stack's own row keeps its value and gains this detail.
+        return { level: 'ok', value: 'up to date', detail: version(rel.version) + ', built here ' + when(rel.at) };
     }
 
     // The protection matrix, discovered on the NAS (scripts/lib/protection.sh):
@@ -1336,7 +1409,7 @@
             sources[b.task] = s;
             backupRows.push(['Hyper Backup · ' + b.task, s]);
         });
-        if (!(st.backups || []).length) {
+        if (st.backups && !st.backups.length) {
             backupRows.push(['Hyper Backup', { level: 'warn', value: 'no result', detail: 'Nothing found in its log; see dashboard README' }]);
         }
         (st.dumps || []).forEach(function (d) {
@@ -1376,10 +1449,11 @@
         // One row per stack. A stack the NAS builds itself also carries its
         // image's state; the worse of the two shows.
         var buildJob = (st.jobs || []).filter(function (j) { return j.name === 'build-images'; })[0];
+        var redeployJob = (st.jobs || []).filter(function (j) { return j.name === 'redeploy-images'; })[0];
         var images = {};
-        (st.images || []).forEach(function (im) { images[im.stack] = imageState(im, buildJob); });
+        (st.images || []).forEach(function (im) { images[im.stack] = imageState(im, buildJob, redeployJob); });
         var kList = document.querySelector('[data-leds-stacks]'), behind = [];
-        // Its containers, by compose project (= the Portainer stack's name).
+        // Its containers, by compose project (= the stack's name in Dockhand).
         function containersOf(name) {
             var cs = (st.containers || []).filter(function (c) { return c.project === name; });
             if (!cs.length) { return ''; }
@@ -1408,7 +1482,7 @@
             }
             return [k.name, r];
         });
-        // Built images whose stack Portainer did not list (no token, or renamed).
+        // Built images whose stack Dockhand did not list (no token, or renamed).
         Object.keys(images).forEach(function (name) { rows.push([name, images[name]]); });
         rows.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; }).forEach(function (row) {
             var r = row[1];
@@ -1936,11 +2010,13 @@
     // it the Network tab shows the diagram with generic labels only.
     getJson('local/devices.json').then(function (cfg) {
         if (!cfg) { return; }
+        customize(cfg);
         if (cfg.repo && base) {
             repoLinks.forEach(function (x) {
                 x[0].href = 'https://forgejo.' + base + '/' + cfg.repo + '/' + x[1];
                 x[0].hidden = false;
             });
+            opsGroup.hidden = opsButton.hidden = false;
         }
         if (cfg.tagline) {
             document.querySelector('[data-tagline]').textContent = cfg.tagline + ' · ';

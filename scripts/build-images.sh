@@ -7,9 +7,9 @@
 # <stack> is a folder under stacks/; a path with a slash is a folder of the
 # repo instead, for images that are not a stack (.forgejo/ci, the CI image).
 #
-# Why: Portainer's "Pull and redeploy" fetched new code for a Git stack but did
-# not reliably rebuild its image, even with `pull_policy: build` -- the
-# container kept running the previous code, with nothing reporting it. So such
+# Why: a git stack's redeploy fetches its new code but does not reliably
+# rebuild its image, even with `pull_policy: build` -- the container can keep
+# running the previous code, with nothing reporting it. So such
 # stacks have no `build:` in compose (`pull_policy: never`): this job is the
 # only builder, from this repo's own clone, and a redeploy just starts its image.
 #
@@ -32,6 +32,8 @@ for spec in "$@"; do
 	image=${spec#*=}
 	case $stack in */*) rel=$stack ;; *) rel=stacks/$stack ;; esac
 	dir="$REPO/$rel"
+	# Removed from this clone: nothing to build (the rest still are).
+	[ -d "$dir" ] || { echo "$stack: no $rel in this clone, skipped"; continue; }
 	[ -f "$dir/Dockerfile" ] || { echo "$stack: no Dockerfile in $dir" >&2; exit 1; }
 
 	tree=$(code_hash "$REPO" "$rel")
@@ -52,7 +54,7 @@ for spec in "$@"; do
 	built=$((built + 1))
 	case $stack in
 	*/*) echo "$stack: built." ;;
-	*) echo "$stack: built. Redeploy the stack in Portainer to run it." ;;
+	*) echo "$stack: built. The redeploy-images job starts it." ;;
 	esac
 done
 

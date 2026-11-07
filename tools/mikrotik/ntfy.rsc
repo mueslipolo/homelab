@@ -125,30 +125,35 @@
 /system script add name=ntfy-wg policy=read,write,policy,test dont-require-permissions=no source="# Every minute: a WireGuard peer whose last handshake is under 3 min old is\r\
     \n# connected; one with none for 10 min after that has gone quiet. Pushes the\r\
     \n# transitions only. Named by comment, else name, else start of its key.\r\
+    \n# Peers whose name matches the quiet regex are not reported (deploy.sh sets it\r\
+    \n# from WG_QUIET; WG_QUIET_NONE means report every peer).\r\
     \n:global ntfyWgUp\r\
     \n:if ([:typeof \$ntfyWgUp] != \"array\") do={ :set ntfyWgUp [:toarray \"\"] }\r\
     \n:local send [:parse [/system script get ntfy-send source]]\r\
+    \n:local quiet \"WG_QUIET_NONE\"\r\
     \n:foreach p in=[/interface wireguard peers find] do={\r\
     \n  :local key [:tostr \$p]\r\
     \n  :local name [/interface wireguard peers get \$p comment]\r\
     \n  :if ([:len \$name] = 0) do={ :do { :set name [/interface wireguard peers get \$p name] } on-error={} }\r\
     \n  :if ([:len \$name] = 0) do={ :set name [:pick [/interface wireguard peers get \$p public-key] 0 8] }\r\
-    \n  :local hs [/interface wireguard peers get \$p last-handshake]\r\
-    \n  :local recent false\r\
-    \n  :local gone true\r\
-    \n  :if ([:typeof \$hs] = \"time\") do={\r\
-    \n    :if (\$hs < 3m) do={ :set recent true }\r\
-    \n    :if (\$hs < 10m) do={ :set gone false }\r\
-    \n  }\r\
-    \n  :local was false\r\
-    \n  :if ([:typeof (\$ntfyWgUp->\$key)] = \"bool\") do={ :set was (\$ntfyWgUp->\$key) }\r\
-    \n  :if (\$recent && !\$was) do={\r\
-    \n    :set (\$ntfyWgUp->\$key) true\r\
-    \n    \$send title=(\"VPN: \" . \$name . \" connected\") message=(\"WireGuard peer \" . \$name . \" is connected.\") tags=\"key\" priority=\"low\"\r\
-    \n  }\r\
-    \n  :if (\$gone && \$was) do={\r\
-    \n    :set (\$ntfyWgUp->\$key) false\r\
-    \n    \$send title=(\"VPN: \" . \$name . \" gone quiet\") message=(\"No handshake from \" . \$name . \" for 10 minutes.\") tags=\"zzz\" priority=\"low\"\r\
+    \n  :if (\$quiet = \"WG_QUIET_NONE\" || !(\$name ~ \$quiet)) do={\r\
+    \n    :local hs [/interface wireguard peers get \$p last-handshake]\r\
+    \n    :local recent false\r\
+    \n    :local gone true\r\
+    \n    :if ([:typeof \$hs] = \"time\") do={\r\
+    \n      :if (\$hs < 3m) do={ :set recent true }\r\
+    \n      :if (\$hs < 10m) do={ :set gone false }\r\
+    \n    }\r\
+    \n    :local was false\r\
+    \n    :if ([:typeof (\$ntfyWgUp->\$key)] = \"bool\") do={ :set was (\$ntfyWgUp->\$key) }\r\
+    \n    :if (\$recent && !\$was) do={\r\
+    \n      :set (\$ntfyWgUp->\$key) true\r\
+    \n      \$send title=(\"VPN: \" . \$name . \" connected\") message=(\"WireGuard peer \" . \$name . \" is connected.\") tags=\"key\" priority=\"low\"\r\
+    \n    }\r\
+    \n    :if (\$gone && \$was) do={\r\
+    \n      :set (\$ntfyWgUp->\$key) false\r\
+    \n      \$send title=(\"VPN: \" . \$name . \" gone quiet\") message=(\"No handshake from \" . \$name . \" for 10 minutes.\") tags=\"zzz\" priority=\"low\"\r\
+    \n    }\r\
     \n  }\r\
     \n}"
 

@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Pushes a notification to ntfy when Renovate has something new waiting for
-# approval: majors, and Forgejo/Portainer updates, which no merge deploys
-# (renovate.json). Minor updates merge themselves and are not reported.
+# you: every update is a PR that you merge (renovate.json).
 #
-# Reads the "Pending Approval" section of Renovate's Dependency Dashboard issue
-# in Forgejo, and notifies only about entries not seen on the previous run, so
-# one update is one notification, not one a day. Runs from scripts/run-jobs.sh
+# Reads the "Open" (PRs) and "Pending Approval" sections of Renovate's
+# Dependency Dashboard issue in Forgejo, and notifies only about entries not
+# seen on the previous run, so one update is one notification, not one a day. Runs from scripts/run-jobs.sh
 # after Renovate's daily run (scripts/jobs.conf).
 #
 # jobs.env:
@@ -21,6 +20,10 @@ set -euo pipefail
 . "$(dirname -- "$0")/lib/json.sh"
 # shellcheck source=scripts/lib/ntfy.sh
 . "$(dirname -- "$0")/lib/ntfy.sh"
+
+# No token: Renovate notifications aren't set up here. 77 tells run-jobs.sh
+# the job is skipped, not failed.
+[ -n "${FORGEJO_TOKEN:-}" ] || { echo "FORGEJO_TOKEN not set: skipped"; exit 77; }
 
 readonly FORGEJO_URL="${FORGEJO_URL:-http://127.0.0.1:3000}"
 readonly FORGEJO_TOKEN="${FORGEJO_TOKEN:?set FORGEJO_TOKEN to a Forgejo token that can read the repo}"
@@ -43,11 +46,17 @@ if [ -z "$dashboard" ]; then
 fi
 url=$(sed -n 2p <<<"$dashboard")
 
-# One line per update waiting: the text after the approve-branch marker, e.g.
+# One line per update waiting: the title after the branch marker, e.g.
 #  - [ ] <!-- approve-branch=renovate/x-13.x -->chore(deps): update x to v13
+#  - [ ] <!-- rebase-branch=renovate/y-1.x -->[chore(deps): update y to v1.2](../pulls/78)
+# (open PRs come as a link: keep the text).
 pending=$(sed -n '3,$p' <<<"$dashboard" | tr -d '\r' | awk '
-	/^## / { inside = ($0 ~ /^## Pending Approval/) ; next }
-	inside && /<!-- approve-branch=/ { sub(/.*-->[[:space:]]*/, ""); print }' | sort -u)
+	/^## / { inside = ($0 ~ /^## (Pending Approval|Open)/) ; next }
+	inside && /<!-- (approve|rebase)-branch=/ {
+		sub(/.*-->[[:space:]]*/, "")
+		if (sub(/^\[/, "")) sub(/\]\([^)]*\)[[:space:]]*$/, "")
+		print
+	}' | sort -u)
 
 touch -- "$SEEN"
 new=$(comm -23 <(printf '%s\n' "$pending" | sed '/^$/d') <(sort -u -- "$SEEN"))

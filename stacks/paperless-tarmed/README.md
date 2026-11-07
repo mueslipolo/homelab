@@ -12,7 +12,7 @@ itself: [guide 07](../../docs/guides/07-paperless.md).
 - **Caddy**: no route, by design; the `*.<internal-domain>` catch-all 404s it.
 - **Volume**: `PAPERLESS_TARMED_DATA` → `/data` (cache, journal, tariff table), owned by uid 1000.
 - **Image**: built on the NAS by the `build-images` job; no registry.
-- **Secrets**: `PAPERLESS_TOKEN`, `PAPERLESS_TARMED_WEBHOOK_SECRET` in Portainer's stack environment. The secret's other half is in the Paperless workflow (Paperless's database), in neither git nor Portainer: record it wherever rotations are tracked.
+- **Secrets**: `PAPERLESS_TOKEN`, `PAPERLESS_TARMED_WEBHOOK_SECRET` in Dockhand's stack variables (marked secret). The secret's other half is in the Paperless workflow (Paperless's database), in neither git nor Dockhand: record it wherever rotations are tracked.
 
 ## What it extracts
 
@@ -129,7 +129,7 @@ writes, and "accepted" is not "extracted": read `docker logs`. Dry run: `apply -
 ## Configuration
 
 All variables, with defaults: [.env.example](.env.example). The required ones are
-set in [INSTALL step 3](INSTALL.md#3-deploy-the-stack-in-portainer). Others worth knowing:
+set in [INSTALL step 3](INSTALL.md#3-deploy-the-stack-in-dockhand). Others worth knowing:
 
 | Variable                                               | Purpose                                                                                                    |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
@@ -153,9 +153,10 @@ container give `--since` explicitly.
 ## Operations
 
 **Updating**: push to Forgejo. Within 15 minutes the `build-images` job
-(`scripts/jobs.conf`) rebuilds `paperless-tarmed:0.1.0` and the dashboard light
-turns amber ("update waiting"). Portainer → **Pull and redeploy** turns it green;
-red means the container is gone.
+(`scripts/jobs.conf`) rebuilds `paperless-tarmed:0.1.0`, and the
+`redeploy-images` job, in the same tick, redeploys the stack on it. Amber that
+stays means a step is waiting or failed (the light says which); red means the
+container is gone.
 
 **Tariff table**: the official list of tariff types, kept only to see what
 changed. Nothing reads it for categories or labels; those are hardcoded in
@@ -195,7 +196,7 @@ comparison; it survives redeploys and wins over the image's copy. Needs
 ## Gotchas
 
 - **Use Document Added, not Document Updated.** With `WEBHOOK_OVERWRITE` / `WEBHOOK_TITLE`, an update trigger makes the webhook revert manual edits on every update (and rename files if `PAPERLESS_FILENAME_FORMAT` uses the title).
-- **Portainer never builds this image** (`pull_policy: never`, no `build:` in compose): its rebuilds were unreliable and silently kept old code. Only the `build-images` job builds; a redeploy with no image fails with "No such image" — run the job (or `scripts/build-images.sh paperless-tarmed=paperless-tarmed:0.1.0`) first. Which code is running: `docker exec paperless-tarmed grep -c <new string> /usr/local/lib/python3*/site-packages/paperless_tarmed/<file>.py`.
+- **Dockhand never builds this image** (`pull_policy: never`, no `build:` in compose): rebuilds on redeploy were unreliable and silently kept old code. Only the `build-images` job builds; a redeploy with no image fails with "No such image" — run the job (or `scripts/build-images.sh paperless-tarmed=paperless-tarmed:0.1.0`) first. Which code is running: `docker exec paperless-tarmed grep -c <new string> /usr/local/lib/python3*/site-packages/paperless_tarmed/<file>.py`.
 - **`webserver` must stay in Paperless's `PAPERLESS_ALLOWED_HOSTS`** (`stacks/paperless/compose.yaml`). Otherwise Django answers a bodyless 400 and logs nothing.
 - **The repo root ignores `**/data/`.** This directory's `.gitignore`re-includes`paperless_tarmed/data/` with a directory-level negation; a file-level one silently does nothing.
 - **`/hook` has no network-level auth** and no Authelia: anything on `proxy` can POST; the secret is the only guard.
