@@ -111,10 +111,29 @@ backups_json() {
 	printf ']'
 }
 
-# Scheduler and per-job state written by run-jobs.sh, passed through as-is
-# (it is our own JSON). Absent when run outside run-jobs.sh.
+# Scheduler and per-job state written by run-jobs.sh, passed through (it is
+# our own JSON), plus each job's history (<job>.runs: "started duration exit"
+# per run): over the last 30 days, runs, failures, median and longest
+# duration, and the last 30 runs for the chart. Absent outside run-jobs.sh.
+runs_json() { # <runs file> <since epoch>
+	awk -v since="$2" '
+		{ s[NR] = $1; d[NR] = $2; e[NR] = $3 }
+		END {
+			n = 0; bad = 0
+			for (i = 1; i <= NR; i++) if (s[i] >= since) { n++; v[n] = d[i]; if (e[i] != 0) bad++ }
+			# median and max of v[1..n] (insertion sort: at most a few hundred)
+			for (i = 2; i <= n; i++) { x = v[i]; for (j = i - 1; j >= 1 && v[j] > x; j--) v[j + 1] = v[j]; v[j + 1] = x }
+			med = n ? (n % 2 ? v[(n + 1) / 2] : int((v[n / 2] + v[n / 2 + 1]) / 2)) : "null"
+			printf "{\"n\": %d, \"failed\": %d, \"median\": %s, \"max\": %s, \"last\": [", n, bad, med, n ? v[n] : "null"
+			first = NR > 30 ? NR - 29 : 1
+			for (i = first; i <= NR; i++) printf "%s[%d, %d, %d]", (i > first ? ", " : ""), s[i], d[i], e[i]
+			printf "]}"
+		}' "$1" 2>/dev/null || printf 'null'
+}
+
 jobs_json() {
-	local dir=${JOBS_STATE_DIR:-} f first=1
+	local dir=${JOBS_STATE_DIR:-} f first=1 since
+	since=$((${RUN_JOBS_NOW:-$(date +%s)} - 30 * 86400))
 	printf '['
 	if [ -n "$dir" ]; then
 		for f in "$dir"/*.json; do
@@ -122,7 +141,9 @@ jobs_json() {
 			[ "${f##*/}" != _scheduler.json ] || continue
 			[ "$first" -eq 1 ] || printf ', '
 			first=0
-			tr -d '\n' <"$f"
+			# Our own one-line object: its closing brace gives way to the history.
+			printf '%s, "runs": %s}' "$(tr -d '\n' <"$f" | sed 's/}[[:space:]]*$//')" \
+				"$(if [ -f "${f%.json}.runs" ]; then runs_json "${f%.json}.runs" "$since"; else printf 'null'; fi)"
 		done
 	fi
 	printf ']'
@@ -230,9 +251,24 @@ running_json() { # <container> <image>
 		"$([ -n "$id" ] && [ "$id" = "$latest" ] && echo true || echo false)"
 }
 
+# The scheduler's state, plus its ticks over the last 7 days (_ticks:
+# "started duration", or "started busy" for one that found the previous
+# still running): how many, how many over 15 minutes, median and longest.
 scheduler_json() {
-	local f=${JOBS_STATE_DIR:-}/_scheduler.json
-	if [ -n "${JOBS_STATE_DIR:-}" ] && [ -f "$f" ]; then tr -d '\n' <"$f"; else printf 'null'; fi
+	local f=${JOBS_STATE_DIR:-}/_scheduler.json since ticks=null
+	if [ -z "${JOBS_STATE_DIR:-}" ] || [ ! -f "$f" ]; then printf 'null' && return; fi
+	since=$((${RUN_JOBS_NOW:-$(date +%s)} - 7 * 86400))
+	if [ -f "$JOBS_STATE_DIR/_ticks" ]; then
+		ticks=$(awk -v since="$since" '
+			$1 < since { next }
+			$2 == "busy" { busy++; next }
+			{ n++; v[n] = $2; if ($2 > 900) long++ }
+			END {
+				for (i = 2; i <= n; i++) { x = v[i]; for (j = i - 1; j >= 1 && v[j] > x; j--) v[j + 1] = v[j]; v[j + 1] = x }
+				printf "{\"n\": %d, \"busy\": %d, \"long\": %d, \"median\": %s, \"max\": %s}", n, busy, long, n ? v[int((n + 1) / 2)] : "null", n ? v[n] : "null"
+			}' "$JOBS_STATE_DIR/_ticks")
+	fi
+	printf '%s, "ticks": %s}' "$(tr -d '\n' <"$f" | sed 's/}[[:space:]]*$//')" "$ticks"
 }
 
 main() {

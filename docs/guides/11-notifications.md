@@ -19,7 +19,7 @@ phone notification. This setup uses four topics, so you can mute one:
 | `nas`       | DSM                                                                       | "Hyper Backup task Off-site failed"                                                 |
 
 - **LAN-only, like everything else:** the phone reaches ntfy on the home Wi-Fi,
-  and away from home through a VPN that connects on demand (step 5). Without
+  and away from home through a VPN that only carries the LAN (step 5). Without
   it, messages wait on the server (3 days) and arrive once the phone is back.
 - **iPhone:** Apple only allows push through its own service, so the server
   sends a content-free "poll now" ping via ntfy.sh, and the app then fetches
@@ -101,15 +101,34 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer tk_…' -d te
 2. Subscribe to `homelab`, `media`, `nas` and `paperless` (+ → topic name). Subscriptions
    live in each app, not on the server: the web app and every phone need their
    own, and a fresh login shows none.
-3. Android: keep **instant delivery** on (the app keeps a connection open; that
-   is how it receives), and Settings → **Connection protocol** →
-   **WebSockets** works through Caddy as is.
-4. The VPN, so it works away from home:
+3. Android: the app keeps a connection open to your server (instant delivery;
+   it can't be turned off for a self-hosted server: the "off" mode relies on
+   Google's push, which the app only uses for ntfy.sh). Settings →
+   **Connection protocol** → **WebSockets** works through Caddy as is.
+4. The VPN, so it works away from home: up whenever the phone is away, down on
+   the home Wi-Fi (there it would detour LAN traffic through the router, or not
+   connect at all if the ISP router can't loop back to its own public address).
+   An idle tunnel costs little, while an app that can't reach its server
+   retries all day and drains the battery.
+   - **The tunnel:** `AllowedIPs = <LAN subnet>, <router's VPN address>/32`
+     (your LAN and the DNS server the tunnel names; without the second, name
+     lookups go out over mobile data and `ntfy.<domain>` doesn't resolve), or
+     `DNS =` the router's LAN address. Android's **Private DNS** on Automatic
+     or Off, or it bypasses the tunnel's DNS.
    - **iPhone, WireGuard app:** the tunnel → **On-Demand activation** → on
      cellular, and on Wi-Fi except your home network's name.
-   - **Android:** the official WireGuard app has no on-demand rule; use
-     Settings → Network → VPN → the tunnel → **Always-on VPN**, or a client
-     with automatic tunnelling on untrusted networks (e.g. WG Tunnel).
+   - **Android: [WG Tunnel](https://github.com/zaneschepke/wgtunnel)** (Play Store
+     or F-Droid), a WireGuard client that switches by network. Import the
+     tunnel (from a file or QR code), then **Auto-tunnel** on, your home
+     Wi-Fi's name under **trusted networks**, tunnelling on mobile data and
+     on untrusted Wi-Fi. It asks for the location permission, which Android
+     requires to read the Wi-Fi's name. Leave Android's own **Always-on VPN**
+     off, or the two fight over the tunnel. A second tunnel with the same keys
+     and `AllowedIPs = 0.0.0.0/0, ::/0` sends everything home, for public
+     Wi-Fi; switch to it there by hand.
+   - **Android, official WireGuard app:** it has no network rule; **Always-on
+     VPN** (Settings → Network → VPN) keeps it up at home too, with the
+     problems above.
 
 **Check:** send a test, from the web app (a topic → the message field at the
 bottom), the phone app (a topic → ⋮ → **Send test notification**) or the NAS:
@@ -118,7 +137,8 @@ bottom), the phone app (a topic → ⋮ → **Send test notification**) or the N
 curl -H 'Authorization: Bearer tk_…' -H 'Title: Test' -d 'ntfy works' http://127.0.0.1:2586/homelab
 ```
 
-It arrives on the phone; then once more on mobile data, Wi-Fi off.
+It arrives on the phone; then once more on mobile data, Wi-Fi off, through the
+VPN.
 
 ### 6. Updates waiting for approval
 
@@ -323,8 +343,8 @@ needs ntfy.sh).
 | An \*arr or Seerr test: connection refused or timeout | Use `http://ntfy:8080`, not `https://ntfy.<domain>`: containers can't reach Caddy's macvlan IP. The app must be on `proxy`.                                                                                                                                                                                                                                                                                                     |
 | DSM's test: nothing arrives                           | Send the same request with `curl` (the URL with the `auth` parameter, the JSON body): `200` and it arrives means ntfy is fine and DSM sends something else; `403` means the `auth` value or the topic's access. To see DSM's request, point the webhook at a request logger for a moment: `docker run --rm -d --name echo -p 127.0.0.1:2587:8080 mendhak/http-https-echo:31`, port `2587` in the URL, test, `docker logs echo`. |
 | DSM's test fails                                      | URL `http://127.0.0.1:2586/…` (not the hostname, for the same reason); `auth` parameter built from `Bearer <token>`, without trailing `=`.                                                                                                                                                                                                                                                                                      |
-| Nothing on the phone away from home                   | The VPN didn't connect: check the on-demand rule. Messages are kept 3 days and arrive once the phone reaches the server.                                                                                                                                                                                                                                                                                                        |
-| iPhone: nothing, or "new message" without text        | The ping came, but the app couldn't fetch the message: same VPN cause.                                                                                                                                                                                                                                                                                                                                                          |
+| Nothing on the phone away from home                   | The VPN is off or can't resolve the name: open `https://ntfy.<domain>` in the phone's browser; failing, check the tunnel's DNS (step 5). Messages are kept 3 days.                                                                                                                                                                                                                                                              |
+| iPhone: nothing, or "new message" without text        | The ping came, but the app couldn't fetch the message: the phone is away from home, without the VPN.                                                                                                                                                                                                                                                                                                                            |
 | `renovate-notify`: "No open Dependency Dashboard"     | Renovate hasn't run yet, or its dashboard issue is closed.                                                                                                                                                                                                                                                                                                                                                                      |
 | An update was not notified                            | It was already in the previous run's list (`$OPS_HOME/state/renovate-notified.txt`); delete the file to be told about everything waiting again.                                                                                                                                                                                                                                                                                 |
 

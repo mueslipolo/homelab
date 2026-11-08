@@ -87,7 +87,7 @@ current=$(
 	    ([.last_seen // 0, .newest_photo // 0] | max) as $last |
 	    (if $last == 0 then 1e12 else $now - $last end) as $age |
 	    (if $age >= .max_days * 86400 then "bad"
-	     elif $age >= ((.max_days / 2) | ceil) * 86400 then "warn" else "ok" end) as $lvl |
+	     elif $age >= ((.max_days + 1) / 2 | floor) * 86400 then "warn" else "ok" end) as $lvl |
 	    ((.owner[:1] | ascii_upcase) + .owner[1:] + " · " + .name) as $who |
 	    [ "device:" + .owner + "/" + .name, $lvl, "backups",
 	      (if $lvl == "ok" then $who + " is uploading again"

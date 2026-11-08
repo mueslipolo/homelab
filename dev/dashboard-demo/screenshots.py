@@ -27,6 +27,7 @@ T = int(NOW.timestamp())
 H, D = 3600, 86400
 KIB, GIB, TIB = 1024, 1024**3, 1024**4
 rnd = random.Random(7)
+rjob = random.Random(11)  # its own, so the other tabs keep their numbers
 
 
 def at(days=0, hours=0, minutes=0):
@@ -37,6 +38,24 @@ def evening(days_ago, hh, mm):
     """Epoch of hh:mm local, `days_ago` days before NOW's date."""
     d = NOW.replace(hour=hh, minute=mm, second=0) - timedelta(days=days_ago)
     return int(d.timestamp())
+
+
+def job(name, at_, timeout, hh, mm, typical, day=1):
+    """A job's state and its run history, as run-jobs.sh and dashboard-status.sh write them."""
+    step = 15 * 60 if at_ == "tick" else D
+    first = at(minutes=6) if at_ == "tick" else evening(day, hh, mm)
+    last = []
+    for i in range(29, -1, -1):
+        took = max(1, int(typical * rjob.uniform(0.7, 1.3)))
+        last.append([first - i * step, took, 0])
+    if name == "paperless-export":
+        last[-9][2] = 1  # one failure in the month
+    durs = sorted(r[1] for r in last)
+    started, took = last[-1][0], last[-1][1]
+    return {"name": name, "at": at_, "timeout": timeout, "started": started, "ended": started + took,
+            "duration": took, "exit": 0, "last_ok_day": "", "message": "",
+            "runs": {"n": len(last), "failed": sum(1 for r in last if r[2]), "median": durs[len(durs) // 2],
+                     "max": durs[-1], "last": last}}
 
 
 def status():
@@ -59,13 +78,13 @@ def status():
             {"name": "Mealie dump", "dir": "/volume1/mealie/dumps", "file": "mealie-backup-20261013-200512.zip", "latest": evening(1, 20, 5)},
         ],
         "jobs": [
-            {"name": "forgejo-dump", "exit": 0, "ended": evening(1, 20, 1), "message": ""},
-            {"name": "mealie-backup", "exit": 0, "ended": evening(1, 20, 5), "message": ""},
-            {"name": "paperless-export", "exit": 0, "ended": evening(1, 20, 14), "message": ""},
-            {"name": "docker-prune", "exit": 0, "ended": evening(0, 4, 31), "message": ""},
-            {"name": "storage-scan", "exit": 0, "ended": evening(0, 5, 22), "message": ""},
-            {"name": "build-images", "exit": 0, "ended": at(minutes=6), "message": ""},
-            {"name": "redeploy-images", "exit": 0, "ended": at(minutes=6), "message": ""},
+            job("forgejo-dump", "20:00", "30m", 20, 0, 70),
+            job("mealie-backup", "20:05", "20m", 20, 5, 25),
+            job("paperless-export", "20:10", "25m", 20, 10, 260),
+            job("docker-prune", "04:30", "30m", 4, 30, 50, day=0),
+            job("storage-scan", "05:00", "3h", 5, 0, 2100, day=0),
+            job("build-images", "tick", "30m", None, None, 8),
+            job("redeploy-images", "tick", "10m", None, None, 3),
         ],
         "devices": {
             "configured": True,
@@ -126,7 +145,8 @@ def status():
                             ("paperless-gotenberg-1", "paperless", None), ("paperless-tarmed", "paperless-tarmed", None),
                             ("ntfy-ntfy-1", "ntfy", "healthy"), ("dockhand", "dockhand", None)]
         ],
-        "scheduler": {"sha": commit, "pull_ok": True, "pull_error": ""},
+        "scheduler": {"sha": commit, "pull_ok": True, "pull_error": "",
+                      "ticks": {"n": 668, "busy": 0, "long": 9, "median": 14, "max": 2160}},
     }
 
 

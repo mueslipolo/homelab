@@ -2,7 +2,14 @@
 # The NAS's one scheduled task. DSM Task Scheduler runs this as root every 15
 # minutes; it decides which jobs in scripts/jobs.conf are due and runs them.
 #
-#   run-jobs.sh /path/to/jobs.env
+#   run-jobs.sh [--detach] /path/to/jobs.env
+#
+# --detach (how DSM runs it): returns at once and runs the tick in the
+# background. DSM's Task Scheduler skips a tick, and sends "A scheduled task
+# was skipped because it is already running", whenever the previous one has
+# not returned; a tick with a long job (storage-scan, the evening dumps) did
+# that every night. The lock below still keeps ticks apart. Output then goes
+# to $OPS_HOME/logs/run-jobs.log.
 #
 # Each tick:
 #   1. updates this repo clone from Forgejo (best effort: if Forgejo is down,
@@ -16,7 +23,9 @@
 # healthchecks.io ping key. See docs/guides/10-backups-and-jobs.md for its variables.
 set -uo pipefail # no -e: one failing job must not stop the others
 
-readonly ENV_FILE="${1:?usage: run-jobs.sh /path/to/jobs.env}"
+DETACH=0
+if [ "${1:-}" = --detach ]; then DETACH=1 && shift; fi
+readonly ENV_FILE="${1:?usage: run-jobs.sh [--detach] /path/to/jobs.env}"
 # shellcheck disable=SC1090
 set -a && . "$ENV_FILE" && set +a
 
@@ -37,6 +46,8 @@ readonly STATE="$OPS_HOME/state"
 readonly LOGS="$OPS_HOME/logs"
 readonly RETRY_AFTER="${JOBS_RETRY_AFTER:-3600}" # seconds between attempts after a failure
 readonly LOG_KEEP_DAYS="${JOBS_LOG_KEEP_DAYS:-30}"
+readonly HISTORY_KEEP=200   # runs kept per job (<job>.runs), for the dashboard
+readonly TICKS_KEEP=2000    # ticks kept (_ticks): three weeks at 96 a day
 readonly HC_BASE="${HC_PING_BASE:-https://hc-ping.com}"
 readonly HC_PREFIX="${HC_SLUG_PREFIX:-homelab-}"
 
@@ -49,9 +60,35 @@ done
 mkdir -p "$STATE" "$LOGS"
 chmod 700 "$OPS_HOME"
 
+if [ "$DETACH" = 1 ]; then
+	# Kept small: one file, rotated once over 1 MB.
+	out="$LOGS/run-jobs.log"
+	[ "$(stat -c %s "$out" 2>/dev/null || echo 0)" -lt 1048576 ] || mv -f "$out" "$out.1"
+	# setsid: out of DSM's process group, so nothing waits for it.
+	if command -v setsid >/dev/null; then
+		setsid bash "$0" "$ENV_FILE" </dev/null >>"$out" 2>&1 &
+	else
+		bash "$0" "$ENV_FILE" </dev/null >>"$out" 2>&1 &
+	fi
+	exit 0
+fi
+
 # One tick at a time: a long job may still be running when the next starts.
+# A tick that finds it taken is noted in _ticks ("busy"), for the dashboard.
 exec 9>"$OPS_HOME/run-jobs.lock"
-flock -n 9 || exit 0
+if ! flock -n 9; then
+	echo "${RUN_JOBS_NOW:-$(date +%s)} busy" >>"$STATE/_ticks"
+	exit 0
+fi
+TICK_T0=$(date +%s) # real time: durations are measured, never faked
+
+# Append a line to a history file, keeping only its last <n> lines.
+keep_last() { # <file> <n> <line>
+	printf '%s\n' "$3" >>"$1"
+	if [ "$(wc -l <"$1")" -gt "$(($2 + 50))" ]; then
+		tail -n "$2" -- "$1" | write_atomic "$1"
+	fi
+}
 
 now() { echo "${RUN_JOBS_NOW:-$(date +%s)}"; }
 
@@ -134,9 +171,10 @@ is_due() { # <name> <HH:MM | tick>
 }
 
 run_job() { # <name> <HH:MM> <timeout> <script> [args...]
-	local name=$1 limit=$3 script=$4 started ended rc log
+	local name=$1 at=$2 limit=$3 script=$4 started ended rc log t0 took
 	shift 4
 	started=$(now)
+	t0=$(date +%s)
 	mkdir -p "$LOGS/$name"
 	log="$LOGS/$name/$(date -d "@$started" +%Y%m%d-%H%M%S).log"
 	echo "$started" >"$STATE/$name.lasttry"
@@ -145,6 +183,7 @@ run_job() { # <name> <HH:MM> <timeout> <script> [args...]
 	# stdin from /dev/null: the caller's stdin is jobs.conf itself.
 	timeout "$limit" bash "$SCRIPTS/$script" "$@" </dev/null >"$log" 2>&1
 	rc=$?
+	took=$(($(date +%s) - t0))
 	[ "$rc" = 124 ] && echo "run-jobs: killed after $limit" >>"$log"
 	if [ "$rc" = 77 ]; then
 		# Not set up here (its app isn't deployed, or its setting is unset):
@@ -162,10 +201,11 @@ run_job() { # <name> <HH:MM> <timeout> <script> [args...]
 		: >"$STATE/$name.failed"
 	fi
 
-	printf '{"name": %s, "ended": %s, "exit": %s, "last_ok_day": %s, "message": %s}\n' \
-		"$(json_str "$name")" "$ended" "$rc" \
+	printf '{"name": %s, "at": %s, "timeout": %s, "started": %s, "ended": %s, "duration": %s, "exit": %s, "last_ok_day": %s, "message": %s}\n' \
+		"$(json_str "$name")" "$(json_str "$at")" "$(json_str "$limit")" "$started" "$ended" "$took" "$rc" \
 		"$(json_str "$(cat "$STATE/$name.okday" 2>/dev/null)")" \
 		"$(json_str "$(tail -n 1 -- "$log" | cut -c1-200)")" | write_atomic "$STATE/$name.json"
+	keep_last "$STATE/$name.runs" "$HISTORY_KEEP" "$started $took $rc"
 	hc "$name" "$rc" "$log"
 }
 
@@ -199,8 +239,12 @@ send_alerts() {
 }
 
 main() {
+	local tick_start
+	tick_start=$(now)
 	sync_repo
 	run_due_jobs
+	# Before the report, so the dashboard already shows this tick.
+	keep_last "$STATE/_ticks" "$TICKS_KEEP" "$tick_start $(($(date +%s) - TICK_T0))"
 	refresh_status
 	send_alerts
 	find "$LOGS" -type f -name '*.log' -mtime "+$LOG_KEEP_DAYS" -delete 2>/dev/null

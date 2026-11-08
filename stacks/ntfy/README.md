@@ -26,7 +26,10 @@ This page is the reference.
   content-free ping relayed to Apple's push service; the app then fetches the
   message from here.
 - **Phones away from home** need the VPN: ntfy is LAN-only like everything
-  else. Messages wait 72 h (`NTFY_CACHE_DURATION`).
+  else. Messages wait 72 h (`NTFY_CACHE_DURATION`). On Android, a split tunnel
+  left always on: the app always keeps a connection to a self-hosted server,
+  and retries all day (draining the battery) when it can't reach it (guide 11,
+  step 5).
 - **DSM webhooks can't set headers**: the token goes in the `auth` URL
   parameter, raw base64 of `Bearer <token>` (no trailing `=`).
 - **Users and tokens are made with the CLI** (`ntfy user`, `ntfy access`,

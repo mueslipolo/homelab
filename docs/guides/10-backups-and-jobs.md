@@ -84,7 +84,8 @@ Each tick: `git pull --ff-only` its own clone (if Forgejo is down, the last
 checkout keeps running) → run due jobs (due = past its time and not yet
 successful today; a missed run catches up, a failure retries after an hour;
 each with a timeout, a log in `$OPS_HOME/logs/<job>/`, state in
-`$OPS_HOME/state/<job>.json`) → refresh the dashboard's `status.json` → push
+`$OPS_HOME/state/<job>.json`, its last 200 runs with their durations in
+`<job>.runs`, each tick's in `_ticks`) → refresh the dashboard's `status.json` → push
 what turned amber or red to ntfy ([11](11-notifications.md#10-nas-alerts)) → ping
 healthchecks.io (per job: start and exit code with the log's tail; plus a
 heartbeat that also fails when the clone is a day stale).
@@ -131,7 +132,10 @@ Every push to `main` therefore runs as root on the NAS within 15 minutes.
 5. DSM → Task Scheduler → Create → Scheduled Task → User-defined script: user
    **root**; Schedule _Daily_, first run 00:00, **Frequency every 15 minutes**,
    last run 23:45; email only on abnormal termination. Command:
-   `bash <clone>/scripts/run-jobs.sh <path>/jobs.env`
+   `bash <clone>/scripts/run-jobs.sh --detach <path>/jobs.env`
+   (`--detach` returns at once and runs the tick in the background: without
+   it, DSM skips the next tick while a long job runs, with a "scheduled task
+   was skipped" notification each time. Output: `$OPS_HOME/logs/run-jobs.log`.)
 6. healthchecks.io (optional): checks appear on first ping (`homelab-run-jobs`,
    `homelab-<job>`). Set periods — `run-jobs` 15 min / grace 75 min, daily
    jobs 1 day / grace 2 h — and where alerts go (Integrations). The 75 min

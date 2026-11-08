@@ -126,6 +126,15 @@ Which devices: `$OPS_HOME/uploaders.conf` (`UPLOADERS_CONF` overrides), from `sc
 | Used space, changes, 7/30-day deltas, weekly trend | the history file. Growth: used now minus 30 days ago. The "full in" rate is that change per day, and is hidden when used space did not grow                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Media library                                      | every video under `STORAGE_MEDIA_DIR`: `tv/<series>`, `movies/<film>`. Length comes from ffprobe in the Jellyfin container, once per file. Drawn as one treemap of every series and film; hovering a series splits it by season folder                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
+## Job runs
+
+Below the jobs, a table: each job's schedule and timeout, its last run and how
+long it took, the median and longest duration and the failures over 30 days,
+and a bar per run for the last 30 (red: failed; hover for the date). Under it,
+the scheduler's last 7 days: ticks, how many took over 15 minutes, and how many
+found the previous one still running (that tick is skipped, its jobs run on the
+next). From `run-jobs.sh`'s history files, summed up by `dashboard-status.sh`.
+
 ## Stacks
 
 The System tab lists every git stack Dockhand deploys, with a detail line: the commit and

@@ -29,13 +29,13 @@ from git.
 The tabs, with made-up data (`dev/dashboard-demo/screenshots.sh` regenerates
 them):
 
-| Tab      | Shows                                                                                                                                         |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Services | a card per app, with its stack's README; the left panel sums up every tab                                                                     |
-| Storage  | where the space goes (treemap by share and folder), 90 days of used space, per-folder trends, the media library (treemap by title and season) |
-| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading                                      |
-| System   | each Dockhand stack against git, with its deploy date, containers and built image; jobs; the scheduler                                        |
-| Network  | the LAN diagram and device cards, from `devices.json`                                                                                         |
+| Tab      | Shows                                                                                                                                                 |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Services | a card per app, with its stack's README; the left panel sums up every tab                                                                             |
+| Storage  | where the space goes (treemap by share and folder), 90 days of used space, per-folder trends, the media library (treemap by title and season)         |
+| Backups  | which folder each snapshot and Hyper Backup task protects, last runs, devices that should keep uploading                                              |
+| System   | each Dockhand stack against git, with its deploy date, containers and built image; jobs; the scheduler; job runs: durations and failures over 30 days |
+| Network  | the LAN diagram and device cards, from `devices.json`                                                                                                 |
 
 ![Services tab](../images/dashboard-services.png)
 

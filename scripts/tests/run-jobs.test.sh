@@ -105,6 +105,22 @@ echo 'okjob 20:00 1m ok.sh' >"$T/ops/jobs.conf"
 check "a jobs.conf in OPS_HOME replaces the repo's" [ "$(runs)" = 1 ]
 rm -rf "$T"
 
+echo "--detach"
+setup
+printf 'slow 01:00 1m slow.sh\nokjob 01:00 1m ok.sh\n' >"$T/jobs.conf"
+t0=$(date +%s)
+PATH="$T/bin:$PATH" RUN_JOBS_NOW=$(at "2026-10-11 01:00") bash "$RUN" --detach "$T/jobs.env"
+check "returns at once, before the slow job is done" [ "$(($(date +%s) - t0))" -lt 3 ]
+PATH="$T/bin:$PATH" RUN_JOBS_NOW=$(at "2026-10-11 01:15") bash "$RUN" --detach "$T/jobs.env"
+check "a second tick returns too" [ "$(($(date +%s) - t0))" -lt 3 ]
+for _ in $(seq 100); do [ -f "$T/ops/state/okjob.json" ] && break; sleep 0.2; done
+flock -w 20 "$T/ops/run-jobs.lock" true # then the detached tick is done
+check "the detached tick ran the jobs" [ "$(runs)" = 1 ]
+check "and recorded them" grep -q '"exit": 0' "$T/ops/state/slow.json"
+check "the overlapping tick ran nothing" [ "$(grep -c 'homelab-okjob/start' "$CURL_LOG")" = 1 ]
+check "its output goes to run-jobs.log" [ -f "$T/ops/logs/run-jobs.log" ]
+rm -rf "$T"
+
 echo "tick jobs"
 setup
 echo 'every tick 1m ok.sh' >"$T/jobs.conf"
@@ -268,6 +284,50 @@ check "the dump is listed, its newest file" kj "d['dumps'][0]['name'] == 'Mealie
 check "the image is a release, with its version" kj "d['images'][0]['stack'] == 'photos' and d['images'][0]['release']['version'] == '0.1.3'"
 check "and the version running" kj "d['images'][0]['running']['version'] == '0.1.2' and d['images'][0]['running']['same_image'] is False"
 rm -rf "$T"
+
+echo "run history: durations, ticks, status.json"
+setup
+printf 'okjob 01:00 1m ok.sh\nbad 01:00 1m fail.sh\n' >"$T/jobs.conf"
+mkdir -p "$T/dash"
+cp "$ROOT/scripts/dashboard-status.sh" "$T/jobs/"
+mkdir -p "$T/jobs/lib" && cp "$ROOT/scripts/lib/"*.sh "$T/jobs/lib/"
+printf '#!/usr/bin/env bash\nexit 1\n' >"$T/bin/docker" && chmod +x "$T/bin/docker"
+printf 'DASHBOARD_LOCAL_DIR=%s\nSTATUS_VOLUME=/\nHYPERBACKUP_LOG=/nonexistent\n' "$T/dash" >>"$T/jobs.env"
+tick "2026-10-11 01:00"
+tick "2026-10-12 01:00"
+check "a job's state has its schedule and duration" python3 -c "import json; d=json.load(open('$T/ops/state/okjob.json')); assert d['at'] == '01:00' and d['timeout'] == '1m' and d['duration'] >= 0 and d['started'] > 0"
+check "each run is kept in <job>.runs" [ "$(wc -l <"$T/ops/state/okjob.runs")" = 2 ]
+check "a failed run keeps its exit code" grep -q ' 3$' "$T/ops/state/bad.runs"
+check "each tick is kept in _ticks" [ "$(wc -l <"$T/ops/state/_ticks")" = 2 ]
+hj() { python3 -c "import json,sys; d=json.load(open('$T/dash/status.json')); J={j['name']: j for j in d['jobs']}; sys.exit(0 if ($1) else 1)"; }
+check "status.json is valid JSON" valid_json "$T/dash/status.json"
+check "a job's history: runs, failures, last runs" hj "J['okjob']['runs']['n'] == 2 and J['okjob']['runs']['failed'] == 0 and len(J['okjob']['runs']['last']) == 2"
+check "a failing job's failures are counted" hj "J['bad']['runs']['failed'] == 2"
+check "the scheduler's ticks are summed up" hj "d['scheduler']['ticks']['n'] == 2 and d['scheduler']['ticks']['busy'] == 0"
+exec 8>"$T/ops/run-jobs.lock" && flock 8
+tick "2026-10-12 01:15"
+exec 8>&-
+check "a tick that finds the lock taken is noted as busy" grep -q ' busy$' "$T/ops/state/_ticks"
+tick "2026-10-12 01:30"
+check "and counted in status.json" hj "d['scheduler']['ticks']['busy'] == 1"
+for i in $(seq 260); do echo "$i 1 0"; done >"$T/ops/state/okjob.runs"
+tick "2026-10-13 01:00"
+check "the history is trimmed to the last 200 runs" [ "$(wc -l <"$T/ops/state/okjob.runs")" -le 251 ]
+check "status.json passes at most the last 30" hj "len(J['okjob']['runs']['last']) == 30"
+rm -rf "$T"
+
+echo "_jq: an old local jq is not used"
+J=$(mktemp -d)
+mkdir -p "$J/bin"
+# shellcheck disable=SC2016 # expanded by the fake jq, not here
+printf '#!/usr/bin/env bash\n[ "$1" = --version ] && echo "${FAKE_JQ:-jq-1.6}" && exit 0\necho local\n' >"$J/bin/jq"
+printf '#!/usr/bin/env bash\necho image\n' >"$J/bin/docker"
+chmod +x "$J/bin/"*
+jqsays() { FAKE_JQ=$1 PATH="$J/bin:$PATH" bash -c ". '$ROOT/scripts/lib/json.sh'; _jq ." </dev/null; }
+check "jq 1.6 (no ceil): the pinned image instead" [ "$(jqsays jq-1.6)" = image ]
+check "jq 1.7.1: the local one" [ "$(jqsays jq-1.7.1)" = local ]
+check "jq 1.8.1: the local one" [ "$(jqsays jq-1.8.1)" = local ]
+rm -rf "$J"
 
 echo "paperless-export"
 P=$(mktemp -d)

@@ -27,9 +27,17 @@ write_atomic() { # <path>
 	mv -f -- "$tmp" "$1"
 }
 
-# jq for reading API responses. DSM ships none: use the local one if any, else
-# a pinned image.
+# jq for reading API responses: the local one if it is 1.7 or newer, else a
+# pinned image. An older jq (one DSM can come with) lacks functions these
+# scripts use, e.g. ceil: alerts.sh failed to compile with it.
 JQ_IMAGE="ghcr.io/jqlang/jq:1.8.1"
+_jq_local=""
 _jq() {
-	if command -v jq >/dev/null; then jq "$@"; else docker run --rm -i "$JQ_IMAGE" "$@"; fi
+	if [ -z "$_jq_local" ]; then
+		_jq_local=no
+		case $(jq --version 2>/dev/null) in
+		jq-1.[7-9]* | jq-1.[1-9][0-9]* | jq-[2-9]*) _jq_local=yes ;;
+		esac
+	fi
+	if [ "$_jq_local" = yes ]; then jq "$@"; else docker run --rm -i "$JQ_IMAGE" "$@"; fi
 }

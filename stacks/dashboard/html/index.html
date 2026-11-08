@@ -732,6 +732,12 @@
     .ft .num { text-align: right; font-family: var(--mono); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
     .ft .name { font-weight: 500; }
     .ft .barcell { width: 30%; }
+    .ft td small { display: block; font-size: 0.7rem; color: var(--muted); }
+    .ft thead th.num { font-family: inherit; font-size: 0.74rem; }
+    [data-job-runs] + [data-ticks] { margin-top: 10px; }
+    .ft .num.bad { color: var(--bad); }
+    .runbars rect { fill: var(--ok); opacity: 0.8; }
+    .runbars rect.bad { fill: var(--bad); opacity: 1; }
     .ft .bar { display: block; height: 8px; border-radius: 2px; background: var(--accent); opacity: 0.75; }
     .spark { display: block; }
     .spark-area { fill: var(--accent); fill-opacity: 0.12; }
@@ -841,6 +847,11 @@
             <section>
                 <h3 class="view-title">Containers, jobs and scheduler</h3>
                 <div class="leds" data-leds-system></div>
+            </section>
+            <section>
+                <h3 class="view-title">Job runs <span>the last 30 days</span></h3>
+                <div class="tbl-wrap" data-job-runs></div>
+                <p class="empty-bay" data-ticks></p>
             </section>
         </div>
 
@@ -1166,10 +1177,19 @@
         if (!d.latest) { return { level: 'bad', value: 'none', detail: 'No dump yet: the live data is excluded on purpose' }; }
         return { level: now - d.latest > 2 * DAY ? 'bad' : 'ok', value: ago(d.latest, now), at: d.latest, detail: d.file };
     }
+    // A duration in seconds, short: '40 s', '12 min', '2 h 05'.
+    function dur(s) {
+        if (s == null) { return '–'; }
+        if (s < 60) { return s + ' s'; }
+        if (s < HOUR) { return Math.round(s / 60) + ' min'; }
+        var m = Math.round(s / 60) % 60;
+        return Math.floor(s / HOUR) + ' h ' + (m < 10 ? '0' : '') + m;
+    }
     function job(j, now) {
         var failed = j.exit !== 0;
         return { level: failed ? 'bad' : now - j.ended > 26 * HOUR ? 'warn' : 'ok',
-                 value: (failed ? 'exit ' + j.exit : 'ok') + ' · ' + ago(j.ended, now),
+                 value: (failed ? 'exit ' + j.exit : 'ok') + ' · ' + ago(j.ended, now) +
+                     (j.duration != null ? ' · took ' + dur(j.duration) : ''),
                  at: j.ended, detail: failed ? j.message : '' };
     }
 
@@ -1553,7 +1573,61 @@
         // The summary names the worst problem; among equals, the first found.
         var top = notes.filter(function (n) { return n[0] === 'bad'; })[0] || notes[0];
         area('system', worst(sLevels), top ? top[1] : 'all ok');
+        jobRuns(st, sch);
     });
+
+    // Job runs: per job its schedule, last run, and 30 days of durations
+    // (run-jobs.sh keeps them, dashboard-status.sh sums them up).
+    function runBars(last) {
+        var w = 150, h = 24, n = 30, bw = w / n;
+        var hi = Math.max.apply(null, last.map(function (r) { return r[1]; }).concat([1]));
+        var s = svg('svg', { 'class': 'runbars', viewBox: '0 0 ' + w + ' ' + h, width: w, height: h, role: 'img',
+                             'aria-label': 'durations of the last ' + last.length + ' runs' });
+        last.forEach(function (r, i) {
+            var bh = Math.max(1.5, r[1] / hi * (h - 2));
+            var b = svg('rect', { x: ((n - last.length + i) * bw + 0.5).toFixed(1), y: (h - bh).toFixed(1),
+                                  width: (bw - 1).toFixed(1), height: bh.toFixed(1), 'class': r[2] ? 'bad' : '' });
+            b.appendChild(svg('title', {}, when(r[0]) + ' · ' + dur(r[1]) + (r[2] ? ' · exit ' + r[2] : '')));
+            s.appendChild(b);
+        });
+        return s;
+    }
+    function jobRuns(st, sch) {
+        var box = document.querySelector('[data-job-runs]'), ticks = document.querySelector('[data-ticks]');
+        box.textContent = '';
+        var jobs = (st.jobs || []).filter(function (j) { return j.runs; });
+        if (!jobs.length) {
+            ticks.textContent = 'No run history yet: the scheduler records it from its next tick.';
+        } else {
+            var t = el('table', 'ft'), head = el('tr');
+            ['Job', 'Last run', 'Took', 'Median', 'Longest', 'Failed', 'Last 30 runs'].forEach(function (h, i) {
+                head.appendChild(el('th', i && i < 6 ? 'num' : null, h));
+            });
+            t.appendChild(el('thead')).appendChild(head);
+            var body = t.appendChild(el('tbody'));
+            jobs.sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (j) {
+                var r = j.runs, tr = el('tr'), name = el('td', 'name', j.name);
+                name.appendChild(el('small', null, (j.at === 'tick' ? 'every tick' : 'daily ' + (j.at || '?')) +
+                    (j.timeout ? ' · timeout ' + j.timeout : '')));
+                tr.appendChild(name);
+                tr.appendChild(el('td', 'num', j.started ? when(j.started) : '–'));
+                tr.appendChild(el('td', 'num', dur(j.duration)));
+                tr.appendChild(el('td', 'num', dur(r.median)));
+                tr.appendChild(el('td', 'num', dur(r.max)));
+                tr.appendChild(el('td', 'num' + (r.failed ? ' bad' : ''), r.failed + ' of ' + r.n));
+                tr.appendChild(el('td')).appendChild(runBars(r.last || []));
+                body.appendChild(tr);
+            });
+            box.appendChild(t);
+            ticks.textContent = '';
+        }
+        var k = sch && sch.ticks;
+        if (k && k.n) {
+            ticks.textContent = 'Scheduler, last 7 days: ' + k.n + ' ticks, median ' + dur(k.median) +
+                ', longest ' + dur(k.max) + '; ' + k.long + ' took over 15 min' +
+                (k.busy ? ', ' + k.busy + ' found the previous one still running (skipped, not lost)' : '') + '.';
+        }
+    }
 
     // ----------------------------------------------------------- storage
     // local/storage.json, written every night by scripts/storage-scan.sh.
